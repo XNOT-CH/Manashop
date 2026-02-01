@@ -417,7 +417,7 @@ html.dark .animate-shimmer {
 /* ========================================
    SMOOTH SCROLL & FOCUS
    ======================================== */
-html {
+html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 }
 
@@ -518,6 +518,23 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 .animate-fade-in-scale {
   animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Float Animation for Footer Logo */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
 /* Stagger animations for grids */

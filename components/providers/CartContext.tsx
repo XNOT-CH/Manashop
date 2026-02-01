@@ -1,0 +1,173 @@
+"use client";
+
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { toast } from "sonner";
+
+// Cart item interface
+export interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    discountPrice?: number | null;
+    imageUrl: string | null;
+    category: string;
+}
+
+// Cart context type
+interface CartContextType {
+    items: CartItem[];
+    addToCart: (product: CartItem) => Promise<boolean>;
+    removeFromCart: (productId: string) => void;
+    clearCart: () => void;
+    isInCart: (productId: string) => boolean;
+    itemCount: number;
+    subtotal: number;
+    total: number;
+    isLoading: boolean;
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+const CART_STORAGE_KEY = "gamestore_cart";
+
+interface CartProviderProps {
+    children: ReactNode;
+}
+
+export function CartProvider({ children }: CartProviderProps) {
+    const [items, setItems] = useState<CartItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
+
+    // Load cart from localStorage on mount
+    useEffect(() => {
+        try {
+            const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+            if (savedCart) {
+                const parsedCart = JSON.parse(savedCart);
+                if (Array.isArray(parsedCart)) {
+                    setItems(parsedCart);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load cart from localStorage:", error);
+        }
+        setIsInitialized(true);
+    }, []);
+
+    // Save cart to localStorage whenever items change
+    useEffect(() => {
+        if (isInitialized) {
+            try {
+                localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+            } catch (error) {
+                console.error("Failed to save cart to localStorage:", error);
+            }
+        }
+    }, [items, isInitialized]);
+
+    // Add item to cart with stock validation
+    const addToCart = useCallback(async (product: CartItem): Promise<boolean> => {
+        // Check if already in cart
+        if (items.some((item) => item.id === product.id)) {
+            toast.info("สินค้านี้อยู่ในตะกร้าแล้ว", {
+                description: product.name,
+            });
+            return false;
+        }
+
+        // Validate stock (check if product is still available)
+        setIsLoading(true);
+        try {
+            const response = await fetch(`/api/products/${product.id}`);
+            if (!response.ok) {
+                toast.error("ไม่พบสินค้านี้");
+                return false;
+            }
+
+            const data = await response.json();
+            if (data.isSold) {
+                toast.error("สินค้านี้ถูกขายไปแล้ว", {
+                    description: product.name,
+                });
+                return false;
+            }
+
+            // Add to cart
+            setItems((prev) => [...prev, product]);
+            toast.success("เพิ่มลงตะกร้าแล้ว", {
+                description: product.name,
+            });
+            return true;
+        } catch (error) {
+            console.error("Failed to validate product:", error);
+            toast.error("ไม่สามารถตรวจสอบสินค้าได้");
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [items]);
+
+    // Remove item from cart
+    const removeFromCart = useCallback((productId: string) => {
+        setItems((prev) => {
+            const item = prev.find((i) => i.id === productId);
+            if (item) {
+                toast.info("นำออกจากตะกร้าแล้ว", {
+                    description: item.name,
+                });
+            }
+            return prev.filter((i) => i.id !== productId);
+        });
+    }, []);
+
+    // Clear all items from cart
+    const clearCart = useCallback(() => {
+        setItems([]);
+        toast.info("ล้างตะกร้าแล้ว");
+    }, []);
+
+    // Check if item is in cart
+    const isInCart = useCallback((productId: string): boolean => {
+        return items.some((item) => item.id === productId);
+    }, [items]);
+
+    // Calculate item count
+    const itemCount = items.length;
+
+    // Calculate subtotal (using discount price if available)
+    const subtotal = items.reduce((sum, item) => {
+        const price = item.discountPrice ?? item.price;
+        return sum + price;
+    }, 0);
+
+    // Total (same as subtotal for now, can add fees/discounts later)
+    const total = subtotal;
+
+    const value: CartContextType = {
+        items,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        isInCart,
+        itemCount,
+        subtotal,
+        total,
+        isLoading,
+    };
+
+    return (
+        <CartContext.Provider value={value}>
+            {children}
+        </CartContext.Provider>
+    );
+}
+
+// Custom hook to use cart context
+export function useCart(): CartContextType {
+    const context = useContext(CartContext);
+    if (context === undefined) {
+        throw new Error("useCart must be used within a CartProvider");
+    }
+    return context;
+}

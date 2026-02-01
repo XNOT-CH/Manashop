@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { title, price, image, category, description, secretData } = body;
+        const { title, price, discountPrice, image, category, description, secretData, currency } = body;
 
         // Validate required fields
         if (!title || !price || !category || !secretData) {
@@ -40,13 +40,33 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate discountPrice if provided
+        let discountPriceNumber: number | null = null;
+        if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
+            discountPriceNumber = parseFloat(discountPrice);
+            if (isNaN(discountPriceNumber) || discountPriceNumber < 0) {
+                return NextResponse.json(
+                    { success: false, message: "Discount price must be a positive number" },
+                    { status: 400 }
+                );
+            }
+            if (discountPriceNumber >= priceNumber) {
+                return NextResponse.json(
+                    { success: false, message: "Discount price must be less than original price" },
+                    { status: 400 }
+                );
+            }
+        }
+
         // Create product in database
         const product = await db.product.create({
             data: {
                 name: title,
                 price: priceNumber,
+                discountPrice: discountPriceNumber,
                 imageUrl: image || null,
                 category: category,
+                currency: currency || "THB",
                 description: description || null,
                 secretData: encrypt(secretData),
                 isSold: false,

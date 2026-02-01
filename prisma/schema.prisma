@@ -20,6 +20,9 @@ model User {
   role          String    @default("USER") // USER, MODERATOR, SELLER, ADMIN
   permissions   String?   @db.Text // JSON array of permission strings
   creditBalance Decimal   @default(0.00) @db.Decimal(10, 2)
+  pointBalance  Int       @default(0)  // Point balance for rare items
+  totalTopup    Decimal   @default(0.00) @db.Decimal(10, 2) // ยอดเติมเงินสะสม (ไม่หักออก)
+  lifetimePoints Int      @default(0)  // พอยต์สะสมตลอดชีพ
   
   orders        Order[]
   topups        Topup[]
@@ -92,6 +95,7 @@ model Product {
   discountPrice Decimal?  @db.Decimal(10, 2)
   imageUrl      String?
   category      String
+  currency      String    @default("THB")  // THB or POINT
   
   secretData    String    @db.Text
   isSold        Boolean   @default(false)
@@ -187,4 +191,69 @@ model NewsArticle {
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+// --- โค้ดส่วนลด (Promo Codes) ---
+model PromoCode {
+  id            String    @id @default(uuid())
+  code          String    @unique              // โค้ดที่ลูกค้าใช้ (e.g. "SALE50")
+  discountType  String    @default("PERCENTAGE") // PERCENTAGE or FIXED
+  discountValue Decimal   @db.Decimal(10, 2)   // ส่วนลด (% หรือ บาท)
+  minPurchase   Decimal?  @db.Decimal(10, 2)   // ยอดขั้นต่ำ
+  maxDiscount   Decimal?  @db.Decimal(10, 2)   // ส่วนลดสูงสุด (สำหรับ %)
+  usageLimit    Int?                           // จำนวนครั้งที่ใช้ได้ (null = ไม่จำกัด)
+  usedCount     Int       @default(0)          // จำนวนที่ใช้แล้ว
+  startsAt      DateTime  @default(now())      // เริ่มใช้ได้เมื่อ
+  expiresAt     DateTime?                      // หมดอายุเมื่อ (null = ไม่หมดอายุ)
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- ตั้งค่า Footer Widget ---
+model FooterWidgetSettings {
+  id          String    @id @default(uuid())
+  isActive    Boolean   @default(true)  // เปิด/ปิดการแสดงผล
+  title       String    @default("เมนูลัด")  // หัวข้อ widget
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// --- ลิงก์ใน Footer Widget ---
+model FooterLink {
+  id           String    @id @default(uuid())
+  label        String    // ข้อความที่โชว์
+  href         String    // ลิงก์ไปที่
+  openInNewTab Boolean   @default(false)  // เปิดแท็บใหม่
+  sortOrder    Int       @default(0)
+  isActive     Boolean   @default(true)
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// --- แถบนำทางหลัก (Main Navigation) ---
+model NavItem {
+  id        String   @id @default(uuid())
+  label     String   // ชื่อเมนูที่แสดง
+  href      String   // เส้นทาง URL
+  icon      String?  // ชื่อ icon (optional)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- การตั้งค่าสกุลเงินพิเศษ (Currency Settings) ---
+model CurrencySettings {
+  id          String   @id @default("default")
+  name        String   @default("พอยท์")      // ชื่อที่แสดง
+  symbol      String   @default("💎")         // ไอคอน/สัญลักษณ์
+  code        String   @default("POINT")      // รหัส (ไม่เปลี่ยน)
+  description String?  @db.Text               // คำอธิบาย
+  isActive    Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
 }

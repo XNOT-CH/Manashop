@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 // Get encryption key from environment or use a default (CHANGE IN PRODUCTION!)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "gamestore-secret-key-32-char!!"; // Must be 32 characters
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "gamestore-secret-key-12345678901"; // Must be 32 characters
 const IV_LENGTH = 16;
 
 /**

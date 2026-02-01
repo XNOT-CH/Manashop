@@ -33,7 +33,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +43,7 @@ interface Product {
     price: number;
     imageUrl: string | null;
     category: string;
+    currency?: string;
     isSold: boolean;
     isFeatured: boolean;
 }
@@ -153,7 +154,14 @@ export function ProductTable({ products }: ProductTableProps) {
                                 <Badge variant="secondary">{product.category}</Badge>
                             </TableCell>
                             <TableCell className="text-right font-medium">
-                                ฿{product.price.toLocaleString()}
+                                {product.currency === "POINT" ? (
+                                    <span className="flex items-center justify-end gap-1 text-purple-600">
+                                        <Gem className="h-4 w-4" />
+                                        {product.price.toLocaleString()}
+                                    </span>
+                                ) : (
+                                    <span>฿{product.price.toLocaleString()}</span>
+                                )}
                             </TableCell>
                             <TableCell className="text-center">
                                 {product.isSold ? (
