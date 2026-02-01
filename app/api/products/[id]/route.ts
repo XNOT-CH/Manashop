@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { title, price, image, category, description, secretData } = body;
+        const { title, price, discountPrice, image, category, description, secretData, currency } = body;
 
         // Check if product exists
         const existingProduct = await db.product.findUnique({
@@ -73,14 +73,35 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             );
         }
 
+        // Validate discountPrice if provided
+        let discountPriceNumber: number | null = null;
+        const priceNumber = parseFloat(price);
+        if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
+            discountPriceNumber = parseFloat(discountPrice);
+            if (isNaN(discountPriceNumber) || discountPriceNumber < 0) {
+                return NextResponse.json(
+                    { success: false, message: "Discount price must be a positive number" },
+                    { status: 400 }
+                );
+            }
+            if (discountPriceNumber >= priceNumber) {
+                return NextResponse.json(
+                    { success: false, message: "Discount price must be less than original price" },
+                    { status: 400 }
+                );
+            }
+        }
+
         // Update the product
         const updatedProduct = await db.product.update({
             where: { id },
             data: {
                 name: title,
-                price: parseFloat(price),
+                price: priceNumber,
+                discountPrice: discountPriceNumber,
                 imageUrl: image || null,
                 category,
+                currency: currency || "THB",
                 description: description || null,
                 secretData: encrypt(secretData),
             },

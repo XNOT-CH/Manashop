@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { ShoppingCart, Eye, Loader2, ArrowRight } from "lucide-react";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 interface ProductCardProps {
     id: string;
@@ -112,6 +113,7 @@ export function ProductCard({
                             src={image || "/placeholder.jpg"}
                             alt={title}
                             fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                             className={`
                                 object-cover transition-transform duration-500 ease-out
                                 ${isHovered ? 'scale-110' : 'scale-100'}
@@ -182,15 +184,27 @@ export function ProductCard({
                         )}
                         {isSold ? "ขายแล้ว" : "ซื้อ"}
                     </Button>
+                    {!isSold && (
+                        <AddToCartButton
+                            product={{
+                                id,
+                                name: title,
+                                price,
+                                imageUrl: image,
+                                category,
+                            }}
+                            disabled={isSold}
+                            className="flex-1"
+                        />
+                    )}
                     <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 gap-2 rounded-xl border-border text-muted-foreground hover:bg-accent transition-all duration-200"
+                        className="gap-2 rounded-xl border-border text-muted-foreground hover:bg-accent transition-all duration-200"
                         asChild
                     >
                         <Link href={`/product/${id}`}>
                             <Eye className="h-4 w-4" />
-                            ดู
                         </Link>
                     </Button>
                 </CardFooter>

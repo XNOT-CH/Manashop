@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductGallery } from "@/components/ProductGallery";
 import { BuyButton } from "@/components/BuyButton";
+import { ProductDetailAddToCart } from "@/components/cart/AddToCartButtonDetail";
 import {
     ArrowLeft,
     Zap,
@@ -139,6 +140,19 @@ export default async function ProductDetailPage({
                                 price={price}
                                 disabled={isSold}
                             />
+                            {!isSold && (
+                                <ProductDetailAddToCart
+                                    product={{
+                                        id: product.id,
+                                        name: product.name,
+                                        price: price,
+                                        discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+                                        imageUrl: product.imageUrl,
+                                        category: product.category,
+                                    }}
+                                    disabled={isSold}
+                                />
+                            )}
                             <Button
                                 variant="outline"
                                 size="lg"

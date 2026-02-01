@@ -33,26 +33,49 @@ import {
     HelpCircle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NavbarCartButton } from "@/components/NavbarCartButton";
 
 export default async function Navbar() {
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
 
     // Parallel fetch for better performance
-    const [user, siteSettings] = await Promise.all([
+    const [user, siteSettings, dbNavItems] = await Promise.all([
         userId ? db.user.findUnique({
             where: { id: userId },
             select: { username: true, creditBalance: true },
         }) : Promise.resolve(null),
         getSiteSettings(),
+        db.navItem.findMany({
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+        }),
     ]);
 
-    const navLinks = [
-        { href: "/", label: "หน้าแรก", icon: Home },
-        { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
-        { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
-        { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
-    ];
+    // Icon mapping for dynamic nav items
+    const iconMap: Record<string, typeof Home> = {
+        home: Home,
+        shop: ShoppingBag,
+        dashboard: LayoutDashboard,
+        help: HelpCircle,
+        wallet: Wallet,
+        user: User,
+        settings: Settings,
+    };
+
+    // Use database items if available, otherwise fallback to defaults
+    const navLinks = dbNavItems.length > 0
+        ? dbNavItems.map(item => ({
+            href: item.href,
+            label: item.label,
+            icon: iconMap[item.icon?.toLowerCase() || ''] || Home,
+        }))
+        : [
+            { href: "/", label: "หน้าแรก", icon: Home },
+            { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
+            { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+            { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
+        ];
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/90 backdrop-blur-lg shadow-sm">
@@ -96,6 +119,10 @@ export default async function Navbar() {
                 <div className="flex items-center gap-2">
                     {/* Theme Toggle */}
                     <ThemeToggle />
+
+                    {/* Cart Button */}
+                    <NavbarCartButton />
+
                     {user ? (
                         <>
                             {/* Credit Balance */}

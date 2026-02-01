@@ -245,6 +245,7 @@ export default function AdminNewsPage() {
                                                     src={article.imageUrl}
                                                     alt={article.title}
                                                     fill
+                                                    sizes="48px"
                                                     className="object-cover"
                                                     onError={(e) => {
                                                         (e.target as HTMLImageElement).src =
@@ -366,6 +367,7 @@ export default function AdminNewsPage() {
                                         src={formData.imageUrl}
                                         alt="Preview"
                                         fill
+                                        sizes="100%"
                                         className="object-cover"
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).src =

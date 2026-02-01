@@ -12,6 +12,8 @@ import {
     Gamepad2,
     Newspaper,
     FileText,
+    LinkIcon,
+    Gem,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -20,6 +22,8 @@ const sidebarLinks = [
     { href: "/admin/news", label: "News Manager", icon: Newspaper },
     { href: "/admin/users", label: "User Manager", icon: Users },
     { href: "/admin/slips", label: "Slip Verification", icon: FileCheck },
+    { href: "/admin/currency-settings", label: "Currency Settings", icon: Gem },
+    { href: "/admin/footer-links", label: "Footer Links", icon: LinkIcon },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: FileText },
     { href: "/admin/settings", label: "Site Settings", icon: Settings },
 ];

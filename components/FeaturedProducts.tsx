@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Flame, ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/ui/AlertModal";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -201,6 +202,7 @@ export function FeaturedProducts() {
                                     src={product.imageUrl || "/placeholder.jpg"}
                                     alt={product.name}
                                     fill
+                                    sizes="208px"
                                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                             </div>
@@ -214,18 +216,31 @@ export function FeaturedProducts() {
                                             ขายแล้ว
                                         </Button>
                                     ) : (
-                                        <Button
-                                            className="w-full flex-1"
-                                            onClick={() => handleBuyClick(product)}
-                                            disabled={buyingId === product.id}
-                                        >
-                                            {buyingId === product.id ? (
-                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            ) : (
-                                                <ShoppingCart className="h-4 w-4 mr-2" />
-                                            )}
-                                            ซื้อ
-                                        </Button>
+                                        <>
+                                            <Button
+                                                className="flex-1"
+                                                onClick={() => handleBuyClick(product)}
+                                                disabled={buyingId === product.id}
+                                            >
+                                                {buyingId === product.id ? (
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                ) : (
+                                                    <ShoppingCart className="h-4 w-4 mr-2" />
+                                                )}
+                                                ซื้อ
+                                            </Button>
+                                            <AddToCartButton
+                                                product={{
+                                                    id: product.id,
+                                                    name: product.name,
+                                                    price: product.price,
+                                                    imageUrl: product.imageUrl,
+                                                    category: product.category,
+                                                }}
+                                                showText={false}
+                                                size="icon"
+                                            />
+                                        </>
                                     )}
                                     <Link href={`/product/${product.id}`}>
                                         <Button variant="outline" size="icon">

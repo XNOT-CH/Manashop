@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Shield } from "lucide-react";
+import { ArrowLeft, Loader2, Shield, Gem, Banknote } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 
 export default function AddProductPage() {
@@ -17,10 +18,12 @@ export default function AddProductPage() {
     const [formData, setFormData] = useState({
         title: "",
         price: "",
+        discountPrice: "",
         image: "",
         category: "",
         description: "",
         secretData: "",
+        currency: "THB", // THB or POINT
     });
 
     const handleChange = (
@@ -96,33 +99,94 @@ export default function AddProductPage() {
                             />
                         </div>
 
-                        {/* Price & Category Row */}
+                        {/* Currency Type */}
+                        <div className="space-y-3">
+                            <Label>ประเภทสกุลเงิน *</Label>
+                            <RadioGroup
+                                value={formData.currency}
+                                onValueChange={(value) =>
+                                    setFormData((prev) => ({ ...prev, currency: value }))
+                                }
+                                className="flex gap-4"
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="THB" id="currency-thb" />
+                                    <Label htmlFor="currency-thb" className="flex items-center gap-2 cursor-pointer">
+                                        <Banknote className="h-4 w-4 text-green-600" />
+                                        บาท (THB)
+                                    </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="POINT" id="currency-point" />
+                                    <Label htmlFor="currency-point" className="flex items-center gap-2 cursor-pointer">
+                                        <Gem className="h-4 w-4 text-purple-600" />
+                                        พอยท์ (POINT)
+                                    </Label>
+                                </div>
+                            </RadioGroup>
+                            {formData.currency === "POINT" && (
+                                <p className="text-xs text-purple-600">
+                                    💎 สินค้านี้จะซื้อได้ด้วย Point เท่านั้น
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Price & Discount Row */}
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="price">ราคา (฿) *</Label>
+                                <Label htmlFor="price" className="flex items-center gap-2">
+                                    {formData.currency === "POINT" ? (
+                                        <><Gem className="h-4 w-4 text-purple-600" /> ราคา (Point) *</>
+                                    ) : (
+                                        <>ราคาเต็ม (฿) *</>
+                                    )}
+                                </Label>
                                 <Input
                                     id="price"
                                     name="price"
                                     type="number"
-                                    placeholder="เช่น 1500"
+                                    placeholder={formData.currency === "POINT" ? "เช่น 100" : "เช่น 1500"}
                                     min="0"
-                                    step="0.01"
+                                    step={formData.currency === "POINT" ? "1" : "0.01"}
                                     value={formData.price}
                                     onChange={handleChange}
                                     required
+                                    className={formData.currency === "POINT" ? "border-purple-300 focus:border-purple-500" : ""}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="category">หมวดหมู่ *</Label>
+                                <Label htmlFor="discountPrice" className="flex items-center gap-2">
+                                    <span className="text-red-500">🎁</span>
+                                    ราคาลด {formData.currency === "POINT" ? "(Point)" : "(฿)"}
+                                </Label>
                                 <Input
-                                    id="category"
-                                    name="category"
-                                    placeholder="เช่น ROV, Valorant, Genshin"
-                                    value={formData.category}
+                                    id="discountPrice"
+                                    name="discountPrice"
+                                    type="number"
+                                    placeholder="เช่น 1200 (เว้นว่างถ้าไม่ลด)"
+                                    min="0"
+                                    step="0.01"
+                                    value={formData.discountPrice}
                                     onChange={handleChange}
-                                    required
+                                    className="border-red-200 focus:border-red-400"
                                 />
+                                <p className="text-xs text-muted-foreground">
+                                    หากกรอกราคานี้ สินค้าจะแสดงใน "สินค้าลดราคา"
+                                </p>
                             </div>
+                        </div>
+
+                        {/* Category */}
+                        <div className="space-y-2">
+                            <Label htmlFor="category">หมวดหมู่ *</Label>
+                            <Input
+                                id="category"
+                                name="category"
+                                placeholder="เช่น ROV, Valorant, Genshin"
+                                value={formData.category}
+                                onChange={handleChange}
+                                required
+                            />
                         </div>
 
                         {/* Image URL */}
