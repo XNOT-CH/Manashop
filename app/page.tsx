@@ -4,6 +4,7 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
+import { CategoryBannerSection } from "@/components/CategoryBannerSection";
 import TrustBanner from "@/components/home/TrustBanner";
 import { db } from "@/lib/db";
 
@@ -26,6 +27,9 @@ export default async function Home() {
 
         {/* Sale Products Carousel */}
         <SaleProducts />
+
+        {/* Category Banners */}
+        <CategoryBannerSection page="home" />
 
         {/* Section Header - All Products */}
         <div>

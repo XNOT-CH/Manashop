@@ -15,14 +15,29 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { title, price, discountPrice, image, category, description, secretData, currency } = body;
+        const {
+            title,
+            price,
+            discountPrice,
+            discountType,
+            discountValue,
+            image,
+            category,
+            categoryBannerId,
+            description,
+            notes,
+            purchaseNotes,
+            secretData,
+            currency,
+            purchaseLimit
+        } = body;
 
         // Validate required fields
         if (!title || !price || !category || !secretData) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Missing required fields: title, price, category, secretData",
+                    message: "กรุณากรอกข้อมูลที่จำเป็น: ชื่อสินค้า, ราคา, หมวดหมู่ และข้อมูลลับ",
                 },
                 { status: 400 }
             );
@@ -34,40 +49,55 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Price must be a positive number",
+                    message: "ราคาต้องเป็นตัวเลขที่มากกว่า 0",
                 },
                 { status: 400 }
             );
         }
 
-        // Validate discountPrice if provided
-        let discountPriceNumber: number | null = null;
-        if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-            discountPriceNumber = parseFloat(discountPrice);
-            if (isNaN(discountPriceNumber) || discountPriceNumber < 0) {
-                return NextResponse.json(
-                    { success: false, message: "Discount price must be a positive number" },
-                    { status: 400 }
-                );
+        // Process discount price (could be calculated or direct)
+        let finalDiscountPrice: number | null = null;
+        if (discountPrice !== undefined && discountPrice !== null && discountPrice !== "") {
+            finalDiscountPrice = parseFloat(discountPrice);
+            if (isNaN(finalDiscountPrice) || finalDiscountPrice < 0) {
+                finalDiscountPrice = null;
             }
-            if (discountPriceNumber >= priceNumber) {
+            if (finalDiscountPrice !== null && finalDiscountPrice >= priceNumber) {
                 return NextResponse.json(
-                    { success: false, message: "Discount price must be less than original price" },
+                    { success: false, message: "ราคาลดต้องน้อยกว่าราคาเต็ม" },
                     { status: 400 }
                 );
             }
         }
+
+        // Process discount value
+        let discountValueNumber: number | null = null;
+        if (discountValue !== undefined && discountValue !== "" && discountValue !== null) {
+            discountValueNumber = parseFloat(discountValue);
+            if (isNaN(discountValueNumber) || discountValueNumber < 0) {
+                discountValueNumber = null;
+            }
+        }
+
+        // Process purchase limit
+        const purchaseLimitNumber = parseInt(purchaseLimit) || 0;
 
         // Create product in database
         const product = await db.product.create({
             data: {
                 name: title,
                 price: priceNumber,
-                discountPrice: discountPriceNumber,
+                discountPrice: finalDiscountPrice,
+                discountType: discountType || "FIXED",
+                discountValue: discountValueNumber,
                 imageUrl: image || null,
                 category: category,
+                categoryBannerId: categoryBannerId || null,
                 currency: currency || "THB",
                 description: description || null,
+                notes: notes || null,
+                purchaseNotes: purchaseNotes || null,
+                purchaseLimit: purchaseLimitNumber,
                 secretData: encrypt(secretData),
                 isSold: false,
             },
@@ -75,7 +105,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: "Product created successfully",
+            message: "สร้างสินค้าสำเร็จ",
             product: {
                 id: product.id,
                 name: product.name,
@@ -88,7 +118,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
             {
                 success: false,
-                message: error instanceof Error ? error.message : "Failed to create product",
+                message: error instanceof Error ? error.message : "ไม่สามารถสร้างสินค้าได้",
             },
             { status: 500 }
         );

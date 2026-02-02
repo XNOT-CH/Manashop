@@ -106,15 +106,27 @@ model AuditLog {
 // --- ตารางสินค้า (Products) ---
 model Product {
   id            String    @id @default(uuid())
-  name          String
-  description   String?   @db.Text
-  price         Decimal   @db.Decimal(10, 2)
-  discountPrice Decimal?  @db.Decimal(10, 2)
-  imageUrl      String?
-  category      String
-  currency      String    @default("THB")  // THB or POINT
+  name          String                            // ชื่อสินค้า
+  description   String?   @db.Text                // รายละเอียดสินค้า
+  notes         String?   @db.Text                // หมายเหตุ
+  purchaseNotes String?   @db.Text                // หมายเหตุเมื่อสั่งซื้อ (แสดงตอนกดซื้อ)
   
-  secretData    String    @db.Text
+  price         Decimal   @db.Decimal(10, 2)      // ราคาเต็ม
+  discountPrice Decimal?  @db.Decimal(10, 2)      // ราคาลด (ราคาสุดท้าย)
+  discountType  String?   @default("FIXED")       // ประเภทส่วนลด: FIXED (บาท) หรือ PERCENT (%)
+  discountValue Decimal?  @db.Decimal(10, 2)      // มูลค่าส่วนลด
+  
+  imageUrl      String?   @db.Text                // ลิงก์รูปภาพสินค้า
+  category      String                            // หมวดหมู่ (ข้อความ)
+  currency      String    @default("THB")         // สกุลเงิน: THB หรือ POINT
+  
+  // เชื่อมกับ Category Banner (ถ้ามี)
+  categoryBannerId String?
+  categoryBanner   CategoryBanner? @relation(fields: [categoryBannerId], references: [id], onDelete: SetNull)
+  
+  purchaseLimit Int       @default(0)             // จำกัดการซื้อต่อบัญชี (0 = ไม่จำกัด)
+  
+  secretData    String    @db.Text                // ข้อมูลลับ (ID/Password)
   isSold        Boolean   @default(false)
   isFeatured    Boolean   @default(false)
   sortOrder     Int       @default(0)
@@ -273,4 +285,27 @@ model CurrencySettings {
   description String?  @db.Text               // คำอธิบาย
   isActive    Boolean  @default(true)
   updatedAt   DateTime @updatedAt
+}
+
+// --- แบนเนอร์หมวดหมู่ (Category Banners) ---
+model CategoryBanner {
+  id            String   @id @default(uuid())
+  name          String                          // ชื่อหมวดหมู่
+  imageUrl      String   @db.Text               // รูปภาพแบนเนอร์
+  linkUrl       String?                         // ลิงก์ที่คลิกแล้วไป
+  minPrice      Decimal? @db.Decimal(10, 2)     // ราคาต่ำสุด (แสดงผล)
+  maxPrice      Decimal? @db.Decimal(10, 2)     // ราคาสูงสุด (แสดงผล)
+  productCount  Int      @default(0)            // จำนวนสินค้า (แสดงผล)
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  
+  // Page Placement
+  showOnHome     Boolean @default(true)         // แสดงที่หน้าแรก
+  showOnProducts Boolean @default(false)        // แสดงที่หน้าสินค้า
+  
+  // Relations
+  products      Product[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

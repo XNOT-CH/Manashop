@@ -15,19 +15,21 @@ import {
     LinkIcon,
     Gem,
     UserPlus,
+    LayoutGrid,
 } from "lucide-react";
 
 const sidebarLinks = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/products", label: "Product Manager", icon: Package },
-    { href: "/admin/news", label: "News Manager", icon: Newspaper },
-    { href: "/admin/users", label: "User Manager", icon: Users },
-    { href: "/admin/slips", label: "Slip Verification", icon: FileCheck },
-    { href: "/admin/referral", label: "Referral System", icon: UserPlus },
-    { href: "/admin/currency-settings", label: "Currency Settings", icon: Gem },
-    { href: "/admin/footer-links", label: "Footer Links", icon: LinkIcon },
-    { href: "/admin/audit-logs", label: "Audit Logs", icon: FileText },
-    { href: "/admin/settings", label: "Site Settings", icon: Settings },
+    { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard },
+    { href: "/admin/products", label: "จัดการสินค้า", icon: Package },
+    { href: "/admin/category-banners", label: "จัดการแบนเนอร์", icon: LayoutGrid },
+    { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
+    { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
+    { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
+    { href: "/admin/referral", label: "ระบบแนะนำเพื่อน", icon: UserPlus },
+    { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
+    { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
+    { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
+    { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings },
 ];
 
 export function AdminSidebar() {
@@ -41,7 +43,7 @@ export function AdminSidebar() {
                     <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                         <Gamepad2 className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-lg font-bold">Admin Panel</span>
+                    <span className="text-lg font-bold">แผงควบคุมแอดมิน</span>
                 </Link>
             </div>
 
@@ -75,7 +77,7 @@ export function AdminSidebar() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
                 >
                     <LogOut className="h-5 w-5" />
-                    Back to Shop
+                    กลับไปหน้าร้าน
                 </Link>
             </div>
         </aside>

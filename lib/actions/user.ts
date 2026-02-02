@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
@@ -125,6 +126,11 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             })),
             status: "SUCCESS",
         });
+
+        // Revalidate pages to show updated profile data
+        revalidatePath("/", "layout"); // Revalidate Navbar across all pages
+        revalidatePath("/profile/settings");
+        revalidatePath("/dashboard");
 
         return {
             success: true,
