@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { PurchasedItem } from "@/components/PurchasedItem";
+import { ReferralCard } from "@/components/ReferralCard";
 import {
     Wallet,
     Package,
@@ -41,6 +42,10 @@ export default async function DashboardPage() {
 
     const creditBalance = Number(user.creditBalance);
     const totalPurchased = orders.length;
+
+    // Get referral count (will work after Prisma migration)
+    const referralCount = 0; // Placeholder until schema is synced
+    const referralCode = (user as { referralCode?: string }).referralCode || "";
 
     return (
         <div className="space-y-8 animate-page-enter">
@@ -123,6 +128,14 @@ export default async function DashboardPage() {
                         </Link>
                     </CardContent>
                 </Card>
+
+                {/* Referral Card */}
+                {referralCode && (
+                    <ReferralCard
+                        referralCode={referralCode}
+                        referralCount={referralCount}
+                    />
+                )}
             </div>
 
             <Separator />

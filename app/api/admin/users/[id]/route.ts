@@ -46,11 +46,20 @@ export async function PATCH(
             lifetimePoints?: number;
         } = {};
 
+        // Max value for Decimal(10,2) is 99,999,999.99
+        const MAX_DECIMAL_VALUE = 99999999.99;
+
         if (creditBalance !== undefined) {
             const value = parseFloat(creditBalance);
             if (isNaN(value) || value < 0) {
                 return NextResponse.json(
                     { error: "เครดิตคงเหลือต้องเป็นตัวเลขที่ไม่ติดลบ" },
+                    { status: 400 }
+                );
+            }
+            if (value > MAX_DECIMAL_VALUE) {
+                return NextResponse.json(
+                    { error: `เครดิตคงเหลือต้องไม่เกิน ${MAX_DECIMAL_VALUE.toLocaleString()} บาท` },
                     { status: 400 }
                 );
             }
@@ -62,6 +71,12 @@ export async function PATCH(
             if (isNaN(value) || value < 0) {
                 return NextResponse.json(
                     { error: "ยอดเติมสะสมต้องเป็นตัวเลขที่ไม่ติดลบ" },
+                    { status: 400 }
+                );
+            }
+            if (value > MAX_DECIMAL_VALUE) {
+                return NextResponse.json(
+                    { error: `ยอดเติมสะสมต้องไม่เกิน ${MAX_DECIMAL_VALUE.toLocaleString()} บาท` },
                     { status: 400 }
                 );
             }

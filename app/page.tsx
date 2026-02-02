@@ -4,6 +4,7 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
+import TrustBanner from "@/components/home/TrustBanner";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,9 @@ export default async function Home() {
 
         {/* News and Promotions Section */}
         <NewsSection />
+
+        {/* Trust & Credibility Section */}
+        <TrustBanner />
       </div>
     </div>
   );

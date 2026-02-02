@@ -14,6 +14,7 @@ import {
     FileText,
     LinkIcon,
     Gem,
+    UserPlus,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -22,6 +23,7 @@ const sidebarLinks = [
     { href: "/admin/news", label: "News Manager", icon: Newspaper },
     { href: "/admin/users", label: "User Manager", icon: Users },
     { href: "/admin/slips", label: "Slip Verification", icon: FileCheck },
+    { href: "/admin/referral", label: "Referral System", icon: UserPlus },
     { href: "/admin/currency-settings", label: "Currency Settings", icon: Gem },
     { href: "/admin/footer-links", label: "Footer Links", icon: LinkIcon },
     { href: "/admin/audit-logs", label: "Audit Logs", icon: FileText },

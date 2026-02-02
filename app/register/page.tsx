@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertModal } from "@/components/ui/AlertModal";
@@ -10,6 +10,8 @@ import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 export default function RegisterPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const refCode = searchParams.get("ref");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -97,13 +99,14 @@ export default function RegisterPage() {
                 body: JSON.stringify({
                     username: formData.username,
                     password: formData.password,
+                    ref: refCode,
                 }),
             });
 
             const data = await response.json();
 
             if (data.success) {
-                showAlert("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success");
+                showAlert(data.message || "สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success");
                 setTimeout(() => {
                     router.push("/login");
                 }, 1500);

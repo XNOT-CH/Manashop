@@ -9,6 +9,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- การตั้งค่าระบบ (System Config) ---
+model SystemConfig {
+  key         String   @id
+  value       String   @db.Text
+  description String?  @db.Text
+  updatedAt   DateTime @updatedAt
+}
+
 // --- ตารางผู้ใช้งาน (Users) ---
 model User {
   id            String    @id @default(uuid())
@@ -23,6 +31,15 @@ model User {
   pointBalance  Int       @default(0)  // Point balance for rare items
   totalTopup    Decimal   @default(0.00) @db.Decimal(10, 2) // ยอดเติมเงินสะสม (ไม่หักออก)
   lifetimePoints Int      @default(0)  // พอยต์สะสมตลอดชีพ
+  
+  // Referral System
+  referralCode  String?   @unique  // รหัสเชิญชวนของผู้ใช้
+  referredById  String?            // ID ของคนที่เชิญมา
+  referredBy    User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]    @relation("Referrals")  // รายชื่อคนที่เชิญมา
+  
+  // Anti-Abuse
+  registrationIp String?  @db.VarChar(45)  // IP ที่ใช้สมัคร (IPv4/IPv6)
   
   orders        Order[]
   topups        Topup[]

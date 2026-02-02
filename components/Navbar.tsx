@@ -31,6 +31,7 @@ import {
     UserCog,
     Settings,
     HelpCircle,
+    Sparkles,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavbarCartButton } from "@/components/NavbarCartButton";
@@ -43,7 +44,7 @@ export default async function Navbar() {
     const [user, siteSettings, dbNavItems] = await Promise.all([
         userId ? db.user.findUnique({
             where: { id: userId },
-            select: { username: true, creditBalance: true },
+            select: { username: true, creditBalance: true, pointBalance: true },
         }) : Promise.resolve(null),
         getSiteSettings(),
         db.navItem.findMany({
@@ -129,9 +130,19 @@ export default async function Navbar() {
                             <Link href="/dashboard/topup" className="hidden sm:block">
                                 <Button variant="outline" size="sm" className="gap-2 rounded-xl border-border bg-accent text-primary hover:bg-accent/80">
                                     <Wallet className="h-4 w-4" />
+                                    <span className="text-xs text-muted-foreground">เครดิต</span>
                                     ฿{Number(user.creditBalance).toLocaleString()}
                                 </Button>
                             </Link>
+
+                            {/* Point Balance */}
+                            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20">
+                                <Sparkles className="h-4 w-4 text-amber-500" />
+                                <span className="text-xs text-muted-foreground">พอยท์</span>
+                                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                                    {user.pointBalance?.toLocaleString() ?? 0}
+                                </span>
+                            </div>
 
                             {/* User Dropdown */}
                             <DropdownMenu>
@@ -148,9 +159,10 @@ export default async function Navbar() {
                                     <DropdownMenuLabel>
                                         <div className="flex flex-col space-y-1">
                                             <p className="text-sm font-medium text-foreground">{user.username}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                ฿{Number(user.creditBalance).toLocaleString()}
-                                            </p>
+                                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                <span>เครดิต: ฿{Number(user.creditBalance).toLocaleString()}</span>
+                                                <span className="text-amber-600">พอยท์: {user.pointBalance?.toLocaleString() ?? 0}</span>
+                                            </div>
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
@@ -227,9 +239,10 @@ export default async function Navbar() {
                                         </Avatar>
                                         <div>
                                             <p className="font-medium text-foreground">{user.username}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                ฿{Number(user.creditBalance).toLocaleString()}
-                                            </p>
+                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                <span>เครดิต: ฿{Number(user.creditBalance).toLocaleString()}</span>
+                                                <span className="text-amber-600">พอยท์: {user.pointBalance?.toLocaleString() ?? 0}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
