@@ -126,13 +126,16 @@ model Product {
   
   purchaseLimit Int       @default(0)             // จำกัดการซื้อต่อบัญชี (0 = ไม่จำกัด)
   
-  secretData    String    @db.Text                // ข้อมูลลับ (ID/Password)
+  secretData    String?   @db.Text                // ข้อมูลลับ (ID/Password) - legacy, ใช้ ProductCode แทน
   isSold        Boolean   @default(false)
   isFeatured    Boolean   @default(false)
   sortOrder     Int       @default(0)
   
   orderId       String?   @unique
   order         Order?    @relation(fields: [orderId], references: [id])
+  
+  // คลังรหัสสินค้า (Product Code Inventory)
+  codes         ProductCode[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -144,9 +147,33 @@ model Order {
   userId        String
   user          User      @relation(fields: [userId], references: [id])
   product       Product?
+  productCode   ProductCode?   // รหัสที่ลูกค้าได้รับ
   totalPrice    Decimal   @db.Decimal(10, 2)
   status        String    @default("COMPLETED")
   purchasedAt   DateTime  @default(now())
+}
+
+// --- คลังรหัสสินค้า (Product Code Inventory) ---
+model ProductCode {
+  id          String    @id @default(uuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  code        String    @db.Text           // รหัส/คีย์ที่ลูกค้าจะได้รับ
+  
+  // สถานะ
+  isSold      Boolean   @default(false)
+  soldAt      DateTime?
+  
+  // เชื่อมกับ Order (เมื่อขายแล้ว)
+  orderId     String?   @unique
+  order       Order?    @relation(fields: [orderId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([productId])
+  @@index([isSold])
 }
 
 // --- ตารางเติมเงิน (Topups / TopUpRequests) ---

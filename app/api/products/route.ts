@@ -3,6 +3,32 @@ import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { encrypt } from "@/lib/encryption";
 
+// GET: ดึงรายการสินค้าทั้งหมด (สำหรับ dropdown เลือกสินค้า)
+export async function GET() {
+    try {
+        const products = await db.product.findMany({
+            where: { isSold: false },
+            select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return NextResponse.json({
+            success: true,
+            products,
+        });
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        return NextResponse.json(
+            { success: false, message: "เกิดข้อผิดพลาด" },
+            { status: 500 }
+        );
+    }
+}
+
 export async function POST(request: NextRequest) {
     // Check if user is admin
     const authCheck = await isAdmin();

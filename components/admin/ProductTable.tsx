@@ -33,7 +33,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem, Key } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
@@ -208,6 +208,12 @@ export function ProductTable({ products }: ProductTableProps) {
                                         >
                                             <Copy className="h-4 w-4 mr-2" />
                                             {duplicatingId === product.id ? "กำลังคัดลอก..." : "คัดลอกสินค้า"}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/admin/product-codes?productId=${product.id}`} className="flex items-center gap-2 cursor-pointer">
+                                                <Key className="h-4 w-4" />
+                                                คลังรหัส
+                                            </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <AlertDialog>

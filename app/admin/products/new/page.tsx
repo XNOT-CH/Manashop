@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Shield, Gem, Banknote, Percent, Tag } from "lucide-react";
+import { ArrowLeft, Loader2, Shield, Gem, Banknote, Percent, ChevronDown, Settings2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
     Select,
@@ -17,6 +17,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { toast } from "sonner";
 
 interface CategoryBanner {
@@ -28,6 +33,7 @@ export default function AddProductPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [categories, setCategories] = useState<CategoryBanner[]>([]);
+    const [showAdvanced, setShowAdvanced] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
         image: "",
@@ -104,9 +110,7 @@ export default function AddProductPage() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success("สร้างสินค้าสำเร็จ", {
-                    description: "ระบบได้บันทึกข้อมูลสินค้าเรียบร้อยแล้ว",
-                });
+                toast.success("สร้างสินค้าสำเร็จ");
                 router.push("/admin/products");
             } else {
                 toast.error("ไม่สามารถสร้างสินค้าได้", {
@@ -114,129 +118,73 @@ export default function AddProductPage() {
                 });
             }
         } catch (error) {
-            toast.error("เกิดข้อผิดพลาด", {
-                description: "กรุณาลองใหม่อีกครั้ง",
-            });
+            toast.error("เกิดข้อผิดพลาด กรุณาลองใหม่");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="mx-auto max-w-2xl space-y-6">
+        <div className="mx-auto max-w-2xl space-y-4">
             {/* Back Button */}
             <Link
                 href="/admin/products"
-                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
                 <ArrowLeft className="h-4 w-4" />
-                กลับไปรายการสินค้า
+                กลับ
             </Link>
 
             {/* Form Card */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-2xl">
-                        <Shield className="h-6 w-6 text-primary" />
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <Shield className="h-5 w-5 text-primary" />
                         เพิ่มสินค้าใหม่
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Image URL */}
-                        <div className="space-y-2">
-                            <Label htmlFor="image">ลิงก์รูปภาพสินค้า (URL)</Label>
-                            <Input
-                                id="image"
-                                name="image"
-                                placeholder="https://example.com/image.jpg"
-                                value={formData.image}
-                                onChange={handleChange}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                กรุณาระบุ URL ของรูปภาพสินค้าที่ต้องการแสดงผล
-                            </p>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Row 1: Image + Title */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="image">ลิงก์รูปภาพ</Label>
+                                <Input
+                                    id="image"
+                                    name="image"
+                                    placeholder="https://..."
+                                    value={formData.image}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="title">ชื่อสินค้า *</Label>
+                                <Input
+                                    id="title"
+                                    name="title"
+                                    placeholder="ชื่อสินค้า"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        {/* Product Name */}
-                        <div className="space-y-2">
-                            <Label htmlFor="title">ชื่อสินค้า *</Label>
-                            <Input
-                                id="title"
-                                name="title"
-                                placeholder="กรุณาระบุชื่อสินค้า"
-                                value={formData.title}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-
-                        {/* Description */}
-                        <div className="space-y-2">
-                            <Label htmlFor="description">รายละเอียดสินค้า</Label>
-                            <Textarea
-                                id="description"
-                                name="description"
-                                placeholder="กรุณาระบุรายละเอียดสินค้า เช่น คุณสมบัติ ระดับ สกิน ฯลฯ"
-                                rows={4}
-                                value={formData.description}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        {/* Notes */}
-                        <div className="space-y-2">
-                            <Label htmlFor="notes">หมายเหตุ</Label>
-                            <Textarea
-                                id="notes"
-                                name="notes"
-                                placeholder="ข้อมูลเพิ่มเติมสำหรับสินค้านี้ (แสดงผลในหน้ารายละเอียดสินค้า)"
-                                rows={2}
-                                value={formData.notes}
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        {/* Purchase Notes */}
-                        <div className="space-y-2">
-                            <Label htmlFor="purchaseNotes" className="flex items-center gap-2">
-                                <Tag className="h-4 w-4 text-orange-500" />
-                                หมายเหตุสำหรับการสั่งซื้อ
-                            </Label>
-                            <Textarea
-                                id="purchaseNotes"
-                                name="purchaseNotes"
-                                placeholder="ข้อความแจ้งเตือนที่จะแสดงผลเมื่อลูกค้ากดสั่งซื้อสินค้า (เช่น ข้อควรทราบ ขั้นตอนการรับสินค้า)"
-                                rows={2}
-                                value={formData.purchaseNotes}
-                                onChange={handleChange}
-                                className="border-orange-200 focus:border-orange-400"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                ข้อความนี้จะแสดงผลให้ลูกค้าทราบก่อนทำการยืนยันคำสั่งซื้อ
-                            </p>
-                        </div>
-
-                        {/* Category Section */}
-                        <div className="space-y-4 border-t pt-4">
-                            <h3 className="font-medium">หมวดหมู่สินค้า</h3>
-
-                            {/* Category Text */}
-                            <div className="space-y-2">
-                                <Label htmlFor="category">ประเภทสินค้า *</Label>
+                        {/* Row 2: Category + Category Banner */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="category">ประเภท *</Label>
                                 <Input
                                     id="category"
                                     name="category"
-                                    placeholder="ระบุประเภท เช่น ROV, Valorant, Genshin Impact"
+                                    placeholder="เช่น ROV, Valorant"
                                     value={formData.category}
                                     onChange={handleChange}
                                     required
                                 />
                             </div>
-
-                            {/* Category Banner Link */}
-                            <div className="space-y-2">
-                                <Label htmlFor="categoryBannerId">เชื่อมโยงกับหมวดหมู่แบนเนอร์ (ไม่บังคับ)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="categoryBannerId">หมวดหมู่แบนเนอร์</Label>
                                 <Select
                                     value={formData.categoryBannerId}
                                     onValueChange={(value) =>
@@ -244,10 +192,10 @@ export default function AddProductPage() {
                                     }
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="-- เลือกหมวดหมู่ (ไม่บังคับ) --" />
+                                        <SelectValue placeholder="-- ไม่บังคับ --" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">ไม่เชื่อมโยงกับหมวดหมู่ใด</SelectItem>
+                                        <SelectItem value="none">ไม่เชื่อมโยง</SelectItem>
                                         {categories.map((cat) => (
                                             <SelectItem key={cat.id} value={cat.id}>
                                                 {cat.name}
@@ -255,51 +203,39 @@ export default function AddProductPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <p className="text-xs text-muted-foreground">
-                                    หากเลือกหมวดหมู่ สินค้าจะแสดงผลในหน้าหมวดหมู่ที่เลือกด้วย
-                                </p>
                             </div>
                         </div>
 
-                        {/* Pricing Section */}
-                        <div className="space-y-4 border-t pt-4">
-                            <h3 className="font-medium">ราคาและส่วนลด</h3>
-
-                            {/* Currency Type */}
-                            <div className="space-y-3">
+                        {/* Row 3: Currency + Price */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
                                 <Label>สกุลเงิน *</Label>
                                 <RadioGroup
                                     value={formData.currency}
                                     onValueChange={(value) =>
                                         setFormData((prev) => ({ ...prev, currency: value }))
                                     }
-                                    className="flex gap-4"
+                                    className="flex gap-4 h-9 items-center"
                                 >
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-1.5">
                                         <RadioGroupItem value="THB" id="currency-thb" />
-                                        <Label htmlFor="currency-thb" className="flex items-center gap-2 cursor-pointer">
-                                            <Banknote className="h-4 w-4 text-green-600" />
-                                            บาท (THB)
+                                        <Label htmlFor="currency-thb" className="flex items-center gap-1 cursor-pointer text-sm">
+                                            <Banknote className="h-3.5 w-3.5 text-green-600" />
+                                            บาท
                                         </Label>
                                     </div>
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-1.5">
                                         <RadioGroupItem value="POINT" id="currency-point" />
-                                        <Label htmlFor="currency-point" className="flex items-center gap-2 cursor-pointer">
-                                            <Gem className="h-4 w-4 text-purple-600" />
-                                            พอยท์ (POINT)
+                                        <Label htmlFor="currency-point" className="flex items-center gap-1 cursor-pointer text-sm">
+                                            <Gem className="h-3.5 w-3.5 text-purple-600" />
+                                            พอยท์
                                         </Label>
                                     </div>
                                 </RadioGroup>
                             </div>
-
-                            {/* Price */}
-                            <div className="space-y-2">
-                                <Label htmlFor="price" className="flex items-center gap-2">
-                                    {formData.currency === "POINT" ? (
-                                        <><Gem className="h-4 w-4 text-purple-600" /> ราคา (พอยท์) *</>
-                                    ) : (
-                                        <>ราคาเต็ม (บาท) *</>
-                                    )}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="price">
+                                    ราคา {formData.currency === "POINT" ? "(พอยท์)" : "(บาท)"} *
                                 </Label>
                                 <Input
                                     id="price"
@@ -311,107 +247,151 @@ export default function AddProductPage() {
                                     value={formData.price}
                                     onChange={handleChange}
                                     required
-                                    className={formData.currency === "POINT" ? "border-purple-300 focus:border-purple-500" : ""}
                                 />
                             </div>
-
-                            {/* Discount Section */}
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="discountType">ประเภทส่วนลด</Label>
-                                    <Select
-                                        value={formData.discountType}
-                                        onValueChange={(value) =>
-                                            setFormData((prev) => ({ ...prev, discountType: value }))
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="FIXED">
-                                                <span className="flex items-center gap-2">
-                                                    <Banknote className="h-4 w-4" />
-                                                    ลดเป็นจำนวนเงิน (บาท)
-                                                </span>
-                                            </SelectItem>
-                                            <SelectItem value="PERCENT">
-                                                <span className="flex items-center gap-2">
-                                                    <Percent className="h-4 w-4" />
-                                                    ลดเป็นเปอร์เซ็นต์ (%)
-                                                </span>
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="discountValue">
-                                        มูลค่าส่วนลด {formData.discountType === "PERCENT" ? "(%)" : "(บาท)"}
-                                    </Label>
-                                    <Input
-                                        id="discountValue"
-                                        name="discountValue"
-                                        type="number"
-                                        placeholder="เว้นว่างถ้าไม่มีส่วนลด"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.discountValue}
-                                        onChange={handleChange}
-                                        className="border-red-200 focus:border-red-400"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Discount Preview */}
-                            {discountPrice !== null && discountPrice > 0 && (
-                                <div className="rounded-lg bg-green-50 dark:bg-green-900/20 p-3 border border-green-200 dark:border-green-800">
-                                    <p className="text-sm text-green-700 dark:text-green-300">
-                                        💰 ราคาหลังหักส่วนลด: <span className="font-bold text-lg">{discountPrice.toLocaleString()} {formData.currency === "POINT" ? "พอยท์" : "บาท"}</span>
-                                    </p>
-                                </div>
-                            )}
                         </div>
 
-                        {/* Purchase Limit */}
-                        <div className="space-y-2">
-                            <Label htmlFor="purchaseLimit">จำกัดจำนวนการซื้อต่อบัญชี</Label>
-                            <Input
-                                id="purchaseLimit"
-                                name="purchaseLimit"
-                                type="number"
-                                placeholder="0"
-                                min="0"
-                                step="1"
-                                value={formData.purchaseLimit}
+                        {/* Description (compact) */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="description">รายละเอียด</Label>
+                            <Textarea
+                                id="description"
+                                name="description"
+                                placeholder="คุณสมบัติ, ระดับ, สกิน ฯลฯ"
+                                rows={2}
+                                value={formData.description}
                                 onChange={handleChange}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                กรุณาระบุจำนวนสูงสุดที่ลูกค้าแต่ละรายสามารถซื้อได้ (ระบุ 0 หมายถึงไม่จำกัดจำนวน)
-                            </p>
                         </div>
 
-                        {/* Secret Data */}
-                        <div className="space-y-2 border-t pt-4">
+                        {/* Secret Data (required, always visible) */}
+                        <div className="space-y-1.5">
                             <Label
                                 htmlFor="secretData"
-                                className="flex items-center gap-2 text-amber-700 dark:text-amber-400"
+                                className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400"
                             >
-                                🔐 ข้อมูลลับสำหรับส่งมอบ (ID/รหัสผ่าน) *
+                                🔐 ข้อมูลลับ (ID/รหัสผ่าน) *
                             </Label>
                             <Textarea
                                 id="secretData"
                                 name="secretData"
-                                placeholder="ID: ชื่อผู้ใช้&#10;รหัสผ่าน: รหัสผ่านของบัญชี"
-                                rows={3}
+                                placeholder="ID: ...&#10;รหัสผ่าน: ..."
+                                rows={2}
                                 value={formData.secretData}
                                 onChange={handleChange}
                                 required
-                                className="border-amber-300 bg-amber-50 dark:bg-amber-900/20 focus:border-amber-500 focus:ring-amber-500"
+                                className="border-amber-300 bg-amber-50 dark:bg-amber-900/20"
                             />
-                            <p className="text-xs text-amber-600 dark:text-amber-400">
-                                ⚠️ ข้อมูลนี้จะแสดงผลให้ลูกค้าทราบหลังจากชำระเงินสำเร็จเท่านั้น
-                            </p>
                         </div>
+
+                        {/* Advanced Options (Collapsible) */}
+                        <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+                            <CollapsibleTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="w-full justify-between text-muted-foreground hover:text-foreground"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Settings2 className="h-4 w-4" />
+                                        ตัวเลือกเพิ่มเติม
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+                                </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="space-y-4 pt-3">
+                                {/* Discount Section */}
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="discountType">ประเภทส่วนลด</Label>
+                                        <Select
+                                            value={formData.discountType}
+                                            onValueChange={(value) =>
+                                                setFormData((prev) => ({ ...prev, discountType: value }))
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="FIXED">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Banknote className="h-3.5 w-3.5" />
+                                                        ลดเป็นบาท
+                                                    </span>
+                                                </SelectItem>
+                                                <SelectItem value="PERCENT">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Percent className="h-3.5 w-3.5" />
+                                                        ลดเป็น %
+                                                    </span>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="discountValue">
+                                            มูลค่าส่วนลด {formData.discountType === "PERCENT" ? "(%)" : "(บาท)"}
+                                        </Label>
+                                        <Input
+                                            id="discountValue"
+                                            name="discountValue"
+                                            type="number"
+                                            placeholder="0"
+                                            min="0"
+                                            step="0.01"
+                                            value={formData.discountValue}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Discount Preview */}
+                                {discountPrice !== null && discountPrice > 0 && (
+                                    <div className="rounded-md bg-green-50 dark:bg-green-900/20 px-3 py-2 text-sm text-green-700 dark:text-green-300">
+                                        💰 ราคาหลังลด: <span className="font-bold">{discountPrice.toLocaleString()} {formData.currency === "POINT" ? "พอยท์" : "บาท"}</span>
+                                    </div>
+                                )}
+
+                                {/* Purchase Limit */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="purchaseLimit">จำกัดซื้อต่อบัญชี (0 = ไม่จำกัด)</Label>
+                                    <Input
+                                        id="purchaseLimit"
+                                        name="purchaseLimit"
+                                        type="number"
+                                        placeholder="0"
+                                        min="0"
+                                        value={formData.purchaseLimit}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+
+                                {/* Notes */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="notes">หมายเหตุ (หน้าสินค้า)</Label>
+                                    <Input
+                                        id="notes"
+                                        name="notes"
+                                        placeholder="ข้อมูลเพิ่มเติม"
+                                        value={formData.notes}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+
+                                {/* Purchase Notes */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="purchaseNotes">หมายเหตุการสั่งซื้อ</Label>
+                                    <Input
+                                        id="purchaseNotes"
+                                        name="purchaseNotes"
+                                        placeholder="ข้อความแจ้งเตือนก่อนซื้อ"
+                                        value={formData.purchaseNotes}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </CollapsibleContent>
+                        </Collapsible>
 
                         {/* Submit Button */}
                         <Button
