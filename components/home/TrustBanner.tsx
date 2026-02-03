@@ -30,16 +30,6 @@ export default function TrustBanner() {
     return (
         <section className="py-10 px-4 bg-white dark:bg-card border-b border-gray-100 dark:border-border">
             <div className="max-w-6xl mx-auto">
-                {/* Sub-headline */}
-                <p className="text-center text-sm text-muted-foreground mb-2">
-                    ยินดีต้อนรับสู่ Game ID Marketplace
-                </p>
-
-                {/* Main Headline */}
-                <h2 className="text-center text-2xl md:text-3xl font-bold text-foreground mb-8">
-                    ร้านจำหน่ายไอดี เกมและ บริการต่างๆ ที่เกมเมอร์ ไว้ใจ
-                </h2>
-
                 {/* Feature Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {features.map((feature, index) => {

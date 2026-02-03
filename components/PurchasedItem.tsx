@@ -17,7 +17,7 @@ interface PurchasedItemProps {
     title: string;
     image: string;
     date: string;
-    secretData: string;
+    secretData: string | null | undefined;
 }
 
 export function PurchasedItem({
@@ -29,7 +29,11 @@ export function PurchasedItem({
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
 
+    // ใช้ข้อความ fallback ถ้าไม่มี secretData
+    const displayData = secretData || "ไม่มีข้อมูล";
+
     const handleCopy = async () => {
+        if (!secretData) return;
         await navigator.clipboard.writeText(secretData);
         setCopied(true);
         toast.success("คัดลอกข้อมูลแล้ว!");
@@ -111,7 +115,7 @@ export function PurchasedItem({
                                 </Button>
                             </div>
                             <pre className="text-sm text-foreground whitespace-pre-wrap font-mono break-all">
-                                {secretData}
+                                {displayData}
                             </pre>
                         </div>
                     </CollapsibleContent>

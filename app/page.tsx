@@ -11,16 +11,40 @@ import { db } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Fetch products
+  // Fetch products with stock counts
   const products = await db.product.findMany({
     orderBy: { createdAt: "desc" },
+    include: {
+      _count: {
+        select: {
+          codes: true,  // ทั้งหมด
+        },
+      },
+      codes: {
+        where: { isSold: false },
+        select: { id: true },
+      },
+    },
   });
+
+  // Fetch site settings for slogan
+  const settings = await db.siteSettings.findFirst();
+  const slogan = settings?.slogan || "ร้านจำหน่ายไอดี เกมและ บริการต่างๆ ที่เกมเมอร์ ไว้ใจ";
 
   return (
     <div className="animate-page-enter">
       <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 border border-border/50 space-y-6">
         {/* Hero Banner */}
         <HeroBanner />
+
+        {/* Slogan */}
+        {slogan && (
+          <div className="text-center py-1 mb-2">
+            <p className="text-lg sm:text-xl text-muted-foreground font-medium">
+              {slogan}
+            </p>
+          </div>
+        )}
 
         {/* Featured Products Carousel */}
         <FeaturedProducts />
@@ -60,6 +84,8 @@ export default async function Home() {
                 category={product.category}
                 isSold={Boolean(product.isSold)}
                 index={index}
+                stockCount={product.codes.length}
+                soldCount={product._count.codes - product.codes.length}
               />
             ))}
           </div>

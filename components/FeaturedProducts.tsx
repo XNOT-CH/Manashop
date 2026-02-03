@@ -8,16 +8,7 @@ import { ChevronLeft, ChevronRight, Flame, ShoppingCart, Eye, Loader2 } from "lu
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import Swal from "sweetalert2";
 
 interface FeaturedProduct {
     id: string;
@@ -33,7 +24,6 @@ export function FeaturedProducts() {
     const [products, setProducts] = useState<FeaturedProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [buyingId, setBuyingId] = useState<string | null>(null);
-    const [confirmProduct, setConfirmProduct] = useState<FeaturedProduct | null>(null);
     const [alertState, setAlertState] = useState<{
         isOpen: boolean;
         description: string;
@@ -53,21 +43,27 @@ export function FeaturedProducts() {
         setAlertState((prev) => ({ ...prev, isOpen: false }));
     };
 
-    const handleBuyClick = (product: FeaturedProduct) => {
-        setConfirmProduct(product);
-    };
+    const handleBuyClick = async (product: FeaturedProduct) => {
+        // Confirm before purchase
+        const confirmResult = await Swal.fire({
+            title: "ยืนยันการสั่งซื้อ?",
+            html: `<p style="color: #6b7280;">คุณต้องการซื้อ <strong style="color: #1f2937;">${product.name}</strong> ในราคา <strong style="color: #3b82f6;">฿${Number(product.price).toLocaleString()}</strong> ใช่หรือไม่?</p>`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "ยืนยัน",
+            cancelButtonText: "ยกเลิก",
+            reverseButtons: true,
+        });
 
-    const handleBuyConfirm = async () => {
-        if (!confirmProduct) return;
+        if (!confirmResult.isConfirmed) return;
 
-        setBuyingId(confirmProduct.id);
-        setConfirmProduct(null);
+        setBuyingId(product.id);
 
         try {
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: confirmProduct.id }),
+                body: JSON.stringify({ productId: product.id }),
             });
 
             const data = await response.json();
@@ -78,7 +74,7 @@ export function FeaturedProducts() {
                 // Update local state
                 setProducts((prev) =>
                     prev.map((p) =>
-                        p.id === confirmProduct.id ? { ...p, isSold: true } : p
+                        p.id === product.id ? { ...p, isSold: true } : p
                     )
                 );
             } else {
@@ -253,28 +249,6 @@ export function FeaturedProducts() {
                     </div>
                 ))}
             </div>
-
-            {/* Confirm Purchase Dialog */}
-            <AlertDialog open={!!confirmProduct} onOpenChange={() => setConfirmProduct(null)}>
-                <AlertDialogContent className="max-w-sm bg-white border-slate-200 shadow-2xl rounded-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>ยืนยันการซื้อ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            คุณต้องการซื้อ <strong>{confirmProduct?.name}</strong> ในราคา{" "}
-                            <strong>฿{confirmProduct?.price.toLocaleString()}</strong> ใช่หรือไม่?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">ยกเลิก</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleBuyConfirm}
-                            className="bg-primary hover:bg-primary/90 rounded-xl"
-                        >
-                            ซื้อเลย
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
 
             {/* Alert Modal */}
             <AlertModal

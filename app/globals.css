@@ -601,3 +601,193 @@ html.dark .box-glow-purple {
   box-shadow: 0 0 20px -5px rgba(167, 139, 250, 0.4),
     inset 0 0 20px -10px rgba(167, 139, 250, 0.1);
 }
+
+/* Tier Effects */
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+.tier-diamond {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e0f7fa 0%, #4fc3f7 50%, #0288d1 100%);
+  border: 1px solid #b3e5fc;
+}
+
+.tier-diamond::after {
+  content: "✦";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: white;
+  font-size: 10px;
+  animation: sparkle 2s infinite;
+}
+
+.tier-legend {
+  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+  background-size: 400%;
+  animation: glowing 20s linear infinite;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes glowing {
+  0% {
+    background-position: 0 0;
+  }
+
+  50% {
+    background-position: 400% 0;
+  }
+
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.border-platinum {
+  box-shadow: 0 0 0 2px #e0e0e0, 0 0 10px #b3e5fc;
+  animation: border-pulse 2s infinite;
+}
+
+@keyframes border-pulse {
+  0% {
+    box-shadow: 0 0 0 2px #e0e0e0, 0 0 5px #b3e5fc;
+  }
+
+  50% {
+    box-shadow: 0 0 0 2px #ffffff, 0 0 15px #4fc3f7;
+  }
+
+  100% {
+    box-shadow: 0 0 0 2px #e0e0e0, 0 0 5px #b3e5fc;
+  }
+}
+
+/* ========================================
+   SWEETALERT2 CUSTOM STYLES
+   ======================================== */
+.swal2-popup {
+  border-radius: 1rem !important;
+  padding: 2rem !important;
+}
+
+.swal2-title {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+}
+
+.swal2-html-container {
+  color: #6b7280 !important;
+  font-size: 1rem !important;
+}
+
+/* Icon styles - outline style */
+.swal2-icon {
+  border-width: 3px !important;
+  margin: 1.5rem auto !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #60a5fa !important;
+  color: #60a5fa !important;
+}
+
+.swal2-icon.swal2-warning .swal2-icon-content {
+  color: #60a5fa !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #f87171 !important;
+}
+
+.swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+  background-color: #f87171 !important;
+}
+
+.swal2-icon.swal2-success {
+  border-color: #34d399 !important;
+  color: #34d399 !important;
+}
+
+.swal2-icon.swal2-success [class^='swal2-success-line'] {
+  background-color: #34d399 !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+.swal2-icon.swal2-question {
+  border-color: #60a5fa !important;
+  color: #60a5fa !important;
+}
+
+/* Button styles - pill shape */
+.swal2-actions {
+  margin-top: 1.5rem !important;
+  gap: 0.75rem !important;
+}
+
+.swal2-styled {
+  border-radius: 9999px !important;
+  padding: 0.625rem 1.75rem !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+  min-width: 5rem !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.swal2-styled:focus {
+  box-shadow: none !important;
+}
+
+.swal2-styled.swal2-confirm {
+  background-color: #22c55e !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+  background-color: #16a34a !important;
+}
+
+.swal2-styled.swal2-cancel {
+  background-color: #ef4444 !important;
+}
+
+.swal2-styled.swal2-cancel:hover {
+  background-color: #dc2626 !important;
+}
+
+.swal2-styled.swal2-deny {
+  background-color: #ef4444 !important;
+}
+
+/* Dark mode support */
+html.dark .swal2-popup {
+  background: #1a2332 !important;
+}
+
+html.dark .swal2-title {
+  color: #f1f5f9 !important;
+}
+
+html.dark .swal2-html-container {
+  color: #94a3b8 !important;
+}

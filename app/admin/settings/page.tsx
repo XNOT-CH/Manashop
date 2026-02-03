@@ -16,6 +16,7 @@ interface SiteSettings {
     heroTitle: string;
     heroDescription: string;
     announcement: string;
+    slogan: string;
     bannerImage1: string;
     bannerTitle1: string;
     bannerSubtitle1: string;
@@ -36,6 +37,7 @@ export default function AdminSettingsPage() {
         heroTitle: "",
         heroDescription: "",
         announcement: "",
+        slogan: "",
         bannerImage1: "",
         bannerTitle1: "",
         bannerSubtitle1: "",
@@ -63,6 +65,7 @@ export default function AdminSettingsPage() {
                     heroTitle: data.data.heroTitle || "",
                     heroDescription: data.data.heroDescription || "",
                     announcement: data.data.announcement || "",
+                    slogan: data.data.slogan || "",
                     bannerImage1: data.data.bannerImage1 || "",
                     bannerTitle1: data.data.bannerTitle1 || "",
                     bannerSubtitle1: data.data.bannerSubtitle1 || "",
@@ -173,6 +176,20 @@ export default function AdminSettingsPage() {
                             placeholder="ข้อความประกาศ..."
                             rows={2}
                         />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <Type className="h-4 w-4" />
+                            Slogan (แสดงด้านบนสินค้าแนะนำ)
+                        </Label>
+                        <Input
+                            value={settings.slogan}
+                            onChange={(e) => updateSetting("slogan", e.target.value)}
+                            placeholder="ร้านจำหน่ายไอดี เกมและ บริการต่างๆ ที่เกมเมอร์ ไว้ใจ"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            ข้อความนี้จะแสดงที่หน้าแรกเหนือส่วนสินค้าแนะนำ
+                        </p>
                     </div>
                     <div className="space-y-2">
                         <Label>URL โลโก้</Label>

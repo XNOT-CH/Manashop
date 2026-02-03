@@ -1,3 +1,5 @@
+"use client";
+
 import Swal from "sweetalert2";
 
 // Custom SweetAlert Toast (สำหรับแจ้งเตือนเล็กๆ)

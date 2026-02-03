@@ -8,16 +8,7 @@ import { ChevronLeft, ChevronRight, Tag, ShoppingCart, Eye, Percent, Loader2 } f
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import Swal from "sweetalert2";
 
 interface SaleProduct {
     id: string;
@@ -34,7 +25,6 @@ export function SaleProducts() {
     const [products, setProducts] = useState<SaleProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [buyingId, setBuyingId] = useState<string | null>(null);
-    const [confirmProduct, setConfirmProduct] = useState<SaleProduct | null>(null);
     const [alertState, setAlertState] = useState<{
         isOpen: boolean;
         description: string;
@@ -54,21 +44,33 @@ export function SaleProducts() {
         setAlertState((prev) => ({ ...prev, isOpen: false }));
     };
 
-    const handleBuyClick = (product: SaleProduct) => {
-        setConfirmProduct(product);
-    };
+    const handleBuyClick = async (product: SaleProduct) => {
+        // Confirm before purchase
+        const confirmResult = await Swal.fire({
+            title: "ยืนยันการสั่งซื้อ?",
+            html: `
+                <p style="margin-bottom: 0.5rem; color: #6b7280;">คุณต้องการซื้อ <strong style="color: #1f2937;">${product.name}</strong></p>
+                <p>
+                    <strong style="color: #ef4444; font-size: 1.25rem;">฿${Number(product.discountPrice).toLocaleString()}</strong>
+                    <span style="color: #9ca3af; text-decoration: line-through; margin-left: 0.5rem;">฿${Number(product.price).toLocaleString()}</span>
+                </p>
+            `,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "ยืนยัน",
+            cancelButtonText: "ยกเลิก",
+            reverseButtons: true,
+        });
 
-    const handleBuyConfirm = async () => {
-        if (!confirmProduct) return;
+        if (!confirmResult.isConfirmed) return;
 
-        setBuyingId(confirmProduct.id);
-        setConfirmProduct(null);
+        setBuyingId(product.id);
 
         try {
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: confirmProduct.id }),
+                body: JSON.stringify({ productId: product.id }),
             });
 
             const data = await response.json();
@@ -79,7 +81,7 @@ export function SaleProducts() {
                 // Update local state
                 setProducts((prev) =>
                     prev.map((p) =>
-                        p.id === confirmProduct.id ? { ...p, isSold: true } : p
+                        p.id === product.id ? { ...p, isSold: true } : p
                     )
                 );
             } else {
@@ -269,32 +271,6 @@ export function SaleProducts() {
                     </div>
                 ))}
             </div>
-
-            {/* Confirm Purchase Dialog */}
-            <AlertDialog open={!!confirmProduct} onOpenChange={() => setConfirmProduct(null)}>
-                <AlertDialogContent className="max-w-sm bg-white border-slate-200 shadow-2xl rounded-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>ยืนยันการซื้อ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            คุณต้องการซื้อ <strong>{confirmProduct?.name}</strong> ในราคา{" "}
-                            <strong>฿{confirmProduct?.discountPrice.toLocaleString()}</strong> ใช่หรือไม่?
-                            <br />
-                            <span className="text-sm text-muted-foreground line-through">
-                                ราคาเดิม: ฿{confirmProduct?.price.toLocaleString()}
-                            </span>
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">ยกเลิก</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleBuyConfirm}
-                            className="bg-red-500 hover:bg-red-600 rounded-xl"
-                        >
-                            ซื้อเลย
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
 
             {/* Alert Modal */}
             <AlertModal

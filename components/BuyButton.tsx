@@ -21,13 +21,11 @@ export function BuyButton({ productId, price, disabled }: BuyButtonProps) {
 
         // Confirm before purchase
         const confirmResult = await Swal.fire({
-            title: "ยืนยันการซื้อ?",
-            html: `คุณต้องการซื้อสินค้านี้ในราคา <strong>฿${price.toLocaleString()}</strong> ใช่หรือไม่?`,
+            title: "ยืนยันการสั่งซื้อ?",
+            html: `<p style="color: #6b7280;">คุณต้องการซื้อสินค้านี้ในราคา <strong style="color: #3b82f6;">฿${price.toLocaleString()}</strong> ใช่หรือไม่?</p>`,
             icon: "question",
             showCancelButton: true,
-            confirmButtonColor: "#3b82f6",
-            cancelButtonColor: "#6b7280",
-            confirmButtonText: "ซื้อเลย",
+            confirmButtonText: "ยืนยัน",
             cancelButtonText: "ยกเลิก",
             reverseButtons: true,
         });

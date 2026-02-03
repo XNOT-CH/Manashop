@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,7 @@ import {
     CheckCircle,
     AlertTriangle,
     Save,
+    ArrowLeft,
 } from "lucide-react";
 import { updateProfile, getCurrentUserProfile } from "@/lib/actions/user";
 import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
@@ -141,6 +144,16 @@ export default function ProfileSettingsPage() {
 
     return (
         <div className="container max-w-2xl mx-auto py-8 px-4">
+            {/* Back Button */}
+            <div className="mb-4">
+                <Link href="/dashboard">
+                    <Button variant="ghost" className="gap-2 text-zinc-600 hover:text-zinc-900">
+                        <ArrowLeft className="h-4 w-4" />
+                        ย้อนกลับ
+                    </Button>
+                </Link>
+            </div>
+
             {/* Page Header */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3">

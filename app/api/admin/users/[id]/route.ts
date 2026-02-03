@@ -11,14 +11,25 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
-        const { creditBalance, totalTopup, pointBalance, lifetimePoints } = body;
+        const {
+            creditBalance,
+            totalTopup,
+            pointBalance,
+            lifetimePoints,
+            roleId,
+            isVerified,
+            isInfluencer
+        } = body;
 
         // Validate that at least one field is provided
         if (
             creditBalance === undefined &&
             totalTopup === undefined &&
             pointBalance === undefined &&
-            lifetimePoints === undefined
+            lifetimePoints === undefined &&
+            roleId === undefined &&
+            isVerified === undefined &&
+            isInfluencer === undefined
         ) {
             return NextResponse.json(
                 { error: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" },
@@ -44,6 +55,9 @@ export async function PATCH(
             totalTopup?: Decimal;
             pointBalance?: number;
             lifetimePoints?: number;
+            roleId?: string | null;
+            isVerified?: boolean;
+            isInfluencer?: boolean;
         } = {};
 
         // Max value for Decimal(10,2) is 99,999,999.99
@@ -105,6 +119,37 @@ export async function PATCH(
             updateData.lifetimePoints = value;
         }
 
+        // Handle role assignment
+        if (roleId !== undefined) {
+            if (roleId === null || roleId === "") {
+                // Allow clearing the role
+                updateData.roleId = null;
+            } else {
+                // Validate that the role exists
+                const role = await db.role.findUnique({
+                    where: { id: roleId },
+                });
+
+                if (!role) {
+                    return NextResponse.json(
+                        { error: "ไม่พบยศที่เลือก" },
+                        { status: 400 }
+                    );
+                }
+
+                updateData.roleId = roleId;
+            }
+        }
+
+        // Handle special badges
+        if (isVerified !== undefined) {
+            updateData.isVerified = isVerified;
+        }
+
+        if (isInfluencer !== undefined) {
+            updateData.isInfluencer = isInfluencer;
+        }
+
         // Update user
         const updatedUser = await db.user.update({
             where: { id },
@@ -120,6 +165,8 @@ export async function PATCH(
                 totalTopup: updatedUser.totalTopup.toString(),
                 pointBalance: updatedUser.pointBalance,
                 lifetimePoints: updatedUser.lifetimePoints,
+                isVerified: updatedUser.isVerified,
+                isInfluencer: updatedUser.isInfluencer,
             },
         });
     } catch (error) {

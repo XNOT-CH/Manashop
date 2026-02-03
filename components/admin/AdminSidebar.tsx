@@ -16,6 +16,8 @@ import {
     Gem,
     UserPlus,
     LayoutGrid,
+    Shield,
+    Trophy,
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -24,8 +26,10 @@ const sidebarLinks = [
     { href: "/admin/category-banners", label: "จัดการแบนเนอร์", icon: LayoutGrid },
     { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
     { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
+    { href: "/admin/roles", label: "จัดการยศ", icon: Shield },
     { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
     { href: "/admin/referral", label: "ระบบแนะนำเพื่อน", icon: UserPlus },
+    { href: "/admin/settings/tiers", label: "ตั้งค่าระดับผู้ใช้", icon: Trophy },
     { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
     { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
     { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },

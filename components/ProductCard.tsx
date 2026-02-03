@@ -11,6 +11,8 @@ import { AlertModal } from "@/components/ui/AlertModal";
 import { ShoppingCart, Eye, Loader2, ArrowRight } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
+import Swal from "sweetalert2";
+
 interface ProductCardProps {
     id: string;
     image: string;
@@ -19,6 +21,8 @@ interface ProductCardProps {
     category: string;
     isSold: boolean;
     index?: number;
+    stockCount?: number;  // จำนวนสต๊อกที่เหลือ
+    soldCount?: number;   // จำนวนที่ขายไปแล้ว
 }
 
 export function ProductCard({
@@ -29,6 +33,8 @@ export function ProductCard({
     category,
     isSold,
     index = 0,
+    stockCount,
+    soldCount,
 }: ProductCardProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -65,6 +71,20 @@ export function ProductCard({
 
     const handleBuy = async () => {
         if (isSold || isLoading) return;
+
+        // Confirm before purchase
+        const confirmResult = await Swal.fire({
+            title: "ยืนยันการสั่งซื้อ?",
+            html: `<p style="color: #6b7280;">คุณต้องการซื้อ <strong style="color: #1f2937;">${title}</strong> ในราคา <strong style="color: #3b82f6;">฿${price.toLocaleString()}</strong> ใช่หรือไม่?</p>`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "ยืนยัน",
+            cancelButtonText: "ยกเลิก",
+            reverseButtons: true,
+        });
+
+        if (!confirmResult.isConfirmed) return;
+
         setIsLoading(true);
 
         try {
@@ -166,6 +186,24 @@ export function ProductCard({
                         <p className="mt-1 text-lg font-bold text-primary">
                             ฿{price.toLocaleString()}
                         </p>
+                        {/* Stock Info */}
+                        {(stockCount !== undefined || soldCount !== undefined) && (
+                            <div className="mt-2 flex items-center gap-2 text-xs">
+                                {stockCount !== undefined && (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${stockCount > 0
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        }`}>
+                                        📦 คงเหลือ: {stockCount}
+                                    </span>
+                                )}
+                                {soldCount !== undefined && soldCount > 0 && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                        🛒 ขายแล้ว: {soldCount}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </CardContent>
                 </Link>
 

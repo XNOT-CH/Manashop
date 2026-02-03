@@ -14,6 +14,8 @@ import {
     Shield,
     Clock,
     CheckCircle,
+    Package,
+    ShoppingBag,
 } from "lucide-react";
 import { db } from "@/lib/db";
 
@@ -26,9 +28,21 @@ export default async function ProductDetailPage({
 }: ProductDetailPageProps) {
     const { id } = await params;
 
-    // Fetch product from database
+    // Fetch product from database with stock count
     const product = await db.product.findUnique({
         where: { id },
+        include: {
+            _count: {
+                select: {
+                    codes: true,
+                }
+            },
+            codes: {
+                select: {
+                    isSold: true,
+                }
+            }
+        }
     });
 
     // If product not found, show 404
@@ -36,7 +50,12 @@ export default async function ProductDetailPage({
         notFound();
     }
 
-    const isSold = Boolean(product.isSold);
+    // Calculate stock info
+    const totalStock = product._count.codes;
+    const soldCount = product.codes.filter(code => code.isSold).length;
+    const availableStock = totalStock - soldCount;
+
+    const isSold = availableStock === 0 && totalStock > 0;
     const price = Number(product.price);
 
     return (

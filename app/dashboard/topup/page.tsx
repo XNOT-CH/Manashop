@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,18 +19,28 @@ import {
     User,
 } from "lucide-react";
 
-// Bank info - These can be moved to Admin Settings later
-const BANK_INFO = {
+// Bank info interface
+interface BankInfo {
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+    isActive: boolean;
+}
+
+// Default bank info (fallback)
+const DEFAULT_BANK_INFO: BankInfo = {
     bankName: "ธนาคารกสิกรไทย",
     accountName: "บจก. เกมสโตร์",
     accountNumber: "123-4-56789-0",
-    bankLogo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Image_created_with_a_mobile_phone.png/1200px-Image_created_with_a_mobile_phone.png",
+    isActive: true,
 };
 
 export default function TopupPage() {
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingBank, setIsFetchingBank] = useState(true);
+    const [bankInfo, setBankInfo] = useState<BankInfo>(DEFAULT_BANK_INFO);
     const [isDragging, setIsDragging] = useState(false);
     const [slipFile, setSlipFile] = useState<File | null>(null);
     const [slipPreview, setSlipPreview] = useState<string>("");
@@ -44,6 +54,26 @@ export default function TopupPage() {
         description: "",
         variant: "info",
     });
+
+    // Fetch bank settings on mount
+    useEffect(() => {
+        async function fetchBankSettings() {
+            try {
+                const res = await fetch("/api/admin/settings/bank");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.settings) {
+                        setBankInfo(data.settings);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching bank settings:", error);
+            } finally {
+                setIsFetchingBank(false);
+            }
+        }
+        fetchBankSettings();
+    }, []);
 
     const showAlert = (description: string, variant: "success" | "error" | "warning" | "info") => {
         setAlertState({ isOpen: true, description, variant });
@@ -201,14 +231,14 @@ export default function TopupPage() {
                                             <User className="h-3 w-3" />
                                             ชื่อบัญชี
                                         </div>
-                                        <p className="font-semibold text-primary">{BANK_INFO.accountName}</p>
+                                        <p className="font-semibold text-primary">{bankInfo.accountName}</p>
                                     </div>
                                     <div>
                                         <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
                                             <Building2 className="h-3 w-3" />
                                             ธนาคาร
                                         </div>
-                                        <p className="font-semibold text-primary">{BANK_INFO.bankName}</p>
+                                        <p className="font-semibold text-primary">{bankInfo.bankName}</p>
                                     </div>
                                 </div>
 
@@ -220,10 +250,10 @@ export default function TopupPage() {
                                     </div>
                                     <div className="flex items-center justify-center gap-2">
                                         <span className="text-xl font-bold text-primary tracking-wider">
-                                            {BANK_INFO.accountNumber}
+                                            {bankInfo.accountNumber}
                                         </span>
                                         <button
-                                            onClick={() => copyToClipboard(BANK_INFO.accountNumber.replace(/-/g, ""))}
+                                            onClick={() => copyToClipboard(bankInfo.accountNumber.replace(/-/g, ""))}
                                             className="p-1 rounded hover:bg-slate-200 transition-colors"
                                             title="คัดลอก"
                                         >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,8 +35,19 @@ export function SlipTable({ slips }: SlipTableProps) {
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     const handleAction = async (slipId: string, action: "APPROVE" | "REJECT") => {
-        const actionText = action === "APPROVE" ? "approve" : "reject";
-        if (!confirm(`Are you sure you want to ${actionText} this request?`)) {
+        const actionText = action === "APPROVE" ? "อนุมัติ" : "ปฏิเสธ";
+        const result = await Swal.fire({
+            title: "ยืนยันการดำเนินการ?",
+            text: `คุณต้องการ${actionText}คำขอนี้ใช่หรือไม่?`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: action === "APPROVE" ? "#16a34a" : "#dc2626",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: `ใช่, ${actionText}`,
+            cancelButtonText: "ยกเลิก",
+        });
+
+        if (!result.isConfirmed) {
             return;
         }
 

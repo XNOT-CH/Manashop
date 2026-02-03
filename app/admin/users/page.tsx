@@ -14,6 +14,15 @@ export default async function AdminUsersPage() {
             email: true,
             image: true,
             role: true,
+            roleRef: {
+                select: {
+                    id: true,
+                    name: true,
+                    displayName: true,
+                    color: true,
+                    iconUrl: true,
+                },
+            },
             creditBalance: true,
             totalTopup: true,
             pointBalance: true,

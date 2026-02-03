@@ -8,9 +8,20 @@ import { ShoppingBag, Package, TrendingUp } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {
-    // Fetch all products
+    // Fetch all products with stock counts
     const products = await db.product.findMany({
         orderBy: { createdAt: "desc" },
+        include: {
+            _count: {
+                select: {
+                    codes: true,  // ทั้งหมด
+                },
+            },
+            codes: {
+                where: { isSold: false },
+                select: { id: true },
+            },
+        },
     });
 
     // Get unique categories
@@ -85,6 +96,8 @@ export default async function ShopPage() {
                                     category={product.category}
                                     isSold={Boolean(product.isSold)}
                                     index={index}
+                                    stockCount={product.codes.length}
+                                    soldCount={product._count.codes - product.codes.length}
                                 />
                             ))}
                         </div>
@@ -112,6 +125,8 @@ export default async function ShopPage() {
                                             category={product.category}
                                             isSold={Boolean(product.isSold)}
                                             index={index}
+                                            stockCount={product.codes.length}
+                                            soldCount={product._count.codes - product.codes.length}
                                         />
                                     ))}
                                 </div>

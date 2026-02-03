@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Swal from "sweetalert2";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -261,7 +262,18 @@ export default function AdminProductCodesPage() {
 
     // Delete code
     const handleDelete = async (id: string) => {
-        if (!confirm("ต้องการลบรหัสนี้?")) return;
+        const result = await Swal.fire({
+            title: "ลบรหัสสินค้า?",
+            text: "คุณต้องการลบรหัสนี้ใช่หรือไม่?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc2626",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "ใช่, ลบเลย",
+            cancelButtonText: "ยกเลิก",
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             const res = await fetch(`/api/admin/product-codes/${id}`, {

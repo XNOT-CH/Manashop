@@ -17,6 +17,22 @@ model SystemConfig {
   updatedAt   DateTime @updatedAt
 }
 
+// --- ตารางยศ (Roles) ---
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique           // ชื่อยศ (ADMIN, MODERATOR, etc.)
+  displayName String                     // ชื่อแสดง (แอดมิน, ผู้ช่วย)
+  iconUrl     String?  @db.Text          // ลิงก์ภาพไอคอน
+  color       String   @default("#6366f1") // สียศ (hex color)
+  isSystem    Boolean  @default(false)   // ยศระบบ (ลบไม่ได้)
+  sortOrder   Int      @default(0)       // ลำดับการแสดง
+  permissions String   @db.Text          // JSON array ของ permissions
+  users       User[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // --- ตารางผู้ใช้งาน (Users) ---
 model User {
   id            String    @id @default(uuid())
@@ -25,12 +41,23 @@ model User {
   email         String?   // Optional email
   password      String
   image         String?   @db.Text // Profile image URL
+  
+  // Role relation (new system)
+  roleId        String?
+  roleRef       Role?     @relation(fields: [roleId], references: [id])
+  
+  // Legacy role field (keep for backward compatibility)
   role          String    @default("USER") // USER, MODERATOR, SELLER, ADMIN
-  permissions   String?   @db.Text // JSON array of permission strings
+  permissions   String?   @db.Text // JSON array of custom permission strings
+  
   creditBalance Decimal   @default(0.00) @db.Decimal(10, 2)
   pointBalance  Int       @default(0)  // Point balance for rare items
   totalTopup    Decimal   @default(0.00) @db.Decimal(10, 2) // ยอดเติมเงินสะสม (ไม่หักออก)
   lifetimePoints Int      @default(0)  // พอยต์สะสมตลอดชีพ
+  
+  // Special Status
+  isVerified    Boolean   @default(false)
+  isInfluencer  Boolean   @default(false)
   
   // Referral System
   referralCode  String?   @unique  // รหัสเชิญชวนของผู้ใช้
@@ -198,6 +225,7 @@ model SiteSettings {
   heroTitle       String
   heroDescription String    @db.Text
   announcement    String?   @db.Text
+  slogan          String?   @db.Text   // ข้อความ slogan ด้านบนสินค้าแนะนำ
   
   // Banner Images (External URLs)
   bannerImage1    String?   @db.Text

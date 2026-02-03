@@ -1,30 +1,42 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PurchasedItem } from "@/components/PurchasedItem";
 import { Package, ShoppingBag } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
-    // Find test user
-    const user = await db.user.findFirst({
-        where: { email: "test@gamestore.com" },
+    // Get user from session
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+
+    if (!userId) {
+        redirect("/login");
+    }
+
+    const user = await db.user.findUnique({
+        where: { id: userId },
     });
 
     if (!user) {
         return (
             <div className="text-center py-20">
-                <p className="text-zinc-600">User not found</p>
+                <p className="text-zinc-600">ไม่พบบัญชีผู้ใช้</p>
             </div>
         );
     }
 
-    // Fetch orders with products
+    // Fetch orders with products and product codes
     const orders = await db.order.findMany({
         where: { userId: user.id },
-        include: { product: true },
+        include: {
+            product: true,
+            productCode: true,  // รวม ProductCode ที่ได้รับ
+        },
         orderBy: { purchasedAt: "desc" },
     });
 
@@ -78,7 +90,7 @@ export default async function InventoryPage() {
                                             day: "numeric",
                                         }
                                     )}
-                                    secretData={order.product.secretData}
+                                    secretData={order.productCode?.code || order.product.secretData}
                                 />
                             )
                     )}
