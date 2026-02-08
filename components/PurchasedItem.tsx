@@ -11,7 +11,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Lock, Eye, EyeOff, Calendar, Copy, Check } from "lucide-react";
-import { toast } from "sonner";
+import { showSuccess } from "@/lib/swal";
 
 interface PurchasedItemProps {
     title: string;
@@ -32,12 +32,12 @@ export function PurchasedItem({
     const handleCopy = async () => {
         await navigator.clipboard.writeText(secretData);
         setCopied(true);
-        toast.success("คัดลอกข้อมูลแล้ว!");
+        showSuccess("คัดลอกข้อมูลแล้ว!");
         setTimeout(() => setCopied(false), 2000);
     };
 
     return (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden card-tilt touch-feedback">
             {/* Image */}
             <div className="relative aspect-[4/3] bg-muted">
                 <Image

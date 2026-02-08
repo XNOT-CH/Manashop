@@ -11,14 +11,15 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
-        const { creditBalance, totalTopup, pointBalance, lifetimePoints } = body;
+        const { creditBalance, totalTopup, pointBalance, lifetimePoints, role } = body;
 
         // Validate that at least one field is provided
         if (
             creditBalance === undefined &&
             totalTopup === undefined &&
             pointBalance === undefined &&
-            lifetimePoints === undefined
+            lifetimePoints === undefined &&
+            role === undefined
         ) {
             return NextResponse.json(
                 { error: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" },
@@ -44,6 +45,7 @@ export async function PATCH(
             totalTopup?: Decimal;
             pointBalance?: number;
             lifetimePoints?: number;
+            role?: string;
         } = {};
 
         if (creditBalance !== undefined) {
@@ -90,6 +92,10 @@ export async function PATCH(
             updateData.lifetimePoints = value;
         }
 
+        if (role !== undefined && typeof role === 'string' && role.trim()) {
+            updateData.role = role.trim().toUpperCase();
+        }
+
         // Update user
         const updatedUser = await db.user.update({
             where: { id },
@@ -105,6 +111,7 @@ export async function PATCH(
                 totalTopup: updatedUser.totalTopup.toString(),
                 pointBalance: updatedUser.pointBalance,
                 lifetimePoints: updatedUser.lifetimePoints,
+                role: updatedUser.role,
             },
         });
     } catch (error) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { decrypt, encrypt } from "@/lib/encryption";
+import { splitStock, getDelimiter } from "@/lib/stock";
 
 export async function POST(request: NextRequest) {
     try {
@@ -60,12 +62,29 @@ export async function POST(request: NextRequest) {
                 throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${productPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`);
             }
 
+            // Decrypt and split stock items
+            const decryptedData = decrypt(product.secretData || "");
+            const separatorType = (product as unknown as { stockSeparator: string }).stockSeparator || "newline";
+            const stockItems = splitStock(decryptedData, separatorType);
+
+            if (stockItems.length === 0) {
+                throw new Error("สินค้าหมดสต็อก");
+            }
+
+            // Take the first stock item for this purchase
+            const givenItem = stockItems[0];
+            const remainingItems = stockItems.slice(1);
+            const delimiter = getDelimiter(separatorType);
+            const remainingData = remainingItems.join(delimiter);
+            const isLastStock = remainingItems.length === 0;
+
             // Create order first
             const order = await tx.order.create({
                 data: {
                     userId: user.id,
                     totalPrice: product.price,
                     status: "COMPLETED",
+                    givenData: encrypt(givenItem), // Store the code given to customer
                 },
             });
 
@@ -79,16 +98,17 @@ export async function POST(request: NextRequest) {
                 },
             });
 
-            // Update product: set isSold = true and link to order
+            // Update product: remove used stock item, mark sold if last
             await tx.product.update({
                 where: { id: productId },
                 data: {
-                    isSold: true,
+                    secretData: isLastStock ? encrypt(givenItem) : encrypt(remainingData),
+                    isSold: isLastStock,
                     orderId: order.id,
                 },
             });
 
-            return { order, product };
+            return { order, product, givenItem };
         });
 
         return NextResponse.json({

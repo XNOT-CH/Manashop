@@ -6,18 +6,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Flame, ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AlertModal } from "@/components/ui/AlertModal";
+import { showPurchaseSuccess, showError, showWarning } from "@/lib/swal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import Swal from "@/lib/swal";
 
 interface FeaturedProduct {
     id: string;
@@ -33,59 +24,51 @@ export function FeaturedProducts() {
     const [products, setProducts] = useState<FeaturedProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [buyingId, setBuyingId] = useState<string | null>(null);
-    const [confirmProduct, setConfirmProduct] = useState<FeaturedProduct | null>(null);
-    const [alertState, setAlertState] = useState<{
-        isOpen: boolean;
-        description: string;
-        variant: "success" | "error" | "warning" | "info";
-    }>({
-        isOpen: false,
-        description: "",
-        variant: "info",
-    });
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const showAlert = (description: string, variant: "success" | "error" | "warning" | "info") => {
-        setAlertState({ isOpen: true, description, variant });
+    const handleBuyClick = async (product: FeaturedProduct) => {
+        const result = await Swal.fire({
+            title: "ยืนยันการซื้อ?",
+            html: `คุณต้องการซื้อ <strong>${product.name}</strong> ในราคา <strong>฿${product.price.toLocaleString()}</strong> ใช่หรือไม่?`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#3b82f6",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "ซื้อเลย",
+            cancelButtonText: "ยกเลิก",
+            reverseButtons: true,
+        });
+        if (result.isConfirmed) {
+            handleBuyConfirm(product);
+        }
     };
 
-    const closeAlert = () => {
-        setAlertState((prev) => ({ ...prev, isOpen: false }));
-    };
-
-    const handleBuyClick = (product: FeaturedProduct) => {
-        setConfirmProduct(product);
-    };
-
-    const handleBuyConfirm = async () => {
-        if (!confirmProduct) return;
-
-        setBuyingId(confirmProduct.id);
-        setConfirmProduct(null);
+    const handleBuyConfirm = async (product: FeaturedProduct) => {
+        setBuyingId(product.id);
 
         try {
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: confirmProduct.id }),
+                body: JSON.stringify({ productId: product.id }),
             });
 
             const data = await response.json();
 
             if (data.success) {
-                showAlert(`ซื้อ ${data.productName} สำเร็จ! 🎉`, "success");
+                showPurchaseSuccess("สำเร็จ!", `ซื้อ ${data.productName} เรียบร้อยแล้ว`);
                 router.refresh();
                 // Update local state
                 setProducts((prev) =>
                     prev.map((p) =>
-                        p.id === confirmProduct.id ? { ...p, isSold: true } : p
+                        p.id === product.id ? { ...p, isSold: true } : p
                     )
                 );
             } else {
-                showAlert(data.message, "warning");
+                showWarning(data.message);
             }
         } catch {
-            showAlert("ไม่สามารถทำรายการได้ กรุณาลองใหม่", "error");
+            showError("ไม่สามารถทำรายการได้ กรุณาลองใหม่");
         } finally {
             setBuyingId(null);
         }
@@ -145,10 +128,10 @@ export function FeaturedProducts() {
                 </div>
                 <div className="flex gap-4 overflow-hidden">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex-shrink-0 w-52 animate-pulse">
-                            <div className="h-52 bg-muted rounded-xl"></div>
-                            <div className="h-4 bg-muted rounded mt-3 w-3/4"></div>
-                            <div className="h-4 bg-muted rounded mt-2 w-1/2"></div>
+                        <div key={i} className="flex-shrink-0 w-52">
+                            <div className="h-52 skeleton-wave rounded-xl"></div>
+                            <div className="h-4 skeleton-wave rounded mt-3 w-3/4"></div>
+                            <div className="h-4 skeleton-wave rounded mt-2 w-1/2"></div>
                         </div>
                     ))}
                 </div>
@@ -179,12 +162,12 @@ export function FeaturedProducts() {
 
             <div
                 ref={scrollContainerRef}
-                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 snap-x snap-mandatory"
+                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 snap-x snap-mandatory swipe-container"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
                 {products.map((product) => (
-                    <div key={product.id} className="flex-shrink-0 w-52 snap-start">
-                        <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
+                    <div key={product.id} className="flex-shrink-0 w-52 snap-start swipe-item">
+                        <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 card-tilt touch-feedback">
                             <div className="relative aspect-square overflow-hidden bg-muted">
                                 <div className="absolute top-3 left-3 z-10">
                                     <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full">
@@ -223,11 +206,16 @@ export function FeaturedProducts() {
                                                 disabled={buyingId === product.id}
                                             >
                                                 {buyingId === product.id ? (
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        ซื้อ
+                                                    </>
                                                 ) : (
-                                                    <ShoppingCart className="h-4 w-4 mr-2" />
+                                                    <>
+                                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                                        ซื้อ
+                                                    </>
                                                 )}
-                                                ซื้อ
                                             </Button>
                                             <AddToCartButton
                                                 product={{
@@ -254,35 +242,8 @@ export function FeaturedProducts() {
                 ))}
             </div>
 
-            {/* Confirm Purchase Dialog */}
-            <AlertDialog open={!!confirmProduct} onOpenChange={() => setConfirmProduct(null)}>
-                <AlertDialogContent className="max-w-sm bg-white border-slate-200 shadow-2xl rounded-2xl">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>ยืนยันการซื้อ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            คุณต้องการซื้อ <strong>{confirmProduct?.name}</strong> ในราคา{" "}
-                            <strong>฿{confirmProduct?.price.toLocaleString()}</strong> ใช่หรือไม่?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">ยกเลิก</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleBuyConfirm}
-                            className="bg-primary hover:bg-primary/90 rounded-xl"
-                        >
-                            ซื้อเลย
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
 
-            {/* Alert Modal */}
-            <AlertModal
-                isOpen={alertState.isOpen}
-                onClose={closeAlert}
-                description={alertState.description}
-                variant={alertState.variant}
-            />
+
         </div>
     );
 }

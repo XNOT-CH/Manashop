@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { showError } from "@/lib/swal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Table,
@@ -45,12 +46,20 @@ interface User {
     createdAt: string;
 }
 
+interface Role {
+    id: string;
+    name: string;
+    code: string;
+    iconUrl: string | null;
+}
+
 interface AdminUsersClientProps {
     initialUsers: User[];
 }
 
 export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
     const [users, setUsers] = useState<User[]>(initialUsers);
+    const [roles, setRoles] = useState<Role[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -62,7 +71,24 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
         totalTopup: "",
         pointBalance: "",
         lifetimePoints: "",
+        role: "",
     });
+
+    // Fetch roles on mount
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const res = await fetch("/api/admin/roles");
+                if (res.ok) {
+                    const data = await res.json();
+                    setRoles(data);
+                }
+            } catch (error) {
+                console.error("Error fetching roles:", error);
+            }
+        };
+        fetchRoles();
+    }, []);
 
     // Filter users based on search query
     const filteredUsers = useMemo(() => {
@@ -88,6 +114,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
             totalTopup: Number(user.totalTopup).toString(),
             pointBalance: user.pointBalance.toString(),
             lifetimePoints: user.lifetimePoints.toString(),
+            role: user.role,
         });
         setIsDialogOpen(true);
     };
@@ -105,13 +132,14 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                     totalTopup: formData.totalTopup,
                     pointBalance: formData.pointBalance,
                     lifetimePoints: formData.lifetimePoints,
+                    role: formData.role,
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                alert(data.error || "เกิดข้อผิดพลาด");
+                showError(data.error || "เกิดข้อผิดพลาด");
                 return;
             }
 
@@ -125,6 +153,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                             totalTopup: data.user.totalTopup,
                             pointBalance: data.user.pointBalance,
                             lifetimePoints: data.user.lifetimePoints,
+                            role: data.user.role,
                         }
                         : u
                 )
@@ -134,7 +163,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
             setEditingUser(null);
         } catch (error) {
             console.error("Error updating user:", error);
-            alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+            showError("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
         } finally {
             setIsSubmitting(false);
         }
@@ -263,8 +292,8 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                                     <div className="flex items-center gap-3">
                                                         <Avatar
                                                             className={`h-10 w-10 ${hasGoldBorder
-                                                                    ? "ring-2 ring-amber-400 ring-offset-2"
-                                                                    : ""
+                                                                ? "ring-2 ring-amber-400 ring-offset-2"
+                                                                : ""
                                                                 }`}
                                                         >
                                                             {user.image ? (
@@ -272,8 +301,8 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                                             ) : null}
                                                             <AvatarFallback
                                                                 className={`font-semibold ${hasGoldBorder
-                                                                        ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
-                                                                        : "bg-indigo-100 text-indigo-600"
+                                                                    ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
+                                                                    : "bg-indigo-100 text-indigo-600"
                                                                     }`}
                                                             >
                                                                 {initials}
@@ -455,6 +484,33 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                     }
                                 />
                             </div>
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="space-y-2">
+                            <Label htmlFor="role">ยศ/บทบาท</Label>
+                            <select
+                                id="role"
+                                value={formData.role}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, role: e.target.value }))
+                                }
+                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                                <option value="USER">ผู้ใช้ทั่วไป (USER)</option>
+                                <option value="MODERATOR">ผู้ดูแล (MODERATOR)</option>
+                                <option value="SELLER">ผู้ขาย (SELLER)</option>
+                                <option value="ADMIN">แอดมิน (ADMIN)</option>
+                                {/* Custom roles from database */}
+                                {roles.filter(r => !['USER', 'MODERATOR', 'SELLER', 'ADMIN'].includes(r.code)).map((role) => (
+                                    <option key={role.id} value={role.code}>
+                                        {role.name} ({role.code})
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-muted-foreground">
+                                เลือกยศหรือบทบาทของผู้ใช้
+                            </p>
                         </div>
                     </div>
 

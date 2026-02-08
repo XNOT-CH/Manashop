@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Package } from "lucide-react";
 import { ProductTable } from "@/components/admin/ProductTable";
+import { decrypt } from "@/lib/encryption";
+import { getStockCount } from "@/lib/stock";
 
 export const dynamic = "force-dynamic";
 
@@ -55,15 +57,24 @@ export default async function AdminProductsPage() {
                         </div>
                     ) : (
                         <ProductTable
-                            products={products.map((p) => ({
-                                id: p.id,
-                                name: p.name,
-                                price: Number(p.price),
-                                imageUrl: p.imageUrl,
-                                category: p.category,
-                                isSold: p.isSold,
-                                isFeatured: p.isFeatured,
-                            }))}
+                            products={products.map((p) => {
+                                let stockCount = 0;
+                                try {
+                                    const decrypted = decrypt(p.secretData || "");
+                                    const sep = (p as unknown as { stockSeparator: string }).stockSeparator || "newline";
+                                    stockCount = p.isSold ? 0 : getStockCount(decrypted, sep);
+                                } catch {}
+                                return {
+                                    id: p.id,
+                                    name: p.name,
+                                    price: Number(p.price),
+                                    imageUrl: p.imageUrl,
+                                    category: p.category,
+                                    isSold: p.isSold,
+                                    isFeatured: p.isFeatured,
+                                    stockCount,
+                                };
+                            })}
                         />
                     )}
                 </CardContent>

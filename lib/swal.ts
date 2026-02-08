@@ -92,6 +92,21 @@ export const showSuccessAlert = (title: string, text?: string) => {
     });
 };
 
+// Purchase success popup (centered modal with green button)
+export const showPurchaseSuccess = (title: string, text?: string) => {
+    return Swal.fire({
+        icon: "success",
+        title,
+        text,
+        confirmButtonColor: "#22c55e",
+        confirmButtonText: "ตกลง",
+        customClass: {
+            popup: "rounded-2xl",
+            confirmButton: "rounded-xl px-8 py-2",
+        },
+    });
+};
+
 // Error alert
 export const showErrorAlert = (title: string, text?: string) => {
     return Swal.fire({

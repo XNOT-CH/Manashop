@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Pencil, Gem, Banknote } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, Gem, Banknote, Package } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "sonner";
+import { showSuccess, showError } from "@/lib/swal";
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -28,6 +28,7 @@ export default function EditProductPage() {
         description: "",
         secretData: "",
         currency: "THB",
+        stockSeparator: "newline",
     });
 
     // Fetch product data on mount
@@ -48,13 +49,14 @@ export default function EditProductPage() {
                         description: product.description || "",
                         secretData: product.secretData || "",
                         currency: product.currency || "THB",
+                        stockSeparator: product.stockSeparator || "newline",
                     });
                 } else {
-                    toast.error("ไม่พบสินค้า");
+                    showError("ไม่พบสินค้า");
                     router.push("/admin/products");
                 }
             } catch (error) {
-                toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+                showError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
                 router.push("/admin/products");
             } finally {
                 setIsFetching(false);
@@ -85,19 +87,13 @@ export default function EditProductPage() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success("🎉 แก้ไขสินค้าสำเร็จ!", {
-                    description: "ข้อมูลสินค้าถูกอัพเดทเรียบร้อยแล้ว",
-                });
+                showSuccess("🎉 แก้ไขสินค้าสำเร็จ! ข้อมูลสินค้าถูกอัพเดทเรียบร้อยแล้ว");
                 router.push("/admin/products");
             } else {
-                toast.error("เกิดข้อผิดพลาด", {
-                    description: data.message,
-                });
+                showError(`เกิดข้อผิดพลาด: ${data.message}`);
             }
         } catch (error) {
-            toast.error("ไม่สามารถแก้ไขสินค้าได้", {
-                description: "กรุณาลองใหม่อีกครั้ง",
-            });
+            showError("ไม่สามารถแก้ไขสินค้าได้ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setIsLoading(false);
         }
@@ -105,35 +101,41 @@ export default function EditProductPage() {
 
     if (isFetching) {
         return (
-            <div className="mx-auto max-w-2xl space-y-6">
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+            <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
 
     return (
-        <div className="mx-auto max-w-2xl space-y-6">
-            {/* Back Button */}
-            <Link
-                href="/admin/products"
-                className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
-            >
-                <ArrowLeft className="h-4 w-4" />
-                กลับไปรายการสินค้า
-            </Link>
+        <div className="space-y-6">
+            {/* Navigation */}
+            <div className="flex items-center justify-between">
+                <Link
+                    href="/admin/products"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    กลับไปรายการสินค้า
+                </Link>
+                <Link href={`/admin/products/${productId}/stock`}>
+                    <Button variant="outline" size="sm" className="gap-2">
+                        <Package className="h-4 w-4" />
+                        จัดการสต็อก
+                    </Button>
+                </Link>
+            </div>
 
-            {/* Form Card */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-2xl">
-                        <Pencil className="h-6 w-6 text-indigo-600" />
-                        แก้ไขสินค้า ✏️
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-2xl">
+                            <Pencil className="h-6 w-6 text-indigo-600" />
+                            ข้อมูลสินค้า
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
                         {/* Title */}
                         <div className="space-y-2">
                             <Label htmlFor="title">ชื่อสินค้า *</Label>
@@ -211,7 +213,7 @@ export default function EditProductPage() {
                                     id="discountPrice"
                                     name="discountPrice"
                                     type="number"
-                                    placeholder="เว้นว่างเดือลลธรรมดาลด"
+                                    placeholder="เว้นว่างถ้าไม่ลดราคา"
                                     min="0"
                                     step={formData.currency === "POINT" ? "1" : "0.01"}
                                     value={formData.discountPrice}
@@ -247,6 +249,18 @@ export default function EditProductPage() {
                                 value={formData.image}
                                 onChange={handleChange}
                             />
+                            {formData.image && (
+                                <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100 max-w-xs">
+                                    <img
+                                        src={formData.image}
+                                        alt="Preview"
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "https://placehold.co/400x300/f1f5f9/64748b?text=Invalid+URL";
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* Description */}
@@ -261,49 +275,26 @@ export default function EditProductPage() {
                                 onChange={handleChange}
                             />
                         </div>
+                    </CardContent>
+                </Card>
 
-                        {/* Secret Data (Highlighted) */}
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="secretData"
-                                className="flex items-center gap-2 text-amber-700"
-                            >
-                                🔐 ข้อมูลลับ (ID/Password) *
-                            </Label>
-                            <Textarea
-                                id="secretData"
-                                name="secretData"
-                                placeholder="ID: username123&#10;Pass: password456"
-                                rows={3}
-                                value={formData.secretData}
-                                onChange={handleChange}
-                                required
-                                className="border-amber-300 bg-amber-50 focus:border-amber-500 focus:ring-amber-500"
-                            />
-                            <p className="text-xs text-amber-600">
-                                ⚠️ ข้อมูลนี้จะแสดงให้ผู้ซื้อเห็นหลังชำระเงินสำเร็จ
-                            </p>
-                        </div>
-
-                        {/* Submit Button */}
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            size="lg"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    กำลังบันทึก...
-                                </>
-                            ) : (
-                                "บันทึกการเปลี่ยนแปลง"
-                            )}
-                        </Button>
-                    </form>
-                </CardContent>
-            </Card>
+                {/* Submit Button */}
+                <Button
+                    type="submit"
+                    className="w-full"
+                    size="lg"
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            กำลังบันทึก...
+                        </>
+                    ) : (
+                        "บันทึกการเปลี่ยนแปลง"
+                    )}
+                </Button>
+            </form>
         </div>
     );
 }

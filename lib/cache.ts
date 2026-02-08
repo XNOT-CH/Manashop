@@ -8,6 +8,7 @@ export const CACHE_KEYS = {
     SITE_SETTINGS: "site_settings",
     HELP_ARTICLES: "help_articles",
     PRODUCTS_LIST: "products_list",
+    ANNOUNCEMENT_POPUPS: "announcement_popups",
 } as const;
 
 // Default TTL values (in seconds)
@@ -146,4 +147,11 @@ export async function invalidateNewsCaches(): Promise<void> {
  */
 export async function invalidateSettingsCaches(): Promise<void> {
     await invalidateCache([CACHE_KEYS.SITE_SETTINGS]);
+}
+
+/**
+ * Invalidate popup caches
+ */
+export async function invalidatePopupCaches(): Promise<void> {
+    await invalidateCache([CACHE_KEYS.ANNOUNCEMENT_POPUPS]);
 }

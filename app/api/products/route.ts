@@ -15,14 +15,14 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { title, price, discountPrice, image, category, description, secretData, currency } = body;
+        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator } = body;
 
         // Validate required fields
-        if (!title || !price || !category || !secretData) {
+        if (!title || !price || !category) {
             return NextResponse.json(
                 {
                     success: false,
-                    message: "Missing required fields: title, price, category, secretData",
+                    message: "Missing required fields: title, price, category",
                 },
                 { status: 400 }
             );
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Create product in database
+        // Create product in database (secretData can be empty for products with stock added later)
         const product = await db.product.create({
             data: {
                 name: title,
@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
                 category: category,
                 currency: currency || "THB",
                 description: description || null,
-                secretData: encrypt(secretData),
+                secretData: secretData ? encrypt(secretData) : "",
+                stockSeparator: stockSeparator || "newline",
                 isSold: false,
             },
         });

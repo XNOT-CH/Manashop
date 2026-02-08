@@ -5,13 +5,11 @@ import {
     Gamepad2,
     Home,
     ShoppingBag,
-    LayoutDashboard,
-    Wallet,
-    ExternalLink,
-    ShoppingCart,
-    Receipt,
-    History,
-    CreditCard
+    HelpCircle,
+    Mail,
+    Shield,
+    FileText,
+    ChevronRight,
 } from "lucide-react";
 
 // ดึงข้อมูล Footer Widget จากฐานข้อมูล
@@ -34,77 +32,86 @@ async function getFooterWidget() {
 }
 
 export default async function Footer() {
-    // Use cached site settings
     const siteSettings = await getSiteSettings();
     const footerWidget = await getFooterWidget();
-
     const currentYear = new Date().getFullYear();
+
+    const siteName = siteSettings?.heroTitle || "GameStore";
 
     // เมนูหลัก
     const menuLinks = [
         { href: "/", label: "หน้าหลัก", icon: Home },
-        { href: "/shop", label: "สินค้าทั่วไป", icon: ShoppingBag },
-        { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
-        { href: "/dashboard/topup", label: "เติมเงิน", icon: Wallet },
+        { href: "/shop", label: "สินค้าทั้งหมด", icon: ShoppingBag },
+        { href: "/help", label: "ศูนย์ช่วยเหลือ", icon: HelpCircle },
     ];
 
-    // ประวัติต่างๆ
-    const historyLinks = [
-        { href: "/dashboard/orders", label: "ประวัติการสั่งซื้อ", icon: ShoppingCart },
-        { href: "/dashboard/purchases", label: "ประวัติการซื้อสินค้า", icon: Receipt },
-        { href: "/dashboard/transactions", label: "ประวัติการเติมเงิน", icon: CreditCard },
-        { href: "/dashboard/history", label: "ประวัติทั้งหมด", icon: History },
+    // ข้อมูลบริษัท
+    const companyLinks = [
+        { href: "/terms", label: "ข้อตกลงการใช้งาน", icon: FileText },
+        { href: "/privacy", label: "นโยบายความเป็นส่วนตัว", icon: Shield },
+        { href: "/contact", label: "ติดต่อเรา", icon: Mail },
     ];
 
     return (
-        <footer className="bg-gradient-to-b from-card/80 via-card to-primary/10 backdrop-blur-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                {/* Main Footer Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <footer className="relative bg-white/60 dark:bg-card/60 backdrop-blur-sm border-t border-border/50">
+            {/* Top Gradient Border */}
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
 
-                    {/* Logo & Description */}
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start">
-                        <Link href="/" className="inline-block mb-4 group">
-                            <div className="relative">
-                                {siteSettings?.logoUrl ? (
-                                    <img
-                                        src={siteSettings.logoUrl}
-                                        alt="Logo"
-                                        className="h-28 w-28 rounded-2xl object-contain shadow-2xl ring-4 ring-primary/30 transition-all duration-300 group-hover:ring-primary/50 group-hover:shadow-primary/30 animate-float"
-                                    />
-                                ) : (
-                                    <div className="h-28 w-28 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-2xl ring-4 ring-primary/30 animate-float">
-                                        <Gamepad2 className="h-14 w-14 text-white drop-shadow-lg" />
-                                    </div>
-                                )}
-                                {/* Glow effect */}
-                                <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl -z-10 animate-pulse"></div>
-                            </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* Main Footer Content */}
+                <div className="py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+
+                    {/* Brand Section */}
+                    <div className="lg:col-span-1">
+                        <Link href="/" className="inline-flex items-center gap-3 mb-4 group">
+                            {siteSettings?.logoUrl ? (
+                                <img
+                                    src={siteSettings.logoUrl}
+                                    alt="Logo"
+                                    className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/50"
+                                />
+                            ) : (
+                                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
+                                    <Gamepad2 className="h-6 w-6 text-primary-foreground" />
+                                </div>
+                            )}
+                            <span className="font-bold text-xl text-foreground">
+                                {siteName}
+                            </span>
                         </Link>
-                        <h3 className="font-extrabold text-primary text-2xl mb-2 tracking-tight">
-                            {siteSettings?.heroTitle || "GameStore"}
-                        </h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed max-w-[200px]">
-                            {siteSettings?.heroDescription || "แหล่งซื้อขายไอดีเกมที่ปลอดภัยที่สุด"}
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                            {siteSettings?.heroDescription || "แพลตฟอร์มซื้อขายสินค้าดิจิทัลที่น่าเชื่อถือ พร้อมระบบรักษาความปลอดภัยมาตรฐานสากล"}
                         </p>
+
+                        {/* Trust Badges */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-full border border-green-500/20">
+                                <Shield className="h-3 w-3" />
+                                ปลอดภัย 100%
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20">
+                                <Gamepad2 className="h-3 w-3" />
+                                สินค้าคุณภาพ
+                            </span>
+                        </div>
                     </div>
 
-                    {/* เมนูหลัก */}
+                    {/* Quick Links */}
                     <div>
-                        <h4 className="font-bold text-primary text-lg mb-4 flex items-center gap-2">
-                            <span className="w-1 h-5 bg-primary rounded-full"></span>
+                        <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider mb-4">
                             เมนูหลัก
                         </h4>
-                        <ul className="space-y-3">
+                        <ul className="space-y-2.5">
                             {menuLinks.map((link) => {
                                 const Icon = link.icon;
                                 return (
                                     <li key={link.href}>
                                         <Link
                                             href={link.href}
-                                            className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-200 group"
+                                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
                                         >
-                                            <Icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                            <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
+                                            <Icon className="h-4 w-4" />
                                             {link.label}
                                         </Link>
                                     </li>
@@ -113,98 +120,74 @@ export default async function Footer() {
                         </ul>
                     </div>
 
-                    {/* ประวัติต่างๆ / Footer Widget */}
+                    {/* Footer Widget / Company Links */}
                     <div>
-                        {footerWidget.settings && footerWidget.links.length > 0 ? (
-                            <>
-                                <h4 className="font-bold text-primary text-lg mb-4 flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-primary rounded-full"></span>
-                                    {footerWidget.settings.title}
-                                </h4>
-                                <ul className="space-y-3">
-                                    {footerWidget.links.map((link) => (
-                                        <li key={link.id}>
-                                            {link.openInNewTab ? (
-                                                <a
-                                                    href={link.href}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-200 group"
-                                                >
-                                                    <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                                    {link.label}
-                                                </a>
-                                            ) : (
-                                                <Link
-                                                    href={link.href}
-                                                    className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-200 group"
-                                                >
-                                                    <Receipt className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                                    {link.label}
-                                                </Link>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </>
-                        ) : (
-                            <>
-                                <h4 className="font-bold text-primary text-lg mb-4 flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-primary rounded-full"></span>
-                                    ประวัติต่างๆ
-                                </h4>
-                                <ul className="space-y-3">
-                                    {historyLinks.map((link) => {
-                                        const Icon = link.icon;
-                                        return (
-                                            <li key={link.href}>
-                                                <Link
-                                                    href={link.href}
-                                                    className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all duration-200 group"
-                                                >
-                                                    <Icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                                    {link.label}
-                                                </Link>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </>
-                        )}
-                    </div>
-
-                    {/* ติดต่อเรา - Facebook Widget */}
-                    <div>
-                        <h4 className="font-bold text-primary text-lg mb-4 flex items-center gap-2">
-                            <span className="w-1 h-5 bg-primary rounded-full"></span>
-                            ติดต่อเรา
+                        <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider mb-4">
+                            {footerWidget.settings?.title || "ข้อมูลสำคัญ"}
                         </h4>
-                        <div className="space-y-3">
-                            {/* Facebook Page Plugin - SNAILSHOP */}
-                            <div className="rounded-xl overflow-hidden shadow-lg border border-primary/20 bg-white">
-                                <iframe
-                                    src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fprofile.php%3Fid%3D61571169820803&tabs=timeline&width=280&height=250&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=true"
-                                    width="100%"
-                                    height="250"
-                                    style={{ border: "none", overflow: "hidden" }}
-                                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                                    title="SNAILSHOP Facebook Page"
-                                ></iframe>
-                            </div>
-                        </div>
+                        <ul className="space-y-2.5">
+                            {footerWidget.settings && footerWidget.links.length > 0 ? (
+                                footerWidget.links.map((link) => (
+                                    <li key={link.id}>
+                                        {link.openInNewTab ? (
+                                            <a
+                                                href={link.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
+                                            >
+                                                <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
+                                                <FileText className="h-4 w-4" />
+                                                {link.label}
+                                            </a>
+                                        ) : (
+                                            <Link
+                                                href={link.href}
+                                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
+                                            >
+                                                <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
+                                                <FileText className="h-4 w-4" />
+                                                {link.label}
+                                            </Link>
+                                        )}
+                                    </li>
+                                ))
+                            ) : (
+                                companyLinks.map((link) => {
+                                    const Icon = link.icon;
+                                    return (
+                                        <li key={link.href}>
+                                            <Link
+                                                href={link.href}
+                                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
+                                            >
+                                                <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
+                                                <Icon className="h-4 w-4" />
+                                                {link.label}
+                                            </Link>
+                                        </li>
+                                    );
+                                })
+                            )}
+                        </ul>
                     </div>
                 </div>
 
-                {/* Copyright */}
-                <div className="mt-10 pt-6 border-t border-primary/10">
+                {/* Bottom Bar */}
+                <div className="py-5 border-t border-border">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <p className="text-sm text-muted-foreground">
-                            © {currentYear} {siteSettings?.heroTitle || "GameStore"}. All rights reserved.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            <span className="text-primary font-medium">{siteSettings?.heroTitle || "GameStore"}</span>
-                            {" "}| ติดต่อเจ้าของร้านได้ที่ Facebook
-                        </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>© {currentYear}</span>
+                            <span className="text-primary font-medium">{siteName}</span>
+                            <span>สงวนลิขสิทธิ์</span>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                ระบบพร้อมให้บริการ
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { showWarning, showError } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,7 +111,7 @@ export default function AdminNewsPage() {
     // Save news
     const handleSave = async () => {
         if (!formData.title || !formData.description) {
-            alert("กรุณากรอกหัวข้อและรายละเอียด");
+            showWarning("กรุณากรอกหัวข้อและรายละเอียด");
             return;
         }
 
@@ -131,11 +132,11 @@ export default function AdminNewsPage() {
                 setIsDialogOpen(false);
                 fetchNews();
             } else {
-                alert("เกิดข้อผิดพลาดในการบันทึก");
+                showError("เกิดข้อผิดพลาดในการบันทึก");
             }
         } catch (error) {
             console.error("Error saving news:", error);
-            alert("เกิดข้อผิดพลาดในการบันทึก");
+            showError("เกิดข้อผิดพลาดในการบันทึก");
         } finally {
             setSaving(false);
         }
@@ -156,11 +157,11 @@ export default function AdminNewsPage() {
                 setSelectedNews(null);
                 fetchNews();
             } else {
-                alert("เกิดข้อผิดพลาดในการลบ");
+                showError("เกิดข้อผิดพลาดในการลบ");
             }
         } catch (error) {
             console.error("Error deleting news:", error);
-            alert("เกิดข้อผิดพลาดในการลบ");
+            showError("เกิดข้อผิดพลาดในการลบ");
         } finally {
             setSaving(false);
         }

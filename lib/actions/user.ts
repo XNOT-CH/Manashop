@@ -54,8 +54,27 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
                 id: true,
                 name: true,
                 email: true,
+                phone: true,
                 image: true,
                 password: true,
+                firstName: true,
+                lastName: true,
+                firstNameEn: true,
+                lastNameEn: true,
+                taxFullName: true,
+                taxPhone: true,
+                taxAddress: true,
+                taxProvince: true,
+                taxDistrict: true,
+                taxSubdistrict: true,
+                taxPostalCode: true,
+                shipFullName: true,
+                shipPhone: true,
+                shipAddress: true,
+                shipProvince: true,
+                shipDistrict: true,
+                shipSubdistrict: true,
+                shipPostalCode: true,
             },
         });
 
@@ -67,19 +86,42 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         }
 
         // เตรียมข้อมูลสำหรับอัปเดต
-        const updateData: {
-            name: string;
-            email: string | null;
-            image?: string | null;
-            password?: string;
-        } = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const updateData: Record<string, any> = {
             name: validatedData.name,
             email: validatedData.email || null,
+            phone: validatedData.phone || null,
+            firstName: validatedData.firstName || null,
+            lastName: validatedData.lastName || null,
+            firstNameEn: validatedData.firstNameEn || null,
+            lastNameEn: validatedData.lastNameEn || null,
         };
 
         // อัปเดต image ถ้ามีการส่งมา
         if (validatedData.image !== undefined) {
             updateData.image = validatedData.image || null;
+        }
+
+        // อัปเดต tax address
+        if (validatedData.taxAddress) {
+            updateData.taxFullName = validatedData.taxAddress.fullName || null;
+            updateData.taxPhone = validatedData.taxAddress.phone || null;
+            updateData.taxAddress = validatedData.taxAddress.address || null;
+            updateData.taxProvince = validatedData.taxAddress.province || null;
+            updateData.taxDistrict = validatedData.taxAddress.district || null;
+            updateData.taxSubdistrict = validatedData.taxAddress.subdistrict || null;
+            updateData.taxPostalCode = validatedData.taxAddress.postalCode || null;
+        }
+
+        // อัปเดต shipping address
+        if (validatedData.shippingAddress) {
+            updateData.shipFullName = validatedData.shippingAddress.fullName || null;
+            updateData.shipPhone = validatedData.shippingAddress.phone || null;
+            updateData.shipAddress = validatedData.shippingAddress.address || null;
+            updateData.shipProvince = validatedData.shippingAddress.province || null;
+            updateData.shipDistrict = validatedData.shippingAddress.district || null;
+            updateData.shipSubdistrict = validatedData.shippingAddress.subdistrict || null;
+            updateData.shipPostalCode = validatedData.shippingAddress.postalCode || null;
         }
 
         // อัปเดต password ถ้ากรอกมา
@@ -160,9 +202,30 @@ export async function getCurrentUserProfile() {
                 name: true,
                 username: true,
                 email: true,
+                phone: true,
                 image: true,
                 role: true,
                 creditBalance: true,
+                phoneVerified: true,
+                emailVerified: true,
+                firstName: true,
+                lastName: true,
+                firstNameEn: true,
+                lastNameEn: true,
+                taxFullName: true,
+                taxPhone: true,
+                taxAddress: true,
+                taxProvince: true,
+                taxDistrict: true,
+                taxSubdistrict: true,
+                taxPostalCode: true,
+                shipFullName: true,
+                shipPhone: true,
+                shipAddress: true,
+                shipProvince: true,
+                shipDistrict: true,
+                shipSubdistrict: true,
+                shipPostalCode: true,
                 createdAt: true,
             },
         });
