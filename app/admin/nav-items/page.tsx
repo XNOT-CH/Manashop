@@ -22,18 +22,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, Loader2, Navigation, GripVertical } from "lucide-react";
-import { toast } from "sonner";
+import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 
 interface NavItem {
     id: string;
@@ -59,8 +49,7 @@ export default function NavItemsAdminPage() {
     const [editHref, setEditHref] = useState("");
     const [editSortOrder, setEditSortOrder] = useState(0);
 
-    // Delete dialog
-    const [deletingItem, setDeletingItem] = useState<NavItem | null>(null);
+
 
     const fetchData = useCallback(async () => {
         try {
@@ -69,7 +58,7 @@ export default function NavItemsAdminPage() {
             setItems(data);
         } catch (error) {
             console.error("Error fetching data:", error);
-            toast.error("ไม่สามารถโหลดข้อมูลได้");
+            showError("ไม่สามารถโหลดข้อมูลได้");
         } finally {
             setLoading(false);
         }
@@ -89,18 +78,18 @@ export default function NavItemsAdminPage() {
             if (res.ok) {
                 const updated = await res.json();
                 setItems(items.map((i) => (i.id === updated.id ? updated : i)));
-                toast.success(updated.isActive ? "แสดงเมนูแล้ว" : "ซ่อนเมนูแล้ว");
+                showSuccess(updated.isActive ? "แสดงเมนูแล้ว" : "ซ่อนเมนูแล้ว");
             }
         } catch (error) {
             console.error("Error toggling active:", error);
-            toast.error("ไม่สามารถอัปเดตได้");
+            showError("ไม่สามารถอัปเดตได้");
         }
     };
 
     const handleAddItem = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newLabel.trim() || !newHref.trim()) {
-            toast.error("กรุณากรอกข้อมูลให้ครบ");
+            showError("กรุณากรอกข้อมูลให้ครบ");
             return;
         }
 
@@ -120,13 +109,13 @@ export default function NavItemsAdminPage() {
                 setItems([...items, newItem]);
                 setNewLabel("");
                 setNewHref("");
-                toast.success("เพิ่มเมนูเรียบร้อย");
+                showSuccess("เพิ่มเมนูเรียบร้อย");
             } else {
-                toast.error("ไม่สามารถเพิ่มเมนูได้");
+                showError("ไม่สามารถเพิ่มเมนูได้");
             }
         } catch (error) {
             console.error("Error adding item:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         } finally {
             setSaving(false);
         }
@@ -141,7 +130,7 @@ export default function NavItemsAdminPage() {
 
     const handleEditItem = async () => {
         if (!editingItem || !editLabel.trim() || !editHref.trim()) {
-            toast.error("กรุณากรอกข้อมูลให้ครบ");
+            showError("กรุณากรอกข้อมูลให้ครบ");
             return;
         }
 
@@ -161,36 +150,36 @@ export default function NavItemsAdminPage() {
                 const updated = await res.json();
                 setItems(items.map((i) => (i.id === updated.id ? updated : i)));
                 setEditingItem(null);
-                toast.success("แก้ไขเมนูเรียบร้อย");
+                showSuccess("แก้ไขเมนูเรียบร้อย");
             } else {
-                toast.error("ไม่สามารถแก้ไขเมนูได้");
+                showError("ไม่สามารถแก้ไขเมนูได้");
             }
         } catch (error) {
             console.error("Error editing item:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDeleteItem = async () => {
-        if (!deletingItem) return;
+    const handleDeleteItem = async (item: NavItem) => {
+        const confirmed = await showDeleteConfirm(item.label);
+        if (!confirmed) return;
 
         try {
-            const res = await fetch(`/api/admin/nav-items/${deletingItem.id}`, {
+            const res = await fetch(`/api/admin/nav-items/${item.id}`, {
                 method: "DELETE",
             });
 
             if (res.ok) {
-                setItems(items.filter((i) => i.id !== deletingItem.id));
-                setDeletingItem(null);
-                toast.success("ลบเมนูเรียบร้อย");
+                setItems(items.filter((i) => i.id !== item.id));
+                showSuccess("ลบเมนูเรียบร้อย");
             } else {
-                toast.error("ไม่สามารถลบเมนูได้");
+                showError("ไม่สามารถลบเมนูได้");
             }
         } catch (error) {
             console.error("Error deleting item:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         }
     };
 
@@ -331,7 +320,7 @@ export default function NavItemsAdminPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="text-destructive hover:text-destructive"
-                                                        onClick={() => setDeletingItem(item)}
+                                                        onClick={() => handleDeleteItem(item)}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -393,27 +382,7 @@ export default function NavItemsAdminPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation */}
-            <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            คุณต้องการลบเมนู &quot;{deletingItem?.label}&quot; ใช่หรือไม่?
-                            การดำเนินการนี้ไม่สามารถย้อนกลับได้
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDeleteItem}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            ลบ
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+
         </div>
     );
 }

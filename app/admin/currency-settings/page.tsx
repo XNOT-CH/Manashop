@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Gem, Save } from "lucide-react";
-import { toast } from "sonner";
+import { showSuccess, showError } from "@/lib/swal";
 
 interface CurrencySettings {
     id: string;
@@ -47,7 +47,7 @@ export default function CurrencySettingsPage() {
             }
         } catch (error) {
             console.error("Error fetching settings:", error);
-            toast.error("ไม่สามารถโหลดการตั้งค่าได้");
+            showError("ไม่สามารถโหลดการตั้งค่าได้");
         } finally {
             setLoading(false);
         }
@@ -55,7 +55,7 @@ export default function CurrencySettingsPage() {
 
     const handleSave = async () => {
         if (!settings.name.trim() || !settings.symbol.trim()) {
-            toast.error("กรุณากรอกชื่อและสัญลักษณ์");
+            showError("กรุณากรอกชื่อและสัญลักษณ์");
             return;
         }
 
@@ -68,13 +68,13 @@ export default function CurrencySettingsPage() {
             });
 
             if (res.ok) {
-                toast.success("บันทึกการตั้งค่าเรียบร้อย 🎉");
+                showSuccess("บันทึกการตั้งค่าเรียบร้อย 🎉");
             } else {
-                toast.error("ไม่สามารถบันทึกได้");
+                showError("ไม่สามารถบันทึกได้");
             }
         } catch (error) {
             console.error("Error saving settings:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         } finally {
             setSaving(false);
         }

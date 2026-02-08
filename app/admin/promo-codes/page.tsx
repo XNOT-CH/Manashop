@@ -32,7 +32,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Plus, Ticket, Loader2, Trash2, Pencil, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { showDeleteConfirm, showSuccess, showError } from "@/lib/swal";
 
 interface PromoCode {
     id: string;
@@ -75,7 +75,7 @@ export default function AdminPromoCodesPage() {
                 setPromoCodes(data.data);
             }
         } catch (error) {
-            toast.error("ไม่สามารถโหลดข้อมูลได้");
+            showError("ไม่สามารถโหลดข้อมูลได้");
         } finally {
             setIsLoading(false);
         }
@@ -138,22 +138,23 @@ export default function AdminPromoCodesPage() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success(editingCode ? "แก้ไขสำเร็จ!" : "สร้างโค้ดส่วนลดสำเร็จ!");
+                showSuccess(editingCode ? "แก้ไขสำเร็จ!" : "สร้างโค้ดส่วนลดสำเร็จ!");
                 setIsDialogOpen(false);
                 resetForm();
                 fetchPromoCodes();
             } else {
-                toast.error(data.message || "เกิดข้อผิดพลาด");
+                showError(data.message || "เกิดข้อผิดพลาด");
             }
         } catch (error) {
-            toast.error("ไม่สามารถบันทึกได้");
+            showError("ไม่สามารถบันทึกได้");
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("ต้องการลบโค้ดนี้หรือไม่?")) return;
+        const confirmed = await showDeleteConfirm("โค้ดนี้");
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/api/admin/promo-codes/${id}`, {
@@ -162,13 +163,13 @@ export default function AdminPromoCodesPage() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success("ลบโค้ดสำเร็จ!");
+                showSuccess("ลบโค้ดสำเร็จ!");
                 fetchPromoCodes();
             } else {
-                toast.error(data.message || "ไม่สามารถลบได้");
+                showError(data.message || "ไม่สามารถลบได้");
             }
         } catch (error) {
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         }
     };
 
@@ -182,17 +183,17 @@ export default function AdminPromoCodesPage() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success(promoCode.isActive ? "ปิดใช้งานแล้ว" : "เปิดใช้งานแล้ว");
+                showSuccess(promoCode.isActive ? "ปิดใช้งานแล้ว" : "เปิดใช้งานแล้ว");
                 fetchPromoCodes();
             }
         } catch (error) {
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         }
     };
 
     const copyCode = (code: string) => {
         navigator.clipboard.writeText(code);
-        toast.success(`คัดลอก ${code} แล้ว!`);
+        showSuccess(`คัดลอก ${code} แล้ว!`);
     };
 
     const formatDiscount = (code: PromoCode) => {

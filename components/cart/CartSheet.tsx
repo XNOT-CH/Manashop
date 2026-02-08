@@ -18,7 +18,7 @@ import { ShoppingCart, Trash2, Loader2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/components/providers/CartContext";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
-import { toast } from "sonner";
+import { showPurchaseSuccess, showError } from "@/lib/swal";
 
 export function CartSheet() {
     const router = useRouter();
@@ -28,7 +28,7 @@ export function CartSheet() {
 
     const handleCheckout = async () => {
         if (items.length === 0) {
-            toast.error("ตะกร้าว่างเปล่า");
+            showError("ตะกร้าว่างเปล่า");
             return;
         }
 
@@ -47,16 +47,12 @@ export function CartSheet() {
             const data = await response.json();
 
             if (data.success) {
-                toast.success("ซื้อสำเร็จ! 🎉", {
-                    description: `ซื้อ ${data.purchasedCount} รายการ รวม ฿${data.totalPrice.toLocaleString()}`,
-                });
+                showPurchaseSuccess("สำเร็จ!", `ซื้อ ${data.purchasedCount} รายการ รวม ฿${data.totalPrice.toLocaleString()}`);
                 clearCart();
                 setIsOpen(false);
                 router.refresh();
             } else {
-                toast.error("ไม่สามารถซื้อได้", {
-                    description: data.message,
-                });
+                showError(`ไม่สามารถซื้อได้: ${data.message}`);
                 // If some items were sold, remove them from cart
                 if (data.soldProductIds && Array.isArray(data.soldProductIds)) {
                     data.soldProductIds.forEach((id: string) => removeFromCart(id));
@@ -64,9 +60,7 @@ export function CartSheet() {
             }
         } catch (error) {
             console.error("Checkout error:", error);
-            toast.error("เกิดข้อผิดพลาด", {
-                description: "กรุณาลองใหม่อีกครั้ง",
-            });
+            showError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
         } finally {
             setIsCheckingOut(false);
         }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
-import { encrypt } from "@/lib/encryption";
+import { encrypt, decrypt } from "@/lib/encryption";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -34,7 +34,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({
             success: true,
-            data: product,
+            data: {
+                ...product,
+                secretData: decrypt(product.secretData || ""),
+            },
         });
     } catch (error) {
         console.error("Get product error:", error);
@@ -59,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { title, price, discountPrice, image, category, description, secretData, currency } = body;
+        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator } = body;
 
         // Check if product exists
         const existingProduct = await db.product.findUnique({
@@ -104,6 +107,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 currency: currency || "THB",
                 description: description || null,
                 secretData: encrypt(secretData),
+                stockSeparator: stockSeparator || "newline",
             },
         });
 

@@ -23,18 +23,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2, ExternalLink, Loader2, Link as LinkIcon, GripVertical } from "lucide-react";
-import { toast } from "sonner";
+import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 
 interface FooterLink {
     id: string;
@@ -69,8 +59,7 @@ export default function FooterLinksAdminPage() {
     const [editOpenInNewTab, setEditOpenInNewTab] = useState(false);
     const [editIsActive, setEditIsActive] = useState(true);
 
-    // Delete dialog
-    const [deletingLink, setDeletingLink] = useState<FooterLink | null>(null);
+
 
     const fetchData = useCallback(async () => {
         try {
@@ -80,7 +69,7 @@ export default function FooterLinksAdminPage() {
             setLinks(data.links);
         } catch (error) {
             console.error("Error fetching data:", error);
-            toast.error("ไม่สามารถโหลดข้อมูลได้");
+            showError("ไม่สามารถโหลดข้อมูลได้");
         } finally {
             setLoading(false);
         }
@@ -100,18 +89,18 @@ export default function FooterLinksAdminPage() {
             if (res.ok) {
                 const updated = await res.json();
                 setSettings(updated);
-                toast.success(isActive ? "เปิดการแสดงผลแล้ว" : "ปิดการแสดงผลแล้ว");
+                showSuccess(isActive ? "เปิดการแสดงผลแล้ว" : "ปิดการแสดงผลแล้ว");
             }
         } catch (error) {
             console.error("Error toggling active:", error);
-            toast.error("ไม่สามารถอัปเดตได้");
+            showError("ไม่สามารถอัปเดตได้");
         }
     };
 
     const handleAddLink = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newLabel.trim() || !newHref.trim()) {
-            toast.error("กรุณากรอกข้อมูลให้ครบ");
+            showError("กรุณากรอกข้อมูลให้ครบ");
             return;
         }
 
@@ -133,13 +122,13 @@ export default function FooterLinksAdminPage() {
                 setNewLabel("");
                 setNewHref("");
                 setNewOpenInNewTab(false);
-                toast.success("เพิ่มลิงก์เรียบร้อย");
+                showSuccess("เพิ่มลิงก์เรียบร้อย");
             } else {
-                toast.error("ไม่สามารถเพิ่มลิงก์ได้");
+                showError("ไม่สามารถเพิ่มลิงก์ได้");
             }
         } catch (error) {
             console.error("Error adding link:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         } finally {
             setSaving(false);
         }
@@ -155,7 +144,7 @@ export default function FooterLinksAdminPage() {
 
     const handleEditLink = async () => {
         if (!editingLink || !editLabel.trim() || !editHref.trim()) {
-            toast.error("กรุณากรอกข้อมูลให้ครบ");
+            showError("กรุณากรอกข้อมูลให้ครบ");
             return;
         }
 
@@ -176,36 +165,36 @@ export default function FooterLinksAdminPage() {
                 const updated = await res.json();
                 setLinks(links.map((l) => (l.id === updated.id ? updated : l)));
                 setEditingLink(null);
-                toast.success("แก้ไขลิงก์เรียบร้อย");
+                showSuccess("แก้ไขลิงก์เรียบร้อย");
             } else {
-                toast.error("ไม่สามารถแก้ไขลิงก์ได้");
+                showError("ไม่สามารถแก้ไขลิงก์ได้");
             }
         } catch (error) {
             console.error("Error editing link:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDeleteLink = async () => {
-        if (!deletingLink) return;
+    const handleDeleteLink = async (link: FooterLink) => {
+        const confirmed = await showDeleteConfirm(link.label);
+        if (!confirmed) return;
 
         try {
-            const res = await fetch(`/api/admin/footer-links/${deletingLink.id}`, {
+            const res = await fetch(`/api/admin/footer-links/${link.id}`, {
                 method: "DELETE",
             });
 
             if (res.ok) {
-                setLinks(links.filter((l) => l.id !== deletingLink.id));
-                setDeletingLink(null);
-                toast.success("ลบลิงก์เรียบร้อย");
+                setLinks(links.filter((l) => l.id !== link.id));
+                showSuccess("ลบลิงก์เรียบร้อย");
             } else {
-                toast.error("ไม่สามารถลบลิงก์ได้");
+                showError("ไม่สามารถลบลิงก์ได้");
             }
         } catch (error) {
             console.error("Error deleting link:", error);
-            toast.error("เกิดข้อผิดพลาด");
+            showError("เกิดข้อผิดพลาด");
         }
     };
 
@@ -375,7 +364,7 @@ export default function FooterLinksAdminPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="text-destructive hover:text-destructive"
-                                                    onClick={() => setDeletingLink(link)}
+                                                    onClick={() => handleDeleteLink(link)}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -452,27 +441,7 @@ export default function FooterLinksAdminPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation */}
-            <AlertDialog open={!!deletingLink} onOpenChange={() => setDeletingLink(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            คุณต้องการลบลิงก์ &quot;{deletingLink?.label}&quot; ใช่หรือไม่?
-                            การดำเนินการนี้ไม่สามารถย้อนกลับได้
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDeleteLink}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            ลบ
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+
         </div>
     );
 }

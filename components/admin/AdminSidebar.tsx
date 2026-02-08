@@ -14,13 +14,17 @@ import {
     FileText,
     LinkIcon,
     Gem,
+    Megaphone,
+    Shield,
 } from "lucide-react";
 
 const sidebarLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/products", label: "Product Manager", icon: Package },
     { href: "/admin/news", label: "News Manager", icon: Newspaper },
+    { href: "/admin/popups", label: "Pop-up Manager", icon: Megaphone },
     { href: "/admin/users", label: "User Manager", icon: Users },
+    { href: "/admin/roles", label: "Role Manager", icon: Shield },
     { href: "/admin/slips", label: "Slip Verification", icon: FileCheck },
     { href: "/admin/currency-settings", label: "Currency Settings", icon: Gem },
     { href: "/admin/footer-links", label: "Footer Links", icon: LinkIcon },

@@ -46,7 +46,6 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
                 <div className="flex h-16 items-center border-b px-6">
                     <Link href="/" className="flex items-center gap-2 font-bold text-lg">
                         <Gamepad2 className="h-5 w-5 text-primary" />
-                        GameStore
                     </Link>
                 </div>
 
@@ -85,9 +84,9 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
                                     <TooltipTrigger asChild>
                                         <Link
                                             href={link.href}
-                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 btn-press touch-feedback ${isActive
+                                                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground hover:translate-x-1"
                                                 }`}
                                         >
                                             <Icon className="h-5 w-5" />

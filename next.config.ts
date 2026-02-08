@@ -28,7 +28,17 @@ const nextConfig: NextConfig = {
     ],
   },
   images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "img5.pic.in.th",
+      },
+      {
+        protocol: "https",
+        hostname: "*.pic.in.th",
+      },
       {
         protocol: "https",
         hostname: "**",

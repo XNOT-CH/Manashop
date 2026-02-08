@@ -86,6 +86,7 @@ export async function PUT(request: Request) {
         if (body.bannerSubtitle3 !== undefined) updateData.bannerSubtitle3 = body.bannerSubtitle3;
         if (body.logoUrl !== undefined) updateData.logoUrl = body.logoUrl;
         if (body.backgroundImage !== undefined) updateData.backgroundImage = body.backgroundImage;
+        if (body.showAllProducts !== undefined) updateData.showAllProducts = body.showAllProducts;
 
         if (settings) {
             // Update existing

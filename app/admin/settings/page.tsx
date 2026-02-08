@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper } from "lucide-react";
+import { showSuccess, showError } from "@/lib/swal";
+import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid } from "lucide-react";
 import Image from "next/image";
+import { Switch } from "@/components/ui/switch";
 
 interface SiteSettings {
     heroTitle: string;
@@ -27,6 +28,7 @@ interface SiteSettings {
     bannerSubtitle3: string;
     logoUrl: string;
     backgroundImage: string;
+    showAllProducts: boolean;
 }
 
 export default function AdminSettingsPage() {
@@ -47,6 +49,7 @@ export default function AdminSettingsPage() {
         bannerSubtitle3: "",
         logoUrl: "",
         backgroundImage: "",
+        showAllProducts: true,
     });
 
     // Fetch settings on mount
@@ -74,10 +77,11 @@ export default function AdminSettingsPage() {
                     bannerSubtitle3: data.data.bannerSubtitle3 || "",
                     logoUrl: data.data.logoUrl || "",
                     backgroundImage: data.data.backgroundImage || "",
+                    showAllProducts: data.data.showAllProducts ?? true,
                 });
             }
         } catch (error) {
-            toast.error("ไม่สามารถโหลดการตั้งค่าได้");
+            showError("ไม่สามารถโหลดการตั้งค่าได้");
         } finally {
             setIsLoading(false);
         }
@@ -94,18 +98,18 @@ export default function AdminSettingsPage() {
             const data = await res.json();
 
             if (data.success) {
-                toast.success("บันทึกการตั้งค่าสำเร็จ");
+                showSuccess("บันทึกการตั้งค่าสำเร็จ");
             } else {
-                toast.error(data.message || "เกิดข้อผิดพลาด");
+                showError(data.message || "เกิดข้อผิดพลาด");
             }
         } catch (error) {
-            toast.error("ไม่สามารถบันทึกได้");
+            showError("ไม่สามารถบันทึกได้");
         } finally {
             setIsSaving(false);
         }
     };
 
-    const updateSetting = (key: keyof SiteSettings, value: string) => {
+    const updateSetting = (key: keyof SiteSettings, value: string | boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
@@ -134,6 +138,33 @@ export default function AdminSettingsPage() {
                     บันทึก
                 </Button>
             </div>
+
+            {/* Homepage Section Toggles */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <LayoutGrid className="h-5 w-5" />
+                        ส่วนแสดงผลหน้าแรก
+                    </CardTitle>
+                    <CardDescription>เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <Label className="text-base font-medium">สินค้าทั้งหมด</Label>
+                            <p className="text-sm text-muted-foreground">
+                                แสดงรายการสินค้าทั้งหมดบนหน้าแรก
+                            </p>
+                        </div>
+                        <Switch
+                            checked={settings.showAllProducts}
+                            onCheckedChange={(checked) => updateSetting("showAllProducts", checked)}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Separator />
 
             {/* General Settings */}
             <Card>
@@ -238,9 +269,9 @@ export default function AdminSettingsPage() {
                         <BannerCard
                             key={num}
                             number={num}
-                            image={settings[`bannerImage${num}` as keyof SiteSettings]}
-                            title={settings[`bannerTitle${num}` as keyof SiteSettings]}
-                            subtitle={settings[`bannerSubtitle${num}` as keyof SiteSettings]}
+                            image={settings[`bannerImage${num}` as keyof SiteSettings] as string}
+                            title={settings[`bannerTitle${num}` as keyof SiteSettings] as string}
+                            subtitle={settings[`bannerSubtitle${num}` as keyof SiteSettings] as string}
                             onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
                             onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
                             onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}

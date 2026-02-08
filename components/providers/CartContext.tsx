@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { toast } from "sonner";
+import { showSuccess, showError, showInfo } from "@/lib/swal";
 
 // Cart item interface
 export interface CartItem {
@@ -70,9 +70,7 @@ export function CartProvider({ children }: CartProviderProps) {
     const addToCart = useCallback(async (product: CartItem): Promise<boolean> => {
         // Check if already in cart
         if (items.some((item) => item.id === product.id)) {
-            toast.info("สินค้านี้อยู่ในตะกร้าแล้ว", {
-                description: product.name,
-            });
+            showInfo(`สินค้านี้อยู่ในตะกร้าแล้ว: ${product.name}`);
             return false;
         }
 
@@ -81,27 +79,23 @@ export function CartProvider({ children }: CartProviderProps) {
         try {
             const response = await fetch(`/api/products/${product.id}`);
             if (!response.ok) {
-                toast.error("ไม่พบสินค้านี้");
+                showError("ไม่พบสินค้านี้");
                 return false;
             }
 
             const data = await response.json();
             if (data.isSold) {
-                toast.error("สินค้านี้ถูกขายไปแล้ว", {
-                    description: product.name,
-                });
+                showError(`สินค้านี้ถูกขายไปแล้ว: ${product.name}`);
                 return false;
             }
 
             // Add to cart
             setItems((prev) => [...prev, product]);
-            toast.success("เพิ่มลงตะกร้าแล้ว", {
-                description: product.name,
-            });
+            showSuccess(`เพิ่มลงตะกร้าแล้ว: ${product.name}`);
             return true;
         } catch (error) {
             console.error("Failed to validate product:", error);
-            toast.error("ไม่สามารถตรวจสอบสินค้าได้");
+            showError("ไม่สามารถตรวจสอบสินค้าได้");
             return false;
         } finally {
             setIsLoading(false);
@@ -113,9 +107,7 @@ export function CartProvider({ children }: CartProviderProps) {
         setItems((prev) => {
             const item = prev.find((i) => i.id === productId);
             if (item) {
-                toast.info("นำออกจากตะกร้าแล้ว", {
-                    description: item.name,
-                });
+                showInfo(`นำออกจากตะกร้าแล้ว: ${item.name}`);
             }
             return prev.filter((i) => i.id !== productId);
         });
@@ -124,7 +116,7 @@ export function CartProvider({ children }: CartProviderProps) {
     // Clear all items from cart
     const clearCart = useCallback(() => {
         setItems([]);
-        toast.info("ล้างตะกร้าแล้ว");
+        showInfo("ล้างตะกร้าแล้ว");
     }, []);
 
     // Check if item is in cart

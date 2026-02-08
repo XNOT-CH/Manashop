@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { showConfirm, showSuccess, showError } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
 import {
     Table,
@@ -34,8 +35,9 @@ export function SlipTable({ slips }: SlipTableProps) {
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     const handleAction = async (slipId: string, action: "APPROVE" | "REJECT") => {
-        const actionText = action === "APPROVE" ? "approve" : "reject";
-        if (!confirm(`Are you sure you want to ${actionText} this request?`)) {
+        const actionText = action === "APPROVE" ? "อนุมัติ" : "ปฏิเสธ";
+        const confirmed = await showConfirm("ยืนยันการดำเนินการ", `คุณต้องการ${actionText}รายการนี้ใช่หรือไม่?`);
+        if (!confirmed) {
             return;
         }
 
@@ -51,13 +53,13 @@ export function SlipTable({ slips }: SlipTableProps) {
             const data = await response.json();
 
             if (data.success) {
-                alert(`✅ ${data.message}`);
+                showSuccess(data.message);
                 router.refresh();
             } else {
-                alert(`❌ Error: ${data.message}`);
+                showError(data.message);
             }
         } catch (error) {
-            alert("Failed to process request");
+            showError("ไม่สามารถดำเนินการได้");
         } finally {
             setProcessingId(null);
         }

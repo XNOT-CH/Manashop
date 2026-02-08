@@ -19,6 +19,34 @@ model User {
   image         String?   @db.Text // Profile image URL
   role          String    @default("USER") // USER, MODERATOR, SELLER, ADMIN
   permissions   String?   @db.Text // JSON array of permission strings
+  phone         String?   // เบอร์มือถือ
+  phoneVerified Boolean   @default(false) // ยืนยันเบอร์มือถือแล้วหรือไม่
+  emailVerified Boolean   @default(false) // ยืนยันอีเมลแล้วหรือไม่
+
+  // ข้อมูลส่วนตัว
+  firstName     String?   // ชื่อ (ภาษาไทย)
+  lastName      String?   // นามสกุล (ภาษาไทย)
+  firstNameEn   String?   // ชื่อ (ภาษาอังกฤษ)
+  lastNameEn    String?   // นามสกุล (ภาษาอังกฤษ)
+
+  // ที่อยู่ในการออกใบกำกับภาษี
+  taxFullName   String?   // ชื่อ - สกุล
+  taxPhone      String?   // หมายเลขโทรศัพท์
+  taxAddress    String?   @db.Text // ที่อยู่
+  taxProvince   String?   // จังหวัด
+  taxDistrict   String?   // อำเภอ
+  taxSubdistrict String?  // ตำบล
+  taxPostalCode String?   // รหัสไปรษณีย์
+
+  // ที่อยู่ในการจัดส่งของรางวัล
+  shipFullName  String?   // ชื่อ - สกุล
+  shipPhone     String?   // หมายเลขโทรศัพท์
+  shipAddress   String?   @db.Text // ที่อยู่
+  shipProvince  String?   // จังหวัด
+  shipDistrict  String?   // อำเภอ
+  shipSubdistrict String? // ตำบล
+  shipPostalCode String?  // รหัสไปรษณีย์
+
   creditBalance Decimal   @default(0.00) @db.Decimal(10, 2)
   pointBalance  Int       @default(0)  // Point balance for rare items
   totalTopup    Decimal   @default(0.00) @db.Decimal(10, 2) // ยอดเติมเงินสะสม (ไม่หักออก)
@@ -98,6 +126,7 @@ model Product {
   currency      String    @default("THB")  // THB or POINT
   
   secretData    String    @db.Text
+  stockSeparator String  @default("newline") // newline, doubleline, triple-dash, custom
   isSold        Boolean   @default(false)
   isFeatured    Boolean   @default(false)
   sortOrder     Int       @default(0)
@@ -115,6 +144,7 @@ model Order {
   userId        String
   user          User      @relation(fields: [userId], references: [id])
   product       Product?
+  givenData     String?   @db.Text // รหัสสินค้าที่ให้ลูกค้า (encrypted)
   totalPrice    Decimal   @db.Decimal(10, 2)
   status        String    @default("COMPLETED")
   purchasedAt   DateTime  @default(now())
@@ -161,6 +191,9 @@ model SiteSettings {
   
   // Background Image
   backgroundImage String?   @db.Text
+  
+  // Homepage Section Toggles
+  showAllProducts Boolean   @default(true)
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -256,4 +289,33 @@ model CurrencySettings {
   description String?  @db.Text               // คำอธิบาย
   isActive    Boolean  @default(true)
   updatedAt   DateTime @updatedAt
+}
+
+// --- Pop-up ประชาสัมพันธ์ (Announcement Popups) ---
+model AnnouncementPopup {
+  id            String    @id @default(uuid())
+  title         String?                   // ชื่อ/หัวข้อ (สำหรับ admin)
+  imageUrl      String    @db.Text        // URL รูปภาพ (1500x1500px)
+  linkUrl       String?   @db.Text        // URL เมื่อคลิกที่ popup
+  sortOrder     Int       @default(0)     // ลำดับการแสดง
+  isActive      Boolean   @default(true)
+  dismissOption String    @default("show_always") // show_always หรือ hide_1_hour
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- ยศแอดมิน (Admin Roles) ---
+model Role {
+  id          String    @id @default(uuid())
+  name        String    @unique          // ชื่อยศ (เช่น "แอดมินผู้ช่วย")
+  code        String    @unique          // รหัสยศ (เช่น "ASSISTANT_ADMIN")
+  iconUrl     String?   @db.Text         // URL ไอคอนยศ
+  description String?                    // คำอธิบาย
+  permissions String?   @db.Text         // JSON array of permissions
+  sortOrder   Int       @default(0)
+  isSystem    Boolean   @default(false)  // ยศระบบ (ลบไม่ได้ เช่น USER, ADMIN)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

@@ -9,10 +9,16 @@ import { db } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Fetch products
-  const products = await db.product.findMany({
-    orderBy: { createdAt: "desc" },
+  // Fetch site settings to check showAllProducts toggle
+  const siteSettings = await db.siteSettings.findFirst({
+    select: { showAllProducts: true },
   });
+  const showAllProducts = siteSettings?.showAllProducts ?? true;
+
+  // Only fetch products if the section is enabled
+  const products = showAllProducts
+    ? await db.product.findMany({ orderBy: { createdAt: "desc" } })
+    : [];
 
   return (
     <div className="animate-page-enter">
@@ -26,38 +32,43 @@ export default async function Home() {
         {/* Sale Products Carousel */}
         <SaleProducts />
 
-        {/* Section Header - All Products */}
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-            สินค้าทั้งหมด
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            ค้นหาไอดีเกมที่คุณต้องการ
-          </p>
-        </div>
+        {/* All Products Section - Toggled from admin */}
+        {showAllProducts && (
+          <>
+            {/* Section Header - All Products */}
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                สินค้าทั้งหมด
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                ค้นหาไอดีเกมที่คุณต้องการ
+              </p>
+            </div>
 
-        {/* Product Grid */}
-        {products.length === 0 ? (
-          <div className="text-center py-12 rounded-2xl bg-card border border-border">
-            <p className="text-muted-foreground text-lg">
-              ยังไม่มีสินค้าในระบบ
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {products.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                image={product.imageUrl || "/placeholder.jpg"}
-                title={product.name}
-                price={Number(product.price)}
-                category={product.category}
-                isSold={Boolean(product.isSold)}
-                index={index}
-              />
-            ))}
-          </div>
+            {/* Product Grid */}
+            {products.length === 0 ? (
+              <div className="text-center py-12 rounded-2xl bg-card border border-border">
+                <p className="text-muted-foreground text-lg">
+                  ยังไม่มีสินค้าในระบบ
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {products.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    image={product.imageUrl || "/placeholder.jpg"}
+                    title={product.name}
+                    price={Number(product.price)}
+                    category={product.category}
+                    isSold={Boolean(product.isSold)}
+                    index={index}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {/* News and Promotions Section */}

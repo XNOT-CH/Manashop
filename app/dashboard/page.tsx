@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -57,7 +58,7 @@ export default async function DashboardPage() {
             {/* Stats Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {/* Credit Balance */}
-                <Card className="bg-primary text-primary-foreground overflow-hidden">
+                <Card className="bg-primary text-primary-foreground overflow-hidden animate-card-up stagger-1 card-tilt">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium opacity-90">
                             ยอดเครดิต
@@ -85,7 +86,7 @@ export default async function DashboardPage() {
                 </Card>
 
                 {/* Total Purchased */}
-                <Card className="bg-card">
+                <Card className="bg-card animate-card-up stagger-2 card-tilt">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">
                             สินค้าที่ซื้อ
@@ -105,7 +106,7 @@ export default async function DashboardPage() {
                 </Card>
 
                 {/* Quick Action */}
-                <Card className="bg-card border-dashed">
+                <Card className="bg-card border-dashed animate-card-up stagger-3 card-tilt">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">
                             ซื้อสินค้าเพิ่ม
@@ -179,7 +180,7 @@ export default async function DashboardPage() {
                                         month: "short",
                                         day: "numeric",
                                     })}
-                                    secretData={order.product.secretData}
+                                    secretData={order.givenData ? decrypt(order.givenData) : "ไม่พบข้อมูล"}
                                 />
                             )
                         ))}

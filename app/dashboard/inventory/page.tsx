@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PurchasedItem } from "@/components/PurchasedItem";
@@ -8,17 +11,20 @@ import { Package, ShoppingBag } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
-    // Find test user
-    const user = await db.user.findFirst({
-        where: { email: "test@gamestore.com" },
+    // Get logged-in user from cookie
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+
+    if (!userId) {
+        redirect("/login");
+    }
+
+    const user = await db.user.findUnique({
+        where: { id: userId },
     });
 
     if (!user) {
-        return (
-            <div className="text-center py-20">
-                <p className="text-zinc-600">User not found</p>
-            </div>
-        );
+        redirect("/login");
     }
 
     // Fetch orders with products
@@ -32,12 +38,12 @@ export default async function InventoryPage() {
         <div className="space-y-6">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
-                    <Package className="h-8 w-8 text-indigo-600" />
-                    My Inventory
+                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                    <Package className="h-6 w-6 text-primary" />
+                    คลังสินค้าของฉัน
                 </h1>
-                <p className="text-zinc-500 mt-1">
-                    รายการสินค้าที่คุณซื้อไปแล้ว ({orders.length} items)
+                <p className="text-muted-foreground mt-1">
+                    รายการสินค้าที่คุณซื้อไปแล้ว ({orders.length} รายการ)
                 </p>
             </div>
 
@@ -45,11 +51,11 @@ export default async function InventoryPage() {
                 /* Empty State */
                 <Card className="py-12">
                     <CardContent className="text-center">
-                        <ShoppingBag className="mx-auto h-12 w-12 text-zinc-300 mb-4" />
-                        <h3 className="text-lg font-semibold text-zinc-700 mb-2">
+                        <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
                             ยังไม่มีสินค้าในคลัง
                         </h3>
-                        <p className="text-zinc-500 mb-4">
+                        <p className="text-muted-foreground mb-4">
                             คุณยังไม่ได้ซื้อสินค้าใดๆ ลองไปเลือกดูสินค้าก่อนนะ
                         </p>
                         <Link href="/shop">
@@ -62,7 +68,7 @@ export default async function InventoryPage() {
                 </Card>
             ) : (
                 /* Inventory Grid */
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {orders.map(
                         (order) =>
                             order.product && (
@@ -78,7 +84,7 @@ export default async function InventoryPage() {
                                             day: "numeric",
                                         }
                                     )}
-                                    secretData={order.product.secretData}
+                                    secretData={order.givenData ? decrypt(order.givenData) : "ไม่พบข้อมูล"}
                                 />
                             )
                     )}
@@ -87,3 +93,4 @@ export default async function InventoryPage() {
         </div>
     );
 }
+

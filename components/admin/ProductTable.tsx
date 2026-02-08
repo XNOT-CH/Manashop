@@ -14,17 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,7 +23,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem, Package } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +36,7 @@ interface Product {
     currency?: string;
     isSold: boolean;
     isFeatured: boolean;
+    stockCount?: number;
 }
 
 interface ProductTableProps {
@@ -127,6 +118,7 @@ export function ProductTable({ products }: ProductTableProps) {
                         <TableHead>ชื่อสินค้า</TableHead>
                         <TableHead>หมวดหมู่</TableHead>
                         <TableHead className="text-right">ราคา</TableHead>
+                        <TableHead className="text-center">สต็อก</TableHead>
                         <TableHead className="text-center">สถานะ</TableHead>
                         <TableHead className="text-center">แนะนำ</TableHead>
                         <TableHead className="w-[80px]"></TableHead>
@@ -164,8 +156,20 @@ export function ProductTable({ products }: ProductTableProps) {
                                 )}
                             </TableCell>
                             <TableCell className="text-center">
+                                {product.stockCount !== undefined ? (
+                                    <Badge variant={product.stockCount > 0 ? "secondary" : "destructive"} className="gap-1">
+                                        <Package className="h-3 w-3" />
+                                        {product.stockCount}
+                                    </Badge>
+                                ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                )}
+                            </TableCell>
+                            <TableCell className="text-center">
                                 {product.isSold ? (
                                     <Badge variant="destructive">ขายแล้ว</Badge>
+                                ) : product.stockCount === 0 ? (
+                                    <Badge variant="destructive">หมดสต็อก</Badge>
                                 ) : (
                                     <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>
                                 )}
@@ -201,6 +205,12 @@ export function ProductTable({ products }: ProductTableProps) {
                                                 แก้ไข
                                             </Link>
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/admin/products/${product.id}/stock`} className="flex items-center gap-2 cursor-pointer">
+                                                <Package className="h-4 w-4" />
+                                                จัดการสต็อก
+                                            </Link>
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem
                                             onClick={() => handleDuplicate(product.id)}
                                             disabled={duplicatingId === product.id}
@@ -210,34 +220,19 @@ export function ProductTable({ products }: ProductTableProps) {
                                             {duplicatingId === product.id ? "กำลังคัดลอก..." : "คัดลอกสินค้า"}
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <DropdownMenuItem
-                                                    onSelect={(e) => e.preventDefault()}
-                                                    className="text-destructive focus:text-destructive cursor-pointer"
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    ลบ
-                                                </DropdownMenuItem>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>ยืนยันการลบ?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        คุณต้องการลบ "{product.name}" ใช่หรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                                                    <AlertDialogAction
-                                                        onClick={() => handleDelete(product.id)}
-                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                    >
-                                                        {deletingId === product.id ? "กำลังลบ..." : "ลบ"}
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                        <DropdownMenuItem
+                                            onClick={async () => {
+                                                const confirmed = await showDeleteConfirm(product.name);
+                                                if (confirmed) {
+                                                    handleDelete(product.id);
+                                                }
+                                            }}
+                                            disabled={deletingId === product.id}
+                                            className="text-destructive focus:text-destructive cursor-pointer"
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            {deletingId === product.id ? "กำลังลบ..." : "ลบ"}
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>

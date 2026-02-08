@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertModal } from "@/components/ui/AlertModal";
+import { showPurchaseSuccess, showError, showWarning } from "@/lib/swal";
 import { ShoppingCart, Eye, Loader2, ArrowRight } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
@@ -34,15 +34,6 @@ export function ProductCard({
     const [isLoading, setIsLoading] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
-    const [alertState, setAlertState] = useState<{
-        isOpen: boolean;
-        description: string;
-        variant: "success" | "error" | "warning" | "info";
-    }>({
-        isOpen: false,
-        description: "",
-        variant: "info",
-    });
 
     // Trigger animation after mount
     useEffect(() => {
@@ -51,17 +42,6 @@ export function ProductCard({
         }, index * 50); // Stagger delay
         return () => clearTimeout(timer);
     }, [index]);
-
-    const showAlert = (
-        description: string,
-        variant: "success" | "error" | "warning" | "info"
-    ) => {
-        setAlertState({ isOpen: true, description, variant });
-    };
-
-    const closeAlert = () => {
-        setAlertState((prev) => ({ ...prev, isOpen: false }));
-    };
 
     const handleBuy = async () => {
         if (isSold || isLoading) return;
@@ -77,13 +57,13 @@ export function ProductCard({
             const data = await response.json();
 
             if (data.success) {
-                showAlert(`ซื้อ ${data.productName} สำเร็จ!`, "success");
+                showPurchaseSuccess("สำเร็จ!", `ซื้อ ${data.productName} เรียบร้อยแล้ว`);
                 router.refresh();
             } else {
-                showAlert(data.message, "warning");
+                showWarning(data.message);
             }
         } catch (error) {
-            showAlert("ไม่สามารถทำรายการได้ กรุณาลองใหม่", "error");
+            showError("ไม่สามารถทำรายการได้ กรุณาลองใหม่");
         } finally {
             setIsLoading(false);
         }
@@ -98,6 +78,7 @@ export function ProductCard({
                     transition-all duration-300 ease-out
                     hover:shadow-xl hover:shadow-primary/20
                     hover:-translate-y-1 hover:border-primary/30
+                    touch-feedback
                     ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
                 `}
                 style={{
@@ -209,14 +190,6 @@ export function ProductCard({
                     </Button>
                 </CardFooter>
             </Card >
-
-            {/* Alert Modal */}
-            < AlertModal
-                isOpen={alertState.isOpen}
-                onClose={closeAlert}
-                description={alertState.description}
-                variant={alertState.variant}
-            />
         </>
     );
 }

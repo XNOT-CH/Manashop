@@ -1,75 +1,159 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import {
     User,
     Mail,
     Lock,
-    Image as ImageIcon,
+    Phone,
     Loader2,
     CheckCircle,
     AlertTriangle,
     Save,
+    MapPin,
+    FileText,
+    Truck,
+    Pencil,
+    ArrowLeft,
 } from "lucide-react";
-import { updateProfile, getCurrentUserProfile } from "@/lib/actions/user";
+import { updateProfile } from "@/lib/actions/user";
 import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
+import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
+
+interface AddressData {
+    fullName: string;
+    phone: string;
+    address: string;
+    province: string;
+    district: string;
+    subdistrict: string;
+    postalCode: string;
+}
 
 interface UserProfile {
     id: string;
     name: string | null;
     username: string;
     email: string | null;
+    phone: string | null;
     image: string | null;
     role: string;
     creditBalance: string;
+    phoneVerified: boolean;
+    emailVerified: boolean;
+    firstName: string | null;
+    lastName: string | null;
+    firstNameEn: string | null;
+    lastNameEn: string | null;
+    taxFullName: string | null;
+    taxPhone: string | null;
+    taxAddress: string | null;
+    taxProvince: string | null;
+    taxDistrict: string | null;
+    taxSubdistrict: string | null;
+    taxPostalCode: string | null;
+    shipFullName: string | null;
+    shipPhone: string | null;
+    shipAddress: string | null;
+    shipProvince: string | null;
+    shipDistrict: string | null;
+    shipSubdistrict: string | null;
+    shipPostalCode: string | null;
 }
 
+const emptyAddress: AddressData = {
+    fullName: "",
+    phone: "",
+    address: "",
+    province: "",
+    district: "",
+    subdistrict: "",
+    postalCode: "",
+};
+
 export default function ProfileSettingsPage() {
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        phone: "",
         image: "",
+        firstName: "",
+        lastName: "",
+        firstNameEn: "",
+        lastNameEn: "",
         password: "",
         confirmPassword: "",
     });
+    const [taxAddress, setTaxAddress] = useState<AddressData>({ ...emptyAddress });
+    const [shipAddress, setShipAddress] = useState<AddressData>({ ...emptyAddress });
+    const [editingTax, setEditingTax] = useState(false);
+    const [editingShip, setEditingShip] = useState(false);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
 
     // Fetch current profile on mount
     useEffect(() => {
         async function fetchProfile() {
             setIsFetching(true);
-            const user = await getCurrentUserProfile();
-            if (user) {
-                setProfile(user as UserProfile);
-                setFormData({
-                    name: user.name || "",
-                    email: user.email || "",
-                    image: user.image || "",
-                    password: "",
-                    confirmPassword: "",
-                });
+            try {
+                const res = await fetch("/api/profile");
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const user = data.data as UserProfile;
+                    setProfile(user);
+                    setFormData({
+                        name: user.name || "",
+                        email: user.email || "",
+                        phone: user.phone || "",
+                        image: user.image || "",
+                        firstName: user.firstName || "",
+                        lastName: user.lastName || "",
+                        firstNameEn: user.firstNameEn || "",
+                        lastNameEn: user.lastNameEn || "",
+                        password: "",
+                        confirmPassword: "",
+                    });
+                    setTaxAddress({
+                        fullName: user.taxFullName || "",
+                        phone: user.taxPhone || "",
+                        address: user.taxAddress || "",
+                        province: user.taxProvince || "",
+                        district: user.taxDistrict || "",
+                        subdistrict: user.taxSubdistrict || "",
+                        postalCode: user.taxPostalCode || "",
+                    });
+                    setShipAddress({
+                        fullName: user.shipFullName || "",
+                        phone: user.shipPhone || "",
+                        address: user.shipAddress || "",
+                        province: user.shipProvince || "",
+                        district: user.shipDistrict || "",
+                        subdistrict: user.shipSubdistrict || "",
+                        postalCode: user.shipPostalCode || "",
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
             }
             setIsFetching(false);
         }
         fetchProfile();
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (section: "contact" | "personal" | "password" | "tax" | "ship") => {
         setErrors({});
 
         // Client-side password match check
-        if (formData.password && formData.password !== formData.confirmPassword) {
+        if (section === "password" && formData.password && formData.password !== formData.confirmPassword) {
             setErrors({ confirmPassword: ["รหัสผ่านไม่ตรงกัน"] });
             return;
         }
@@ -78,23 +162,35 @@ export default function ProfileSettingsPage() {
         showLoading("กำลังบันทึก...");
 
         try {
-            const result = await updateProfile(formData);
+            const submitData = {
+                ...formData,
+                taxAddress,
+                shippingAddress: shipAddress,
+            };
+            const result = await updateProfile(submitData);
 
             hideLoading();
 
             if (result.success) {
                 await showSuccessAlert("สำเร็จ!", result.message);
                 // Clear password fields after success
-                setFormData(prev => ({
-                    ...prev,
-                    password: "",
-                    confirmPassword: "",
-                }));
-                // Refresh profile data
-                const updated = await getCurrentUserProfile();
-                if (updated) {
-                    setProfile(updated as UserProfile);
+                if (section === "password") {
+                    setFormData(prev => ({
+                        ...prev,
+                        password: "",
+                        confirmPassword: "",
+                    }));
                 }
+                setEditingTax(false);
+                setEditingShip(false);
+                // Refresh profile data
+                try {
+                    const res = await fetch("/api/profile");
+                    const refreshData = await res.json();
+                    if (refreshData.success && refreshData.data) {
+                        setProfile(refreshData.data as UserProfile);
+                    }
+                } catch { }
             } else {
                 if (result.errors) {
                     setErrors(result.errors);
@@ -109,14 +205,91 @@ export default function ProfileSettingsPage() {
         }
     };
 
-    const getInitials = (name: string | null, username: string) => {
-        if (name) {
-            return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-        }
-        return username.slice(0, 2).toUpperCase();
+    const passwordsMatch = !formData.confirmPassword || formData.password === formData.confirmPassword;
+
+    const hasAddressData = (addr: AddressData) => {
+        return Object.values(addr).some(v => v && v.trim() !== "");
     };
 
-    const passwordsMatch = !formData.confirmPassword || formData.password === formData.confirmPassword;
+    const renderAddressDisplay = (addr: AddressData) => {
+        if (!hasAddressData(addr)) {
+            return <p className="text-sm text-gray-400 italic">ยังไม่ได้กรอกข้อมูล</p>;
+        }
+        return (
+            <div className="text-sm text-gray-700 space-y-1">
+                {addr.fullName && <p><span className="font-medium">ชื่อ - สกุล:</span> {addr.fullName}</p>}
+                {addr.phone && <p><span className="font-medium">โทรศัพท์:</span> {addr.phone}</p>}
+                {addr.address && <p><span className="font-medium">ที่อยู่:</span> {addr.address}</p>}
+                {(addr.subdistrict || addr.district || addr.province) && (
+                    <p>
+                        <span className="font-medium">ตำบล/อำเภอ/จังหวัด:</span>{" "}
+                        {[addr.subdistrict, addr.district, addr.province].filter(Boolean).join(" / ")}
+                    </p>
+                )}
+                {addr.postalCode && <p><span className="font-medium">รหัสไปรษณีย์:</span> {addr.postalCode}</p>}
+            </div>
+        );
+    };
+
+    const renderAddressForm = (
+        addr: AddressData,
+        setAddr: React.Dispatch<React.SetStateAction<AddressData>>,
+        prefix: string
+    ) => (
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor={`${prefix}-fullName`}>ชื่อ - สกุล</Label>
+                    <Input
+                        id={`${prefix}-fullName`}
+                        placeholder="ชื่อ - สกุล"
+                        value={addr.fullName}
+                        onChange={(e) => setAddr(prev => ({ ...prev, fullName: e.target.value }))}
+                        className="bg-gray-50 border-gray-200"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor={`${prefix}-phone`}>หมายเลขโทรศัพท์</Label>
+                    <Input
+                        id={`${prefix}-phone`}
+                        placeholder="0xx-xxx-xxxx"
+                        value={addr.phone}
+                        onChange={(e) => setAddr(prev => ({ ...prev, phone: e.target.value }))}
+                        className="bg-gray-50 border-gray-200"
+                    />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor={`${prefix}-address`}>ที่อยู่</Label>
+                <Input
+                    id={`${prefix}-address`}
+                    placeholder="บ้านเลขที่ ซอย ถนน"
+                    value={addr.address}
+                    onChange={(e) => setAddr(prev => ({ ...prev, address: e.target.value }))}
+                    className="bg-gray-50 border-gray-200"
+                />
+            </div>
+            {/* Dependent Address Dropdowns */}
+            <ThaiAddressSelector
+                value={{
+                    province: addr.province,
+                    district: addr.district,
+                    subdistrict: addr.subdistrict,
+                    postalCode: addr.postalCode,
+                }}
+                onChange={(newValue) => {
+                    setAddr(prev => ({
+                        ...prev,
+                        province: newValue.province,
+                        district: newValue.district,
+                        subdistrict: newValue.subdistrict,
+                        postalCode: newValue.postalCode,
+                    }));
+                }}
+                idPrefix={prefix}
+            />
+        </div>
+    );
 
     if (isFetching) {
         return (
@@ -140,193 +313,434 @@ export default function ProfileSettingsPage() {
     }
 
     return (
-        <div className="container max-w-2xl mx-auto py-8 px-4">
-            {/* Page Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-100">
-                        <User className="h-7 w-7 text-blue-600" />
+        <div className="min-h-screen bg-gray-100 py-8 px-4">
+            <div className="max-w-6xl mx-auto space-y-5">
+                {/* Back Button */}
+                <button
+                    onClick={() => router.back()}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>ย้อนกลับ</span>
+                </button>
+
+                {/* Page Header */}
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-blue-100">
+                        <User className="h-8 w-8 text-blue-600" />
                     </div>
-                    แก้ไขโปรไฟล์
-                </h1>
-                <p className="text-zinc-500 mt-2">
-                    จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ
-                </p>
-            </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">ข้อมูลผู้ใช้</h1>
+                        <p className="text-gray-500">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
+                    </div>
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Profile Picture Card */}
-                <Card className="border-blue-100 shadow-sm">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
-                            <ImageIcon className="h-5 w-5 text-blue-600" />
-                            รูปโปรไฟล์
-                        </CardTitle>
-                        <CardDescription>
-                            แสดงรูปโปรไฟล์ของคุณบนเว็บไซต์
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex items-center gap-6">
-                        <Avatar className="h-24 w-24 border-4 border-blue-100">
-                            <AvatarImage src={formData.image || profile.image || ""} alt={profile.username} />
-                            <AvatarFallback className="bg-blue-100 text-blue-700 text-xl font-semibold">
-                                {getInitials(profile.name, profile.username)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 space-y-2">
-                            <Label htmlFor="image">URL รูปโปรไฟล์</Label>
-                            <Input
-                                id="image"
-                                type="url"
-                                placeholder="https://example.com/your-photo.jpg"
-                                value={formData.image}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        image: e.target.value,
-                                    }))
-                                }
-                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                            />
-                            {errors.image && (
-                                <p className="text-sm text-red-500">{errors.image[0]}</p>
+                {/* Row 1: Contact Info + Personal Info */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    {/* Contact Info Card */}
+                    <Card className="bg-white shadow-sm border-0">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
+                                <Phone className="h-5 w-5" />
+                                ข้อมูลติดต่อ
+                            </CardTitle>
+                            <CardDescription>เบอร์มือถือและอีเมลสำหรับการติดต่อ</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Username (read-only) */}
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2 text-gray-600">
+                                    <User className="h-4 w-4" />
+                                    Username
+                                </Label>
+                                <Input
+                                    value={profile.username}
+                                    disabled
+                                    className="bg-gray-100 text-gray-500 border-gray-200"
+                                />
+                                <p className="text-xs text-gray-400">Username ไม่สามารถเปลี่ยนได้</p>
+                            </div>
+
+                            {/* Display Name */}
+                            <div className="space-y-2">
+                                <Label htmlFor="name" className="flex items-center gap-2 text-gray-600">
+                                    <User className="h-4 w-4" />
+                                    ชื่อที่แสดง <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    placeholder="กรอกชื่อของคุณ"
+                                    value={formData.name}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            name: e.target.value,
+                                        }))
+                                    }
+                                    required
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                                {errors.name && (
+                                    <p className="text-sm text-red-500">{errors.name[0]}</p>
+                                )}
+                            </div>
+
+                            {/* Phone */}
+                            <div className="space-y-2">
+                                <Label htmlFor="phone" className="flex items-center gap-2 text-gray-600">
+                                    <Phone className="h-4 w-4" />
+                                    เบอร์มือถือ
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    placeholder="0812345678"
+                                    value={formData.phone}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            phone: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                                {errors.phone && (
+                                    <p className="text-sm text-red-500">{errors.phone[0]}</p>
+                                )}
+                            </div>
+
+                            {/* Email */}
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="flex items-center gap-2 text-gray-600">
+                                    <Mail className="h-4 w-4" />
+                                    อีเมล
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="example@email.com"
+                                    value={formData.email}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            email: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                                {errors.email && (
+                                    <p className="text-sm text-red-500">{errors.email[0]}</p>
+                                )}
+                            </div>
+
+                            {/* Save Button */}
+                            <div className="flex justify-end pt-2">
+                                <Button
+                                    type="button"
+                                    onClick={() => handleSubmit("contact")}
+                                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Save className="h-4 w-4" />
+                                    )}
+                                    บันทึก
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Personal Info Card */}
+                    <Card className="bg-white shadow-sm border-0">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
+                                <User className="h-5 w-5" />
+                                ข้อมูลส่วนตัว
+                            </CardTitle>
+                            <CardDescription>ชื่อและนามสกุล (ภาษาไทยและภาษาอังกฤษ)</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Thai Name */}
+                            <div className="space-y-2">
+                                <Label htmlFor="firstName">ชื่อ (ภาษาไทย)</Label>
+                                <Input
+                                    id="firstName"
+                                    type="text"
+                                    placeholder="ชื่อ"
+                                    value={formData.firstName}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            firstName: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="lastName">นามสกุล (ภาษาไทย)</Label>
+                                <Input
+                                    id="lastName"
+                                    type="text"
+                                    placeholder="นามสกุล"
+                                    value={formData.lastName}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            lastName: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                            </div>
+
+                            {/* English Name */}
+                            <div className="space-y-2">
+                                <Label htmlFor="firstNameEn">ชื่อ (ภาษาอังกฤษ)</Label>
+                                <Input
+                                    id="firstNameEn"
+                                    type="text"
+                                    placeholder="First name"
+                                    value={formData.firstNameEn}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            firstNameEn: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="lastNameEn">นามสกุล (ภาษาอังกฤษ)</Label>
+                                <Input
+                                    id="lastNameEn"
+                                    type="text"
+                                    placeholder="Last name"
+                                    value={formData.lastNameEn}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            lastNameEn: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                            </div>
+
+                            {/* Profile Image URL */}
+                            <div className="space-y-2">
+                                <Label htmlFor="image" className="flex items-center gap-2 text-gray-600">
+                                    URL รูปโปรไฟล์
+                                </Label>
+                                <Input
+                                    id="image"
+                                    type="url"
+                                    placeholder="https://example.com/your-photo.jpg"
+                                    value={formData.image}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            image: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                                {errors.image && (
+                                    <p className="text-sm text-red-500">{errors.image[0]}</p>
+                                )}
+                            </div>
+
+                            {/* Save Button */}
+                            <div className="flex justify-end pt-2">
+                                <Button
+                                    type="button"
+                                    onClick={() => handleSubmit("personal")}
+                                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Save className="h-4 w-4" />
+                                    )}
+                                    บันทึก
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Row 2: Tax Address + Shipping Address */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    {/* Tax Invoice Address Card */}
+                    <Card className="bg-white shadow-sm border-0">
+                        <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
+                                        <FileText className="h-5 w-5" />
+                                        ที่อยู่ออกใบกำกับภาษี
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        ที่อยู่สำหรับออกใบกำกับภาษี (ไม่จำเป็นต้องกรอก)
+                                    </CardDescription>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 border-gray-200 text-gray-600 hover:bg-gray-50 rounded-full"
+                                    onClick={() => setEditingTax(!editingTax)}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    {editingTax ? "ยกเลิก" : "แก้ไข"}
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {editingTax ? (
+                                <div className="space-y-4">
+                                    {renderAddressForm(taxAddress, setTaxAddress, "tax")}
+                                    <div className="flex justify-end pt-2">
+                                        <Button
+                                            type="button"
+                                            onClick={() => handleSubmit("tax")}
+                                            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Save className="h-4 w-4" />
+                                            )}
+                                            บันทึก
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 rounded-lg bg-gray-50">
+                                    <div className="flex items-start gap-2">
+                                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                                        {renderAddressDisplay(taxAddress)}
+                                    </div>
+                                </div>
                             )}
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                {/* Personal Info Card */}
-                <Card className="border-blue-100 shadow-sm">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
-                            <User className="h-5 w-5 text-blue-600" />
-                            ข้อมูลส่วนตัว
-                        </CardTitle>
-                        <CardDescription>
-                            ชื่อที่แสดงและข้อมูลติดต่อ
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {/* Display Name */}
-                        <div className="space-y-2">
-                            <Label htmlFor="name" className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-blue-600" />
-                                ชื่อที่แสดง <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="name"
-                                type="text"
-                                placeholder="กรอกชื่อของคุณ"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        name: e.target.value,
-                                    }))
-                                }
-                                required
-                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                            />
-                            {errors.name && (
-                                <p className="text-sm text-red-500">{errors.name[0]}</p>
+                    {/* Shipping Address Card */}
+                    <Card className="bg-white shadow-sm border-0">
+                        <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
+                                        <Truck className="h-5 w-5" />
+                                        ที่อยู่จัดส่งของรางวัล
+                                    </CardTitle>
+                                    <CardDescription className="mt-1">
+                                        ที่อยู่สำหรับจัดส่งของรางวัล (ไม่จำเป็นต้องกรอก)
+                                    </CardDescription>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 border-gray-200 text-gray-600 hover:bg-gray-50 rounded-full"
+                                    onClick={() => setEditingShip(!editingShip)}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    {editingShip ? "ยกเลิก" : "แก้ไข"}
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {editingShip ? (
+                                <div className="space-y-4">
+                                    {renderAddressForm(shipAddress, setShipAddress, "ship")}
+                                    <div className="flex justify-end pt-2">
+                                        <Button
+                                            type="button"
+                                            onClick={() => handleSubmit("ship")}
+                                            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Save className="h-4 w-4" />
+                                            )}
+                                            บันทึก
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 rounded-lg bg-gray-50">
+                                    <div className="flex items-start gap-2">
+                                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                                        {renderAddressDisplay(shipAddress)}
+                                    </div>
+                                </div>
                             )}
-                        </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-                        {/* Email */}
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-blue-600" />
-                                อีเมล
-                            </Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="example@email.com"
-                                value={formData.email}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        email: e.target.value,
-                                    }))
-                                }
-                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                            />
-                            {errors.email && (
-                                <p className="text-sm text-red-500">{errors.email[0]}</p>
-                            )}
-                        </div>
-
-                        {/* Username (Read-only) */}
-                        <div className="space-y-2">
-                            <Label className="text-zinc-500">Username</Label>
-                            <Input
-                                value={profile.username}
-                                disabled
-                                className="bg-zinc-100 text-zinc-500"
-                            />
-                            <p className="text-xs text-zinc-400">Username ไม่สามารถเปลี่ยนได้</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Password Card */}
-                <Card className="border-blue-100 shadow-sm">
+                {/* Row 3: Password (full width) */}
+                <Card className="bg-white shadow-sm border-0">
                     <CardHeader className="pb-4">
-                        <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
-                            <Lock className="h-5 w-5 text-blue-600" />
+                        <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
+                            <Lock className="h-5 w-5" />
                             เปลี่ยนรหัสผ่าน
                         </CardTitle>
-                        <CardDescription>
-                            ปล่อยว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน
-                        </CardDescription>
+                        <CardDescription>ปล่อยว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* New Password */}
-                        <div className="space-y-2">
-                            <Label htmlFor="password" className="flex items-center gap-2">
-                                <Lock className="h-4 w-4 text-blue-600" />
-                                รหัสผ่านใหม่
-                            </Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
-                                value={formData.password}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        password: e.target.value,
-                                    }))
-                                }
-                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                            />
-                            {errors.password && (
-                                <p className="text-sm text-red-500">{errors.password[0]}</p>
-                            )}
-                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* New Password */}
+                            <div className="space-y-2">
+                                <Label htmlFor="password">รหัสผ่านใหม่</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    placeholder="อย่างน้อย 6 ตัวอักษร"
+                                    value={formData.password}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            password: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                                {errors.password && (
+                                    <p className="text-sm text-red-500">{errors.password[0]}</p>
+                                )}
+                            </div>
 
-                        {/* Confirm Password */}
-                        <div className="space-y-2">
-                            <Label htmlFor="confirmPassword" className="flex items-center gap-2">
-                                <Lock className="h-4 w-4 text-blue-600" />
-                                ยืนยันรหัสผ่าน
-                            </Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                placeholder="กรอกรหัสผ่านอีกครั้ง"
-                                value={formData.confirmPassword}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        confirmPassword: e.target.value,
-                                    }))
-                                }
-                                className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                            />
-                            {errors.confirmPassword && (
-                                <p className="text-sm text-red-500">{errors.confirmPassword[0]}</p>
-                            )}
+                            {/* Confirm Password */}
+                            <div className="space-y-2">
+                                <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
+                                <Input
+                                    id="confirmPassword"
+                                    type="password"
+                                    placeholder="กรอกรหัสผ่านอีกครั้ง"
+                                    value={formData.confirmPassword}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            confirmPassword: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-gray-50 border-gray-200"
+                                />
+                                {errors.confirmPassword && (
+                                    <p className="text-sm text-red-500">{errors.confirmPassword[0]}</p>
+                                )}
+                            </div>
                         </div>
 
                         {/* Password Match Indicator */}
@@ -355,33 +769,26 @@ export default function ProfileSettingsPage() {
                                 )}
                             </Alert>
                         )}
+
+                        {/* Save Button */}
+                        <div className="flex justify-end pt-2">
+                            <Button
+                                type="button"
+                                onClick={() => handleSubmit("password")}
+                                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                disabled={isLoading || !passwordsMatch || !formData.password}
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                บันทึก
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
-
-                <Separator />
-
-                {/* Submit Button */}
-                <div className="flex justify-end">
-                    <Button
-                        type="submit"
-                        size="lg"
-                        className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
-                        disabled={isLoading || !passwordsMatch}
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                กำลังบันทึก...
-                            </>
-                        ) : (
-                            <>
-                                <Save className="h-4 w-4" />
-                                บันทึกการเปลี่ยนแปลง
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </form>
+            </div>
         </div>
     );
 }
