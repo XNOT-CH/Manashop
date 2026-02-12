@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/lib/swal";
+import { compressImage } from "@/lib/compressImage";
 import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
@@ -124,8 +125,9 @@ export default function AdminSettingsPage() {
 
         setIsUploadingLogo(true);
         try {
+            const compressed = await compressImage(file);
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", compressed);
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -139,8 +141,8 @@ export default function AdminSettingsPage() {
             } else {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } catch (error) {
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploadingLogo(false);
         }
@@ -153,8 +155,9 @@ export default function AdminSettingsPage() {
 
         setIsUploadingBg(true);
         try {
+            const compressed = await compressImage(file);
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", compressed);
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -168,8 +171,8 @@ export default function AdminSettingsPage() {
             } else {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } catch (error) {
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploadingBg(false);
         }
@@ -292,7 +295,7 @@ export default function AdminSettingsPage() {
                                 ) : (
                                     <Upload className="h-4 w-4" />
                                 )}
-                                {isUploadingLogo ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                {isUploadingLogo ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
                             </Button>
                             <span className="text-sm text-muted-foreground self-center">หรือ</span>
                         </div>
@@ -320,7 +323,7 @@ export default function AdminSettingsPage() {
 
                         {/* Preview */}
                         {settings.logoUrl && (
-                            <div className="mt-2 p-4 bg-slate-100 rounded-lg border">
+                            <div className="mt-2 p-4 bg-muted rounded-lg border">
                                 <Image
                                     src={settings.logoUrl}
                                     alt="Logo Preview"
@@ -362,7 +365,7 @@ export default function AdminSettingsPage() {
                                 ) : (
                                     <Upload className="h-4 w-4" />
                                 )}
-                                {isUploadingBg ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                {isUploadingBg ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
                             </Button>
                             <span className="text-sm text-muted-foreground self-center">หรือ</span>
                         </div>
@@ -394,7 +397,7 @@ export default function AdminSettingsPage() {
 
                         {/* Preview */}
                         {settings.backgroundImage && (
-                            <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100 border">
+                            <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-muted border">
                                 <img
                                     src={settings.backgroundImage}
                                     alt="Background Preview"
@@ -491,8 +494,9 @@ function BannerCard({
 
         setIsUploading(true);
         try {
+            const compressed = await compressImage(file);
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", compressed);
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -506,8 +510,8 @@ function BannerCard({
             } else {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } catch (error) {
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploading(false);
         }
@@ -548,7 +552,7 @@ function BannerCard({
                                     ) : (
                                         <Upload className="h-4 w-4" />
                                     )}
-                                    {isUploading ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
                                 </Button>
                                 <span className="text-sm text-muted-foreground self-center">หรือ</span>
                             </div>
@@ -597,7 +601,7 @@ function BannerCard({
                     </div>
                     <div className="flex items-center justify-center">
                         {hasValidImage ? (
-                            <div className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-slate-100 border">
+                            <div className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-muted border">
                                 {/* Using img tag to avoid next/image URL validation issues */}
                                 <img
                                     src={image}
@@ -613,8 +617,8 @@ function BannerCard({
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-full aspect-[4/1] rounded-xl bg-slate-100 flex items-center justify-center border">
-                                <p className="text-slate-400 text-sm">อัพโหลดหรือใส่ URL รูปภาพเพื่อดูตัวอย่าง</p>
+                            <div className="w-full aspect-[4/1] rounded-xl bg-muted flex items-center justify-center border">
+                                <p className="text-muted-foreground text-sm">อัพโหลดหรือใส่ URL รูปภาพเพื่อดูตัวอย่าง</p>
                             </div>
                         )}
                     </div>

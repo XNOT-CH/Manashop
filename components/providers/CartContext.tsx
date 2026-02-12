@@ -11,6 +11,7 @@ export interface CartItem {
     discountPrice?: number | null;
     imageUrl: string | null;
     category: string;
+    quantity: number;
 }
 
 // Cart context type
@@ -18,6 +19,7 @@ interface CartContextType {
     items: CartItem[];
     addToCart: (product: CartItem) => Promise<boolean>;
     removeFromCart: (productId: string) => void;
+    updateQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
     isInCart: (productId: string) => boolean;
     itemCount: number;
@@ -66,6 +68,16 @@ export function CartProvider({ children }: CartProviderProps) {
         }
     }, [items, isInitialized]);
 
+    // Update item quantity
+    const updateQuantity = useCallback((productId: string, quantity: number) => {
+        if (quantity < 1) return;
+        setItems((prev) =>
+            prev.map((item) =>
+                item.id === productId ? { ...item, quantity } : item
+            )
+        );
+    }, []);
+
     // Add item to cart with stock validation
     const addToCart = useCallback(async (product: CartItem): Promise<boolean> => {
         // Check if already in cart
@@ -90,7 +102,7 @@ export function CartProvider({ children }: CartProviderProps) {
             }
 
             // Add to cart
-            setItems((prev) => [...prev, product]);
+            setItems((prev) => [...prev, { ...product, quantity: product.quantity || 1 }]);
             showSuccess(`เพิ่มลงตะกร้าแล้ว: ${product.name}`);
             return true;
         } catch (error) {
@@ -124,13 +136,13 @@ export function CartProvider({ children }: CartProviderProps) {
         return items.some((item) => item.id === productId);
     }, [items]);
 
-    // Calculate item count
-    const itemCount = items.length;
+    // Calculate item count (total quantities)
+    const itemCount = items.reduce((count, item) => count + (item.quantity || 1), 0);
 
-    // Calculate subtotal (using discount price if available)
+    // Calculate subtotal (using discount price if available, multiplied by quantity)
     const subtotal = items.reduce((sum, item) => {
         const price = item.discountPrice ?? item.price;
-        return sum + price;
+        return sum + price * (item.quantity || 1);
     }, 0);
 
     // Total (same as subtotal for now, can add fees/discounts later)
@@ -139,6 +151,7 @@ export function CartProvider({ children }: CartProviderProps) {
     const value: CartContextType = {
         items,
         addToCart,
+        updateQuantity,
         removeFromCart,
         clearCart,
         isInCart,

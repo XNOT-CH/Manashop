@@ -232,6 +232,7 @@ export function FeaturedProducts() {
                                                     price: product.price,
                                                     imageUrl: product.imageUrl,
                                                     category: product.category,
+                                                    quantity: 1,
                                                 }}
                                                 showText={false}
                                                 size="icon"

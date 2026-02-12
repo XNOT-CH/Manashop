@@ -20,8 +20,8 @@ import {
     FileText,
     Truck,
     Pencil,
-    ArrowLeft,
 } from "lucide-react";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
 import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
 import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
@@ -213,10 +213,10 @@ export default function ProfileSettingsPage() {
 
     const renderAddressDisplay = (addr: AddressData) => {
         if (!hasAddressData(addr)) {
-            return <p className="text-sm text-gray-400 italic">ยังไม่ได้กรอกข้อมูล</p>;
+            return <p className="text-sm text-muted-foreground italic">ยังไม่ได้กรอกข้อมูล</p>;
         }
         return (
-            <div className="text-sm text-gray-700 space-y-1">
+            <div className="text-sm text-foreground space-y-1">
                 {addr.fullName && <p><span className="font-medium">ชื่อ - สกุล:</span> {addr.fullName}</p>}
                 {addr.phone && <p><span className="font-medium">โทรศัพท์:</span> {addr.phone}</p>}
                 {addr.address && <p><span className="font-medium">ที่อยู่:</span> {addr.address}</p>}
@@ -313,16 +313,15 @@ export default function ProfileSettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8 px-4">
+        <div className="min-h-screen bg-muted py-8 px-4">
             <div className="max-w-6xl mx-auto space-y-5">
-                {/* Back Button */}
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>ย้อนกลับ</span>
-                </button>
+                {/* Breadcrumb */}
+                <PageBreadcrumb
+                    items={[
+                        { label: "แดชบอร์ด", href: "/dashboard" },
+                        { label: "ข้อมูลผู้ใช้" },
+                    ]}
+                />
 
                 {/* Page Header */}
                 <div className="flex items-center gap-4">
@@ -330,15 +329,15 @@ export default function ProfileSettingsPage() {
                         <User className="h-8 w-8 text-blue-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">ข้อมูลผู้ใช้</h1>
-                        <p className="text-gray-500">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
+                        <h1 className="text-2xl font-bold text-foreground">ข้อมูลผู้ใช้</h1>
+                        <p className="text-muted-foreground">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
                     </div>
                 </div>
 
                 {/* Row 1: Contact Info + Personal Info */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Contact Info Card */}
-                    <Card className="bg-white shadow-sm border-0">
+                    <Card className="bg-card shadow-sm border-0">
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
                                 <Phone className="h-5 w-5" />
@@ -349,21 +348,21 @@ export default function ProfileSettingsPage() {
                         <CardContent className="space-y-4">
                             {/* Username (read-only) */}
                             <div className="space-y-2">
-                                <Label className="flex items-center gap-2 text-gray-600">
+                                <Label className="flex items-center gap-2 text-muted-foreground">
                                     <User className="h-4 w-4" />
                                     Username
                                 </Label>
                                 <Input
                                     value={profile.username}
                                     disabled
-                                    className="bg-gray-100 text-gray-500 border-gray-200"
+                                    className="bg-muted text-muted-foreground border-border"
                                 />
-                                <p className="text-xs text-gray-400">Username ไม่สามารถเปลี่ยนได้</p>
+                                <p className="text-xs text-muted-foreground">Username ไม่สามารถเปลี่ยนได้</p>
                             </div>
 
                             {/* Display Name */}
                             <div className="space-y-2">
-                                <Label htmlFor="name" className="flex items-center gap-2 text-gray-600">
+                                <Label htmlFor="name" className="flex items-center gap-2 text-muted-foreground">
                                     <User className="h-4 w-4" />
                                     ชื่อที่แสดง <span className="text-red-500">*</span>
                                 </Label>
@@ -379,7 +378,7 @@ export default function ProfileSettingsPage() {
                                         }))
                                     }
                                     required
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                                 {errors.name && (
                                     <p className="text-sm text-red-500">{errors.name[0]}</p>
@@ -388,7 +387,7 @@ export default function ProfileSettingsPage() {
 
                             {/* Phone */}
                             <div className="space-y-2">
-                                <Label htmlFor="phone" className="flex items-center gap-2 text-gray-600">
+                                <Label htmlFor="phone" className="flex items-center gap-2 text-muted-foreground">
                                     <Phone className="h-4 w-4" />
                                     เบอร์มือถือ
                                 </Label>
@@ -403,7 +402,7 @@ export default function ProfileSettingsPage() {
                                             phone: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                                 {errors.phone && (
                                     <p className="text-sm text-red-500">{errors.phone[0]}</p>
@@ -412,7 +411,7 @@ export default function ProfileSettingsPage() {
 
                             {/* Email */}
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="flex items-center gap-2 text-gray-600">
+                                <Label htmlFor="email" className="flex items-center gap-2 text-muted-foreground">
                                     <Mail className="h-4 w-4" />
                                     อีเมล
                                 </Label>
@@ -427,7 +426,7 @@ export default function ProfileSettingsPage() {
                                             email: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                                 {errors.email && (
                                     <p className="text-sm text-red-500">{errors.email[0]}</p>
@@ -454,7 +453,7 @@ export default function ProfileSettingsPage() {
                     </Card>
 
                     {/* Personal Info Card */}
-                    <Card className="bg-white shadow-sm border-0">
+                    <Card className="bg-card shadow-sm border-0">
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
                                 <User className="h-5 w-5" />
@@ -477,7 +476,7 @@ export default function ProfileSettingsPage() {
                                             firstName: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -493,7 +492,7 @@ export default function ProfileSettingsPage() {
                                             lastName: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                             </div>
 
@@ -511,7 +510,7 @@ export default function ProfileSettingsPage() {
                                             firstNameEn: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -527,13 +526,13 @@ export default function ProfileSettingsPage() {
                                             lastNameEn: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                             </div>
 
                             {/* Profile Image URL */}
                             <div className="space-y-2">
-                                <Label htmlFor="image" className="flex items-center gap-2 text-gray-600">
+                                <Label htmlFor="image" className="flex items-center gap-2 text-muted-foreground">
                                     URL รูปโปรไฟล์
                                 </Label>
                                 <Input
@@ -547,7 +546,7 @@ export default function ProfileSettingsPage() {
                                             image: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                                 {errors.image && (
                                     <p className="text-sm text-red-500">{errors.image[0]}</p>
@@ -577,7 +576,7 @@ export default function ProfileSettingsPage() {
                 {/* Row 2: Tax Address + Shipping Address */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Tax Invoice Address Card */}
-                    <Card className="bg-white shadow-sm border-0">
+                    <Card className="bg-card shadow-sm border-0">
                         <CardHeader className="pb-4">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -593,7 +592,7 @@ export default function ProfileSettingsPage() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="gap-1.5 border-gray-200 text-gray-600 hover:bg-gray-50 rounded-full"
+                                    className="gap-1.5 border-border text-muted-foreground hover:bg-muted rounded-full"
                                     onClick={() => setEditingTax(!editingTax)}
                                 >
                                     <Pencil className="h-3.5 w-3.5" />
@@ -622,9 +621,9 @@ export default function ProfileSettingsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-4 rounded-lg bg-gray-50">
+                                <div className="p-4 rounded-lg bg-muted/50">
                                     <div className="flex items-start gap-2">
-                                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                         {renderAddressDisplay(taxAddress)}
                                     </div>
                                 </div>
@@ -633,7 +632,7 @@ export default function ProfileSettingsPage() {
                     </Card>
 
                     {/* Shipping Address Card */}
-                    <Card className="bg-white shadow-sm border-0">
+                    <Card className="bg-card shadow-sm border-0">
                         <CardHeader className="pb-4">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -649,7 +648,7 @@ export default function ProfileSettingsPage() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="gap-1.5 border-gray-200 text-gray-600 hover:bg-gray-50 rounded-full"
+                                    className="gap-1.5 border-border text-muted-foreground hover:bg-muted rounded-full"
                                     onClick={() => setEditingShip(!editingShip)}
                                 >
                                     <Pencil className="h-3.5 w-3.5" />
@@ -678,9 +677,9 @@ export default function ProfileSettingsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-4 rounded-lg bg-gray-50">
+                                <div className="p-4 rounded-lg bg-muted/50">
                                     <div className="flex items-start gap-2">
-                                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
+                                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                         {renderAddressDisplay(shipAddress)}
                                     </div>
                                 </div>
@@ -690,7 +689,7 @@ export default function ProfileSettingsPage() {
                 </div>
 
                 {/* Row 3: Password (full width) */}
-                <Card className="bg-white shadow-sm border-0">
+                <Card className="bg-card shadow-sm border-0">
                     <CardHeader className="pb-4">
                         <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
                             <Lock className="h-5 w-5" />
@@ -714,7 +713,7 @@ export default function ProfileSettingsPage() {
                                             password: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                                 {errors.password && (
                                     <p className="text-sm text-red-500">{errors.password[0]}</p>
@@ -735,7 +734,7 @@ export default function ProfileSettingsPage() {
                                             confirmPassword: e.target.value,
                                         }))
                                     }
-                                    className="bg-gray-50 border-gray-200"
+                                    className="bg-muted/50 border-border"
                                 />
                                 {errors.confirmPassword && (
                                     <p className="text-sm text-red-500">{errors.confirmPassword[0]}</p>

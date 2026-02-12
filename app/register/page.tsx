@@ -104,12 +104,12 @@ export default function RegisterPage() {
         <div className="min-h-screen flex items-center justify-center px-4 py-12">
             <div className="w-full max-w-md">
                 {/* Card */}
-                <div className="bg-white rounded-2xl shadow-xl shadow-blue-100/50 p-8">
+                <div className="bg-card rounded-2xl shadow-xl shadow-primary/10 p-8">
                     {/* Header with Logo */}
                     <div className="flex items-start justify-between mb-8">
                         <div>
                             <h1 className="text-2xl font-bold text-primary">สมัครสมาชิก</h1>
-                            <p className="text-slate-400 text-sm">Register</p>
+                            <p className="text-muted-foreground text-sm">Register</p>
                         </div>
                         {logoUrl ? (
                             <img
@@ -127,10 +127,10 @@ export default function RegisterPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label className="text-sm text-slate-600">ชื่อผู้ใช้งาน</label>
+                            <label className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน</label>
                             <Input
                                 placeholder="username"
-                                className="h-12 bg-blue-50/50 border-blue-100 rounded-xl focus:bg-white transition-colors"
+                                className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
                                 minLength={3}
                                 value={formData.username}
                                 onChange={(e) =>
@@ -147,7 +147,7 @@ export default function RegisterPage() {
                         <div className="space-y-2">
                             <Input
                                 placeholder="PIN 6 หลัก"
-                                className="h-12 bg-white border-slate-200 rounded-xl"
+                                className="h-12 bg-muted/50 border-border rounded-xl"
                                 maxLength={6}
                                 pattern="[0-9]*"
                                 value={formData.pin}
@@ -162,12 +162,12 @@ export default function RegisterPage() {
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label className="text-sm text-slate-600">รหัสผ่าน</label>
+                            <label className="text-sm text-muted-foreground">รหัสผ่าน</label>
                             <div className="relative">
                                 <Input
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
-                                    className="h-12 bg-blue-50/50 border-blue-100 rounded-xl pr-12 focus:bg-white transition-colors"
+                                    className="h-12 bg-muted/50 border-border rounded-xl pr-12 transition-colors"
                                     minLength={6}
                                     value={formData.password}
                                     onChange={(e) =>
@@ -181,7 +181,7 @@ export default function RegisterPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-5 w-5" />
@@ -198,7 +198,7 @@ export default function RegisterPage() {
                                 <Input
                                     type={showConfirmPassword ? "text" : "password"}
                                     placeholder="ยืนยันรหัสผ่านอีกครั้ง"
-                                    className="h-12 bg-white border-slate-200 rounded-xl pr-12"
+                                    className="h-12 bg-muted/50 border-border rounded-xl pr-12"
                                     value={formData.confirmPassword}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -225,7 +225,7 @@ export default function RegisterPage() {
                         {/* Password Strength Indicator */}
                         {formData.password && (
                             <div className="space-y-2">
-                                <div className="flex items-center gap-1 text-sm text-slate-500">
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                     <span>ความปลอดภัยของรหัสผ่าน / Password strength</span>
                                 </div>
                                 <div className="flex gap-1 items-center">
@@ -234,7 +234,7 @@ export default function RegisterPage() {
                                             key={level}
                                             className={`h-1 flex-1 rounded-full transition-colors ${level <= passwordStrength.level
                                                 ? passwordStrength.color
-                                                : "bg-slate-200"
+                                                : "bg-muted"
                                                 }`}
                                         />
                                     ))}
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                         </Button>
 
                         {/* Login Link */}
-                        <p className="text-center text-sm text-slate-500">
+                        <p className="text-center text-sm text-muted-foreground">
                             ถ้ามีบัญชีแล้ว{" "}
                             <Link
                                 href="/login"

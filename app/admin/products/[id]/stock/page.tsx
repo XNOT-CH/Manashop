@@ -156,7 +156,7 @@ export default function StockManagementPage() {
                 <div>
                     <Link
                         href="/admin/products"
-                        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 mb-2"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         กลับไปรายการสินค้า
@@ -255,7 +255,7 @@ export default function StockManagementPage() {
                                 {stockItems.map((item, index) => (
                                     <div
                                         key={index}
-                                        className="rounded-lg border bg-white p-3 text-sm"
+                                        className="rounded-lg border bg-card p-3 text-sm"
                                     >
                                         {editingIndex === index ? (
                                             <div className="space-y-2">

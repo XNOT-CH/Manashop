@@ -1,21 +1,19 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProductGallery } from "@/components/ProductGallery";
-import { BuyButton } from "@/components/BuyButton";
-import { ProductDetailAddToCart } from "@/components/cart/AddToCartButtonDetail";
+import { ProductActions } from "@/components/ProductActions";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { ShareButtons } from "@/components/ShareButtons";
 import {
-    ArrowLeft,
     Zap,
     TriangleAlert,
-    MessageCircle,
     Shield,
     Clock,
     CheckCircle,
 } from "lucide-react";
 import { db } from "@/lib/db";
+import { getStockCount } from "@/lib/stock";
 
 interface ProductDetailPageProps {
     params: Promise<{ id: string }>;
@@ -38,23 +36,19 @@ export default async function ProductDetailPage({
 
     const isSold = Boolean(product.isSold);
     const price = Number(product.price);
+    const stockCount = getStockCount(product.secretData || "", product.stockSeparator || "newline");
 
     return (
         <div className="min-h-screen bg-background animate-page-enter">
-            {/* Header Bar */}
-            <div className="border-b border-border bg-card">
-                <div className="max-w-7xl mx-auto flex h-14 items-center px-4">
-                    <Link
-                        href="/shop"
-                        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        กลับไปร้านค้า
-                    </Link>
-                </div>
-            </div>
-
-            <main className="max-w-7xl mx-auto px-4 py-8">
+            <main className="py-6 sm:py-8 px-4 sm:px-6">
+                {/* Breadcrumb */}
+                <PageBreadcrumb
+                    items={[
+                        { label: "ร้านค้า", href: "/shop" },
+                        { label: product.name },
+                    ]}
+                    className="mb-6"
+                />
                 {/* Product Detail Grid */}
                 <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
                     {/* Left Column - Gallery */}
@@ -79,13 +73,18 @@ export default async function ProductDetailPage({
                             <span className="text-4xl font-bold text-primary">
                                 ฿{price.toLocaleString()}
                             </span>
-                            {!isSold && (
+                            {!isSold && stockCount > 0 && (
                                 <Badge className="bg-green-600 hover:bg-green-600">
                                     พร้อมขาย
                                 </Badge>
                             )}
-                            {isSold && (
-                                <Badge variant="destructive">ขายแล้ว</Badge>
+                            {(isSold || stockCount === 0) && (
+                                <Badge variant="destructive">สินค้าหมด</Badge>
+                            )}
+                            {stockCount > 0 && (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                    คงเหลือ {stockCount} ชิ้น
+                                </Badge>
                             )}
                         </div>
 
@@ -106,12 +105,12 @@ export default async function ProductDetailPage({
                         </div>
 
                         {/* Warning Alert */}
-                        <Alert variant="default" className="border-amber-200 bg-amber-50">
+                        <Alert variant="default" className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
                             <TriangleAlert className="h-4 w-4 text-amber-600" />
-                            <AlertTitle className="text-amber-800">
+                            <AlertTitle className="text-amber-800 dark:text-amber-200">
                                 ข้อควรระวัง
                             </AlertTitle>
-                            <AlertDescription className="text-amber-700">
+                            <AlertDescription className="text-amber-700 dark:text-amber-300">
                                 สินค้าประเภท Digital ID ซื้อแล้วไม่รับเปลี่ยนคืน
                                 กรุณาตรวจสอบรายละเอียดก่อนชำระเงิน
                                 และเปลี่ยนรหัสผ่านทันทีหลังได้รับสินค้า
@@ -134,34 +133,23 @@ export default async function ProductDetailPage({
                         )}
 
                         {/* Action Buttons */}
-                        <div className="mt-auto space-y-3 pt-4">
-                            <BuyButton
-                                productId={product.id}
-                                price={price}
-                                disabled={isSold}
+                        <div className="mt-auto pt-4">
+                            <ProductActions
+                                product={{
+                                    id: product.id,
+                                    name: product.name,
+                                    price: price,
+                                    discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+                                    imageUrl: product.imageUrl,
+                                    category: product.category,
+                                }}
+                                disabled={isSold || stockCount === 0}
+                                maxQuantity={stockCount}
                             />
-                            {!isSold && (
-                                <ProductDetailAddToCart
-                                    product={{
-                                        id: product.id,
-                                        name: product.name,
-                                        price: price,
-                                        discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
-                                        imageUrl: product.imageUrl,
-                                        category: product.category,
-                                    }}
-                                    disabled={isSold}
-                                />
-                            )}
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                className="w-full gap-2 rounded-xl"
-                            >
-                                <MessageCircle className="h-5 w-5" />
-                                ติดต่อเรา
-                            </Button>
                         </div>
+
+                        {/* Share Buttons */}
+                        <ShareButtons title={product.name} className="border-t border-border pt-6" />
 
                         {/* Trust Badges */}
                         <div className="flex items-center justify-center gap-6 border-t border-border pt-6 text-xs text-muted-foreground">

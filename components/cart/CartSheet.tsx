@@ -22,7 +22,7 @@ import { showPurchaseSuccess, showError } from "@/lib/swal";
 
 export function CartSheet() {
     const router = useRouter();
-    const { items, removeFromCart, clearCart, total, itemCount, isLoading } = useCart();
+    const { items, removeFromCart, updateQuantity, clearCart, total, itemCount, isLoading } = useCart();
     const [isOpen, setIsOpen] = useState(false);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
@@ -114,6 +114,7 @@ export function CartSheet() {
                                         key={item.id}
                                         item={item}
                                         onRemove={removeFromCart}
+                                        onUpdateQuantity={updateQuantity}
                                     />
                                 ))}
                             </div>

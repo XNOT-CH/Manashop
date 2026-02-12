@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Check, Loader2 } from "lucide-react";
 import { useCart, CartItem } from "@/components/providers/CartContext";
 import { useState } from "react";
+import { QuantitySelector } from "@/components/QuantitySelector";
 
 interface ProductDetailAddToCartProps {
     product: {
@@ -15,11 +16,13 @@ interface ProductDetailAddToCartProps {
         category: string;
     };
     disabled?: boolean;
+    maxQuantity?: number;
 }
 
-export function ProductDetailAddToCart({ product, disabled = false }: ProductDetailAddToCartProps) {
+export function ProductDetailAddToCart({ product, disabled = false, maxQuantity = 99 }: ProductDetailAddToCartProps) {
     const { addToCart, isInCart, isLoading: cartLoading } = useCart();
     const [isAdding, setIsAdding] = useState(false);
+    const [quantity, setQuantity] = useState(1);
     const inCart = isInCart(product.id);
 
     const handleAddToCart = async () => {
@@ -34,6 +37,7 @@ export function ProductDetailAddToCart({ product, disabled = false }: ProductDet
                 discountPrice: product.discountPrice,
                 imageUrl: product.imageUrl,
                 category: product.category,
+                quantity: quantity,
             });
         } finally {
             setIsAdding(false);
@@ -41,29 +45,46 @@ export function ProductDetailAddToCart({ product, disabled = false }: ProductDet
     };
 
     return (
-        <Button
-            variant={inCart ? "secondary" : "outline"}
-            size="lg"
-            className="w-full gap-2 text-lg rounded-xl"
-            disabled={disabled || isAdding || cartLoading}
-            onClick={handleAddToCart}
-        >
-            {isAdding ? (
-                <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    กำลังเพิ่ม...
-                </>
-            ) : inCart ? (
-                <>
-                    <Check className="h-5 w-5" />
-                    อยู่ในตะกร้าแล้ว
-                </>
-            ) : (
-                <>
-                    <Plus className="h-5 w-5" />
-                    เพิ่มลงตะกร้า
-                </>
+        <div className="flex flex-col gap-3">
+            {/* Quantity Selector */}
+            {!inCart && !disabled && (
+                <QuantitySelector
+                    value={quantity}
+                    onChange={setQuantity}
+                    min={1}
+                    max={maxQuantity}
+                    size="md"
+                    disabled={isAdding || cartLoading}
+                    label="จำนวนสินค้า"
+                />
             )}
-        </Button>
+
+            {/* Add to Cart Button */}
+            <Button
+                variant={inCart ? "secondary" : "outline"}
+                size="lg"
+                className="w-full gap-2 text-lg rounded-xl"
+                disabled={disabled || isAdding || cartLoading}
+                onClick={handleAddToCart}
+            >
+                {isAdding ? (
+                    <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        กำลังเพิ่ม...
+                    </>
+                ) : inCart ? (
+                    <>
+                        <Check className="h-5 w-5" />
+                        อยู่ในตะกร้าแล้ว
+                    </>
+                ) : (
+                    <>
+                        <Plus className="h-5 w-5" />
+                        เพิ่มลงตะกร้า
+                    </>
+                )}
+            </Button>
+        </div>
     );
 }
+

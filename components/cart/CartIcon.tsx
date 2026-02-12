@@ -23,7 +23,7 @@ export function CartIcon({ onClick }: CartIconProps) {
             <ShoppingCart className="h-5 w-5" />
             {itemCount > 0 && (
                 <Badge
-                    className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs font-bold bg-primary text-primary-foreground rounded-full badge-pop"
+                    className="absolute top-0.5 right-0.5 h-4 min-w-4 px-1 flex items-center justify-center text-[10px] font-bold bg-primary text-primary-foreground rounded-full badge-pop pointer-events-none"
                 >
                     {itemCount > 99 ? "99+" : itemCount}
                 </Badge>

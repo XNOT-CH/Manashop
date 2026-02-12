@@ -110,17 +110,17 @@ export function ProductTable({ products }: ProductTableProps) {
     };
 
     return (
-        <div className="rounded-lg border">
-            <Table>
+        <div className="rounded-lg border overflow-x-auto">
+            <Table className="min-w-[700px]">
                 <TableHeader>
                     <TableRow>
                         <TableHead className="w-[80px]">รูป</TableHead>
                         <TableHead>ชื่อสินค้า</TableHead>
-                        <TableHead>หมวดหมู่</TableHead>
+                        <TableHead className="hidden md:table-cell">หมวดหมู่</TableHead>
                         <TableHead className="text-right">ราคา</TableHead>
                         <TableHead className="text-center">สต็อก</TableHead>
                         <TableHead className="text-center">สถานะ</TableHead>
-                        <TableHead className="text-center">แนะนำ</TableHead>
+                        <TableHead className="text-center hidden md:table-cell">แนะนำ</TableHead>
                         <TableHead className="w-[80px]"></TableHead>
                     </TableRow>
                 </TableHeader>
@@ -142,7 +142,7 @@ export function ProductTable({ products }: ProductTableProps) {
                             <TableCell className="font-medium">
                                 {product.name}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden md:table-cell">
                                 <Badge variant="secondary">{product.category}</Badge>
                             </TableCell>
                             <TableCell className="text-right font-medium">
@@ -174,7 +174,7 @@ export function ProductTable({ products }: ProductTableProps) {
                                     <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>
                                 )}
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="text-center hidden md:table-cell">
                                 <Button
                                     variant="ghost"
                                     size="icon"

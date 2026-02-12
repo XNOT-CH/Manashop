@@ -6,6 +6,7 @@ import { decrypt } from "@/lib/encryption";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PurchasedItem } from "@/components/PurchasedItem";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { Package, ShoppingBag } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,14 @@ export default async function InventoryPage() {
 
     return (
         <div className="space-y-6">
+            {/* Breadcrumb */}
+            <PageBreadcrumb
+                items={[
+                    { label: "แดชบอร์ด", href: "/dashboard" },
+                    { label: "สินค้าของฉัน" },
+                ]}
+            />
+
             {/* Page Header */}
             <div>
                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

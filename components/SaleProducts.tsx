@@ -248,6 +248,7 @@ export function SaleProducts() {
                                                     discountPrice: product.discountPrice,
                                                     imageUrl: product.imageUrl,
                                                     category: product.category,
+                                                    quantity: 1,
                                                 }}
                                                 showText={false}
                                                 size="icon"
