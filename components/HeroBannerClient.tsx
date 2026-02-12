@@ -88,8 +88,7 @@ export function HeroBannerClient({ banners }: HeroBannerClientProps) {
                             className="flex-[0_0_100%] min-w-0"
                         >
                             <div
-                                className="relative w-full overflow-hidden"
-                                style={{ aspectRatio: "4/1" }}
+                                className="relative w-full overflow-hidden aspect-[2/1] sm:aspect-[3/1] lg:aspect-[4/1]"
                             >
                                 <Image
                                     src={banner.image}

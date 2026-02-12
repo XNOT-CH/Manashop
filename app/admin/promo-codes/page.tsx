@@ -221,10 +221,10 @@ export default function AdminPromoCodesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
+                    <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                         โค้ดส่วนลด <span className="text-3xl">🎟️</span>
                     </h1>
-                    <p className="text-zinc-500">จัดการโค้ดโปรโมชั่นและส่วนลด</p>
+                    <p className="text-muted-foreground">จัดการโค้ดโปรโมชั่นและส่วนลด</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
@@ -389,8 +389,8 @@ export default function AdminPromoCodesPage() {
                 <CardContent>
                     {promoCodes.length === 0 ? (
                         <div className="py-12 text-center">
-                            <Ticket className="mx-auto h-12 w-12 text-zinc-300" />
-                            <p className="mt-4 text-zinc-500">ยังไม่มีโค้ดส่วนลด</p>
+                            <Ticket className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-4 text-muted-foreground">ยังไม่มีโค้ดส่วนลด</p>
                             <Button onClick={handleOpenCreate} className="mt-4 gap-2">
                                 <Plus className="h-4 w-4" />
                                 สร้างโค้ดแรก
@@ -413,7 +413,7 @@ export default function AdminPromoCodesPage() {
                                     <TableRow key={code.id}>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <code className="bg-zinc-100 px-2 py-1 rounded font-mono text-sm">
+                                                <code className="bg-muted px-2 py-1 rounded font-mono text-sm">
                                                     {code.code}
                                                 </code>
                                                 <Button

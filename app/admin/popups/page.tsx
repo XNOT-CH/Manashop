@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { showWarning, showError, showSuccess } from "@/lib/swal";
+import { compressImage } from "@/lib/compressImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -208,8 +209,9 @@ export default function AdminPopupsPage() {
 
         setIsUploading(true);
         try {
+            const compressed = await compressImage(file);
             const uploadFormData = new FormData();
-            uploadFormData.append("file", file);
+            uploadFormData.append("file", compressed);
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -223,8 +225,8 @@ export default function AdminPopupsPage() {
             } else {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } catch (error) {
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploading(false);
         }
@@ -406,7 +408,7 @@ export default function AdminPopupsPage() {
                                     ) : (
                                         <Upload className="h-4 w-4" />
                                     )}
-                                    {isUploading ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
                                 </Button>
                                 <span className="text-sm text-muted-foreground self-center">หรือ</span>
                             </div>

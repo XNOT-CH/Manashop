@@ -173,6 +173,7 @@ export function ProductCard({
                                 price,
                                 imageUrl: image,
                                 category,
+                                quantity: 1,
                             }}
                             disabled={isSold}
                             className="flex-1"

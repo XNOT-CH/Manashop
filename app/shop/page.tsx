@@ -1,4 +1,5 @@
 import { ProductCard } from "@/components/ProductCard";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +21,10 @@ export default async function ShopPage() {
     const availableProducts = products.filter((p) => !p.isSold);
 
     return (
-        <div className="py-8 bg-white/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-blue-200/50 animate-page-enter">
+        <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 shadow-xl shadow-primary/10 animate-page-enter">
+            {/* Breadcrumb */}
+            <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
+
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">

@@ -17,10 +17,10 @@ export default async function AdminSlipsPage() {
         <div className="space-y-6">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                     ตรวจสอบสลิป <span className="text-3xl">📑</span>
                 </h1>
-                <p className="text-zinc-500">
+                <p className="text-muted-foreground">
                     ตรวจสอบและอนุมัติคำขอเติมเงิน
                 </p>
             </div>
@@ -36,11 +36,11 @@ export default async function AdminSlipsPage() {
                 <CardContent>
                     {pendingSlips.length === 0 ? (
                         <div className="py-12 text-center">
-                            <AlertCircle className="mx-auto h-12 w-12 text-zinc-300" />
-                            <p className="mt-4 text-zinc-500">
+                            <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-4 text-muted-foreground">
                                 ไม่มีคำขอที่รออนุมัติ
                             </p>
-                            <p className="text-sm text-zinc-400 mt-2">
+                            <p className="text-sm text-muted-foreground mt-2">
                                 ไปที่{" "}
                                 <a
                                     href="/api/seed-slips"

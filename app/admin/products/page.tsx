@@ -18,17 +18,17 @@ export default async function AdminProductsPage() {
     return (
         <div className="space-y-6">
             {/* Page Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
-                        จัดการสินค้า <span className="text-3xl">📦</span>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+                        จัดการสินค้า <span className="text-2xl sm:text-3xl">📦</span>
                     </h1>
-                    <p className="text-zinc-500">
+                    <p className="text-muted-foreground text-sm sm:text-base">
                         จัดการสินค้าเกมของคุณ
                     </p>
                 </div>
                 <Link href="/admin/products/new">
-                    <Button className="gap-2">
+                    <Button className="gap-2 w-full sm:w-auto">
                         <Plus className="h-4 w-4" />
                         เพิ่มสินค้าใหม่
                     </Button>
@@ -46,8 +46,8 @@ export default async function AdminProductsPage() {
                 <CardContent>
                     {products.length === 0 ? (
                         <div className="py-12 text-center">
-                            <Package className="mx-auto h-12 w-12 text-zinc-300" />
-                            <p className="mt-4 text-zinc-500">ยังไม่มีสินค้า</p>
+                            <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-4 text-muted-foreground">ยังไม่มีสินค้า</p>
                             <Link href="/admin/products/new">
                                 <Button className="mt-4 gap-2">
                                     <Plus className="h-4 w-4" />
@@ -63,7 +63,7 @@ export default async function AdminProductsPage() {
                                     const decrypted = decrypt(p.secretData || "");
                                     const sep = (p as unknown as { stockSeparator: string }).stockSeparator || "newline";
                                     stockCount = p.isSold ? 0 : getStockCount(decrypted, sep);
-                                } catch {}
+                                } catch { }
                                 return {
                                     id: p.id,
                                     name: p.name,

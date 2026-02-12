@@ -18,7 +18,6 @@ import {
     Package,
     Settings,
     ArrowLeft,
-    Gamepad2,
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -41,14 +40,8 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
 
     return (
         <TooltipProvider>
+            {/* Desktop Sidebar */}
             <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-64 flex-col border-r border-border bg-card">
-                {/* Logo */}
-                <div className="flex h-16 items-center border-b px-6">
-                    <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-                        <Gamepad2 className="h-5 w-5 text-primary" />
-                    </Link>
-                </div>
-
                 {/* User Info */}
                 <div className="p-4">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
@@ -85,8 +78,8 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
                                         <Link
                                             href={link.href}
                                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 btn-press touch-feedback ${isActive
-                                                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                                                    : "text-muted-foreground hover:bg-accent hover:text-foreground hover:translate-x-1"
+                                                ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                                                : "text-muted-foreground hover:bg-accent hover:text-foreground hover:translate-x-1"
                                                 }`}
                                         >
                                             <Icon className="h-5 w-5" />
@@ -115,6 +108,37 @@ export function DashboardSidebar({ user }: DashboardSidebarProps) {
                     </Link>
                 </div>
             </aside>
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden items-center justify-around bg-card border-t border-border py-2 px-1">
+                {sidebarLinks.map((link) => {
+                    const isActive =
+                        pathname === link.href ||
+                        (link.href !== "/dashboard" && pathname.startsWith(link.href));
+                    const Icon = link.icon;
+
+                    return (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isActive
+                                ? "text-primary"
+                                : "text-muted-foreground hover:text-foreground"
+                                }`}
+                        >
+                            <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
+                            <span className="truncate max-w-[4rem]">{link.label}</span>
+                        </Link>
+                    );
+                })}
+                <Link
+                    href="/"
+                    className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="truncate max-w-[4rem]">ร้านค้า</span>
+                </Link>
+            </nav>
         </TooltipProvider>
     );
 }

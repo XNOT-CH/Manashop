@@ -39,7 +39,7 @@ export default async function AdminLayout({
             <AdminSidebar />
 
             {/* Main Content */}
-            <main className="ml-64 flex-1 bg-gray-50 p-8 animate-page-enter">
+            <main className="ml-0 md:ml-64 flex-1 bg-muted pt-14 md:pt-0 p-4 md:p-8 animate-page-enter">
                 {children}
             </main>
         </div>

@@ -117,10 +117,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (existingProduct.name !== title) {
             changes.push({ field: "name", old: existingProduct.name, new: title });
         }
-        if (existingProduct.price !== priceNumber) {
+        if (Number(existingProduct.price) !== priceNumber) {
             changes.push({ field: "price", old: String(existingProduct.price), new: String(priceNumber) });
         }
-        if (existingProduct.discountPrice !== discountPriceNumber) {
+        if (Number(existingProduct.discountPrice) !== discountPriceNumber) {
             changes.push({ field: "discountPrice", old: existingProduct.discountPrice ? String(existingProduct.discountPrice) : "ไม่มี", new: discountPriceNumber ? String(discountPriceNumber) : "ไม่มี" });
         }
         if (existingProduct.category !== category) {

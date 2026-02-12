@@ -69,12 +69,12 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center px-4 py-12">
             <div className="w-full max-w-md">
                 {/* Card */}
-                <div className="bg-white rounded-2xl shadow-xl shadow-blue-100/50 p-8">
+                <div className="bg-card rounded-2xl shadow-xl shadow-primary/10 p-8">
                     {/* Header with Logo */}
                     <div className="flex items-start justify-between mb-8">
                         <div>
                             <h1 className="text-2xl font-bold text-primary">เข้าสู่ระบบ</h1>
-                            <p className="text-slate-400 text-sm">Login</p>
+                            <p className="text-muted-foreground text-sm">Login</p>
                         </div>
                         {logoUrl ? (
                             <img
@@ -92,10 +92,10 @@ export default function LoginPage() {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label className="text-sm text-slate-600">ชื่อผู้ใช้งาน</label>
+                            <label className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน</label>
                             <Input
                                 placeholder="username"
-                                className="h-12 bg-blue-50/50 border-blue-100 rounded-xl focus:bg-white transition-colors"
+                                className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
                                 value={formData.username}
                                 onChange={(e) =>
                                     setFormData((prev) => ({
@@ -109,12 +109,12 @@ export default function LoginPage() {
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label className="text-sm text-slate-600">รหัสผ่าน</label>
+                            <label className="text-sm text-muted-foreground">รหัสผ่าน</label>
                             <div className="relative">
                                 <Input
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
-                                    className="h-12 bg-blue-50/50 border-blue-100 rounded-xl pr-12 focus:bg-white transition-colors"
+                                    className="h-12 bg-muted/50 border-border rounded-xl pr-12 transition-colors"
                                     value={formData.password}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -127,7 +127,7 @@ export default function LoginPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-5 w-5" />
@@ -145,13 +145,13 @@ export default function LoginPage() {
                                     id="remember"
                                     checked={rememberMe}
                                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                                    className="border-slate-300"
+                                    className="border-border"
                                 />
-                                <label htmlFor="remember" className="text-sm text-slate-500 cursor-pointer">
+                                <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
                                     จดจำการเข้าสู่ระบบ
                                 </label>
                             </div>
-                            <Link href="#" className="text-sm text-slate-500 hover:text-primary transition-colors">
+                            <Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                                 ลืมรหัสผ่าน
                             </Link>
                         </div>
@@ -173,7 +173,7 @@ export default function LoginPage() {
                         </Button>
 
                         {/* Register Link */}
-                        <p className="text-center text-sm text-slate-500">
+                        <p className="text-center text-sm text-muted-foreground">
                             ถ้ายังไม่มีบัญชี{" "}
                             <Link
                                 href="/register"

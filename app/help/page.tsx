@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import {
     Accordion,
@@ -36,7 +37,10 @@ export default async function HelpPage() {
 
     return (
         <div className="animate-page-enter max-w-4xl mx-auto">
-            <div className="py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 border border-border/50">
+            <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 shadow-xl shadow-primary/10 border border-border/50">
+                {/* Breadcrumb */}
+                <PageBreadcrumb items={[{ label: "ศูนย์ช่วยเหลือ" }]} className="mb-6" />
+
                 {/* Header */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-4">

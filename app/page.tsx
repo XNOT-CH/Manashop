@@ -22,7 +22,7 @@ export default async function Home() {
 
   return (
     <div className="animate-page-enter">
-      <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 border border-border/50 space-y-6">
+      <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 shadow-xl shadow-primary/10 border border-border/50 space-y-6">
         {/* Hero Banner */}
         <HeroBanner />
 

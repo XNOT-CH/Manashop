@@ -13,6 +13,7 @@ import { ArrowLeft, Loader2, Shield, Gem, Banknote, Package, Eye, Plus, Pencil, 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showSuccess, showError } from "@/lib/swal";
 import { splitStock, type StockSeparatorType } from "@/lib/stock";
+import { compressImage } from "@/lib/compressImage";
 
 export default function AddProductPage() {
     const router = useRouter();
@@ -104,8 +105,9 @@ export default function AddProductPage() {
 
         setIsUploading(true);
         try {
+            const compressed = await compressImage(file);
             const uploadFormData = new FormData();
-            uploadFormData.append("file", file);
+            uploadFormData.append("file", compressed);
 
             const res = await fetch("/api/upload", {
                 method: "POST",
@@ -119,8 +121,8 @@ export default function AddProductPage() {
             } else {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } catch (error) {
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploading(false);
         }
@@ -180,7 +182,7 @@ export default function AddProductPage() {
             {/* Back Button */}
             <Link
                 href="/admin/products"
-                className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900"
+                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
                 <ArrowLeft className="h-4 w-4" />
                 กลับไปรายการสินค้า
@@ -326,7 +328,7 @@ export default function AddProductPage() {
                                         ) : (
                                             <Upload className="h-4 w-4" />
                                         )}
-                                        {isUploading ? "กำลังอัพโหลด..." : "อัพโหลดจากเครื่อง"}
+                                        {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลดจากเครื่อง"}
                                     </Button>
                                     <span className="text-sm text-muted-foreground self-center">หรือ</span>
                                 </div>
@@ -356,7 +358,7 @@ export default function AddProductPage() {
 
                                 {/* Preview */}
                                 {formData.image && (
-                                    <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100 max-w-xs border">
+                                    <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-muted max-w-xs border">
                                         <img
                                             src={formData.image}
                                             alt="Preview"
@@ -455,7 +457,7 @@ export default function AddProductPage() {
                                         {stockItems.map((item, index) => (
                                             <div
                                                 key={index}
-                                                className="rounded-lg border bg-white p-3 text-sm flex items-center justify-between"
+                                                className="rounded-lg border bg-card p-3 text-sm flex items-center justify-between"
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="outline" className="text-xs">

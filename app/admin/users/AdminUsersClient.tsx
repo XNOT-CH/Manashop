@@ -173,10 +173,10 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
         <div className="space-y-6">
             {/* Page Header */}
             <div>
-                <h1 className="text-3xl font-bold text-zinc-900 flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                     ระบบบริหารจัดการสมาชิก <span className="text-3xl">👥</span>
                 </h1>
-                <p className="text-zinc-500">ดูข้อมูลสมาชิก เครดิต และพอยต์ทั้งหมด</p>
+                <p className="text-muted-foreground">ดูข้อมูลสมาชิก เครดิต และพอยต์ทั้งหมด</p>
             </div>
 
             {/* Stats Summary */}
@@ -187,7 +187,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                             <Users className="h-5 w-5 text-indigo-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-zinc-500">สมาชิกทั้งหมด</p>
+                            <p className="text-sm text-muted-foreground">สมาชิกทั้งหมด</p>
                             <p className="text-2xl font-bold">{users.length}</p>
                         </div>
                     </CardContent>
@@ -198,7 +198,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                             <Crown className="h-5 w-5 text-amber-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-zinc-500">สมาชิก VIP</p>
+                            <p className="text-sm text-muted-foreground">สมาชิก VIP</p>
                             <p className="text-2xl font-bold">{vipCount}</p>
                         </div>
                     </CardContent>
@@ -209,7 +209,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                             <Coins className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-zinc-500">เครดิตรวมทั้งระบบ</p>
+                            <p className="text-sm text-muted-foreground">เครดิตรวมทั้งระบบ</p>
                             <p className="text-2xl font-bold">฿{totalCredits.toLocaleString()}</p>
                         </div>
                     </CardContent>
@@ -220,7 +220,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                             <Gem className="h-5 w-5 text-purple-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-zinc-500">พอยต์รวมทั้งระบบ</p>
+                            <p className="text-sm text-muted-foreground">พอยต์รวมทั้งระบบ</p>
                             <p className="text-2xl font-bold">{totalPoints.toLocaleString()}</p>
                         </div>
                     </CardContent>
@@ -231,7 +231,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
             <Card>
                 <CardContent className="p-4">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="ค้นหาด้วยชื่อผู้ใช้, ชื่อ, หรืออีเมล..."
                             value={searchQuery}
@@ -254,8 +254,8 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                 <CardContent>
                     {filteredUsers.length === 0 ? (
                         <div className="py-12 text-center">
-                            <Users className="mx-auto h-12 w-12 text-zinc-300" />
-                            <p className="mt-4 text-zinc-500">
+                            <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-4 text-muted-foreground">
                                 {searchQuery ? "ไม่พบผู้ใช้ที่ตรงกับคำค้นหา" : "ยังไม่มีสมาชิก"}
                             </p>
                         </div>
@@ -320,7 +320,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <p className="text-sm text-zinc-500">{user.email || "-"}</p>
+                                                            <p className="text-sm text-muted-foreground">{user.email || "-"}</p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
@@ -333,7 +333,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                                 {/* Total Top-up */}
                                                 <TableCell className="text-right">
                                                     <span
-                                                        className={`font-medium ${isVIP ? "text-amber-600" : "text-zinc-600"
+                                                        className={`font-medium ${isVIP ? "text-amber-600" : "text-muted-foreground"
                                                             }`}
                                                     >
                                                         ฿{Number(user.totalTopup).toLocaleString()}
@@ -348,7 +348,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                                 {/* Lifetime Points */}
                                                 <TableCell className="text-right">
                                                     <span
-                                                        className={`font-medium ${hasGoldBorder ? "text-amber-600" : "text-zinc-600"
+                                                        className={`font-medium ${hasGoldBorder ? "text-amber-600" : "text-muted-foreground"
                                                             }`}
                                                     >
                                                         {user.lifetimePoints.toLocaleString()}
@@ -366,7 +366,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                                                 </TableCell>
 
                                                 {/* Registration Date */}
-                                                <TableCell className="text-zinc-500">
+                                                <TableCell className="text-muted-foreground">
                                                     {new Date(user.createdAt).toLocaleDateString("th-TH", {
                                                         year: "numeric",
                                                         month: "short",
@@ -398,8 +398,8 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
             {/* Legend */}
             <Card>
                 <CardContent className="p-4">
-                    <h3 className="font-semibold text-zinc-700 mb-2">คำอธิบายสัญลักษณ์</h3>
-                    <div className="flex flex-wrap gap-6 text-sm text-zinc-600">
+                    <h3 className="font-semibold text-foreground mb-2">คำอธิบายสัญลักษณ์</h3>
+                    <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-400 to-amber-600 text-white">
                                 👑 VIP

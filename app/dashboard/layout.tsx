@@ -35,12 +35,12 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-100">
+        <div className="flex min-h-screen bg-muted">
             {/* Sidebar */}
             <DashboardSidebar user={user} />
 
             {/* Main Content */}
-            <main className="ml-0 md:ml-64 flex-1 p-4 md:p-8 bg-white">
+            <main className="ml-0 md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8 bg-background">
                 <ScrollArea className="h-full">
                     <div className="page-transition">
                         {children}

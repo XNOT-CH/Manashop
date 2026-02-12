@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@cubejs-client/core": "^1.6.11",
+    "@cubejs-client/react": "^1.6.11",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.12",
