@@ -1,10 +1,9 @@
-import Image from "next/image";
 import { db } from "@/lib/db";
 import { HeroBannerClient } from "./HeroBannerClient";
 
 export async function HeroBanner() {
     // Fetch settings from database
-    let settings = await db.siteSettings.findFirst();
+    const settings = await db.siteSettings.findFirst();
 
     // Default banners if no settings
     const banners = [

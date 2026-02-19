@@ -31,6 +31,7 @@ import {
     UserCog,
     Settings,
     HelpCircle,
+    Dices,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavbarCartButton } from "@/components/NavbarCartButton";
@@ -61,10 +62,12 @@ export default async function Navbar() {
         wallet: Wallet,
         user: User,
         settings: Settings,
+        dices: Dices,
+        gacha: Dices,
     };
 
     // Use database items if available, otherwise fallback to defaults
-    const navLinks = dbNavItems.length > 0
+    const baseNavLinks = dbNavItems.length > 0
         ? dbNavItems.map(item => ({
             href: item.href,
             label: item.label,
@@ -77,8 +80,23 @@ export default async function Navbar() {
             { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
         ];
 
+    // Always include gacha link (insert after /shop if exists, else append)
+    const hasGacha = baseNavLinks.some(l => l.href === "/gacha");
+    const navLinks = hasGacha
+        ? baseNavLinks
+        : (() => {
+            const shopIdx = baseNavLinks.findIndex(l => l.href === "/shop");
+            const gachaItem = { href: "/gacha", label: "สุ่ม", icon: Dices };
+            if (shopIdx >= 0) {
+                const result = [...baseNavLinks];
+                result.splice(shopIdx + 1, 0, gachaItem);
+                return result;
+            }
+            return [...baseNavLinks, gachaItem];
+        })();
+
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/90 backdrop-blur-lg shadow-sm">
+        <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/90 backdrop-blur-lg shadow-sm">
             <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2.5 font-semibold text-lg text-primary">

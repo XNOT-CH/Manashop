@@ -57,6 +57,7 @@ model User {
   sessions      Session[]
   apiKeys       ApiKey[]
   auditLogs     AuditLog[]
+  gachaRollLogs GachaRollLog[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -134,6 +135,9 @@ model Product {
   orderId       String?   @unique
   order         Order?    @relation(fields: [orderId], references: [id])
 
+  gachaRewards  GachaReward[]
+  gachaRollLogs GachaRollLog[]
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -319,4 +323,57 @@ model Role {
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// --- ตั้งค่าระบบกาชา (Gacha Settings) ---
+model GachaSettings {
+  id              String   @id @default("default")
+  isEnabled       Boolean  @default(true)          // เปิด/ปิดระบบกาชา
+  costType        String   @default("FREE")        // FREE, CREDIT, POINT
+  costAmount      Decimal  @default(0) @db.Decimal(10, 2) // ราคาต่อครั้ง
+  dailySpinLimit  Int      @default(0)             // 0 = ไม่จำกัด
+  tierMode        String   @default("PRICE")       // PRICE = จัดตามราคา
+  updatedAt       DateTime @updatedAt
+}
+
+// --- รางวัลในกาชา (Admin-managed reward pool) ---
+model GachaReward {
+  id        String   @id @default(uuid())
+
+  // ประเภทรางวัล: PRODUCT | CREDIT | POINT
+  rewardType      String   @default("PRODUCT")
+
+  // สำหรับรางวัลแบบ PRODUCT
+  productId String?  @unique
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // สำหรับรางวัลแบบ CREDIT / POINT
+  rewardName      String?            // ชื่อรางวัล เช่น "เครดิต 50 บาท"
+  rewardAmount    Decimal? @db.Decimal(10, 2) // จำนวนเครดิต/พอยต์
+  rewardImageUrl  String?  @db.Text  // URL รูปภาพแสดงในกริด
+
+  tier      String   @default("common") // common, rare, epic, legendary
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- ประวัติการสุ่มกาชา (ใช้สำหรับจำกัดครั้ง/วัน) ---
+model GachaRollLog {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId     String?
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  tier          String   // common, rare, epic, legendary
+  selectorLabel String?  // L1..L4 / R1..R4
+  costType      String   // FREE, CREDIT, POINT
+  costAmount    Decimal  @default(0) @db.Decimal(10, 2)
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

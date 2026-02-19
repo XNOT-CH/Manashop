@@ -189,7 +189,8 @@ export default function AdminSettingsPage() {
     return (
         <div className="space-y-8 animate-page-enter">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="sticky top-0 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-background/85 backdrop-blur border-b">
+                <div className="flex items-center justify-between py-4">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">ตั้งค่าเว็บไซต์</h1>
                     <p className="text-muted-foreground">จัดการรูปภาพและข้อความบนเว็บไซต์</p>
@@ -202,250 +203,272 @@ export default function AdminSettingsPage() {
                     )}
                     บันทึก
                 </Button>
-            </div>
-
-            {/* Homepage Section Toggles */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <LayoutGrid className="h-5 w-5" />
-                        ส่วนแสดงผลหน้าแรก
-                    </CardTitle>
-                    <CardDescription>เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <Label className="text-base font-medium">สินค้าทั้งหมด</Label>
-                            <p className="text-sm text-muted-foreground">
-                                แสดงรายการสินค้าทั้งหมดบนหน้าแรก
-                            </p>
-                        </div>
-                        <Switch
-                            checked={settings.showAllProducts}
-                            onCheckedChange={(checked) => updateSetting("showAllProducts", checked)}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Separator />
-
-            {/* General Settings */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Type className="h-5 w-5" />
-                        ข้อความทั่วไป
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label>ชื่อเว็บไซต์</Label>
-                            <Input
-                                value={settings.heroTitle}
-                                onChange={(e) => updateSetting("heroTitle", e.target.value)}
-                                placeholder="GameStore"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>คำอธิบาย</Label>
-                            <Input
-                                value={settings.heroDescription}
-                                onChange={(e) => updateSetting("heroDescription", e.target.value)}
-                                placeholder="Game ID Marketplace"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                            <Megaphone className="h-4 w-4" />
-                            ประกาศ (แสดงด้านบนเว็บ)
-                        </Label>
-                        <Textarea
-                            value={settings.announcement}
-                            onChange={(e) => updateSetting("announcement", e.target.value)}
-                            placeholder="ข้อความประกาศ..."
-                            rows={2}
-                        />
-                    </div>
-                    <div className="space-y-3">
-                        <Label>โลโก้</Label>
-
-                        {/* File Upload */}
-                        <div className="flex gap-2">
-                            <input
-                                ref={logoInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
-                                className="hidden"
-                                onChange={handleLogoUpload}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                                onClick={() => logoInputRef.current?.click()}
-                                disabled={isUploadingLogo}
-                            >
-                                {isUploadingLogo ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Upload className="h-4 w-4" />
-                                )}
-                                {isUploadingLogo ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
-                            </Button>
-                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                        </div>
-
-                        {/* URL Input */}
-                        <div className="flex gap-2">
-                            <Input
-                                value={settings.logoUrl}
-                                onChange={(e) => updateSetting("logoUrl", e.target.value)}
-                                placeholder="วาง URL โลโก้..."
-                                className="flex-1"
-                            />
-                            {settings.logoUrl && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => updateSetting("logoUrl", "")}
-                                    className="text-red-500 hover:text-red-600"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
-
-                        {/* Preview */}
-                        {settings.logoUrl && (
-                            <div className="mt-2 p-4 bg-muted rounded-lg border">
-                                <Image
-                                    src={settings.logoUrl}
-                                    alt="Logo Preview"
-                                    width={120}
-                                    height={40}
-                                    className="object-contain"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "https://placehold.co/120x40/f1f5f9/64748b?text=Logo";
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                    <div className="space-y-3">
-                        <Label className="flex items-center gap-2">
-                            <Wallpaper className="h-4 w-4" />
-                            รูปพื้นหลัง
-                        </Label>
-
-                        {/* File Upload */}
-                        <div className="flex gap-2">
-                            <input
-                                ref={bgInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp,image/gif"
-                                className="hidden"
-                                onChange={handleBgUpload}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                                onClick={() => bgInputRef.current?.click()}
-                                disabled={isUploadingBg}
-                            >
-                                {isUploadingBg ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Upload className="h-4 w-4" />
-                                )}
-                                {isUploadingBg ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
-                            </Button>
-                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                        </div>
-
-                        {/* URL Input */}
-                        <div className="flex gap-2">
-                            <Input
-                                value={settings.backgroundImage}
-                                onChange={(e) => updateSetting("backgroundImage", e.target.value)}
-                                placeholder="วาง URL รูปพื้นหลัง..."
-                                className="flex-1"
-                            />
-                            {settings.backgroundImage && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => updateSetting("backgroundImage", "")}
-                                    className="text-red-500 hover:text-red-600"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
-                        </div>
-
-                        <p className="text-xs text-muted-foreground">
-                            รูปภาพจะแสดงเป็นพื้นหลังของเว็บไซต์ทั้งหมด (แนะนำ: 1920x1080 พิกเซล)
-                        </p>
-
-                        {/* Preview */}
-                        {settings.backgroundImage && (
-                            <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-muted border">
-                                <img
-                                    src={settings.backgroundImage}
-                                    alt="Background Preview"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "https://placehold.co/800x400/f1f5f9/64748b?text=Invalid+URL";
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Separator />
-
-            {/* Banner Images */}
-            <div>
-                <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" />
-                    รูปภาพ Banner (Carousel)
-                </h2>
-                <div className="grid gap-6">
-                    {[1, 2, 3].map((num) => (
-                        <BannerCard
-                            key={num}
-                            number={num}
-                            image={settings[`bannerImage${num}` as keyof SiteSettings] as string}
-                            title={settings[`bannerTitle${num}` as keyof SiteSettings] as string}
-                            subtitle={settings[`bannerSubtitle${num}` as keyof SiteSettings] as string}
-                            onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
-                            onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
-                            onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
-                        />
-                    ))}
                 </div>
             </div>
 
-            {/* Save Button Bottom */}
-            <div className="flex justify-end pt-4">
-                <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2">
-                    {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="h-4 w-4" />
-                    )}
-                    บันทึกการตั้งค่า
-                </Button>
+            <div className="grid gap-6 xl:grid-cols-12">
+                <div className="space-y-6 xl:col-span-5">
+                    {/* Homepage Section Toggles */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <LayoutGrid className="h-5 w-5" />
+                                ส่วนแสดงผลหน้าแรก
+                            </CardTitle>
+                            <CardDescription>เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base font-medium">สินค้าทั้งหมด</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        แสดงรายการสินค้าทั้งหมดบนหน้าแรก
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={settings.showAllProducts}
+                                    onCheckedChange={(checked) => updateSetting("showAllProducts", checked)}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* General Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Type className="h-5 w-5" />
+                                ข้อความทั่วไป
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-6 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label>ชื่อเว็บไซต์</Label>
+                                <Input
+                                    value={settings.heroTitle}
+                                    onChange={(e) => updateSetting("heroTitle", e.target.value)}
+                                    placeholder="GameStore"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>คำอธิบาย</Label>
+                                <Input
+                                    value={settings.heroDescription}
+                                    onChange={(e) => updateSetting("heroDescription", e.target.value)}
+                                    placeholder="Game ID Marketplace"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label className="flex items-center gap-2">
+                                    <Megaphone className="h-4 w-4" />
+                                    ประกาศ (แสดงด้านบนเว็บ)
+                                </Label>
+                                <Textarea
+                                    value={settings.announcement}
+                                    onChange={(e) => updateSetting("announcement", e.target.value)}
+                                    placeholder="ข้อความประกาศ..."
+                                    rows={2}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <Label>โลโก้</Label>
+
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <div className="space-y-3">
+                                        {/* File Upload */}
+                                        <div className="flex gap-2">
+                                            <input
+                                                ref={logoInputRef}
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                                                className="hidden"
+                                                onChange={handleLogoUpload}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-2"
+                                                onClick={() => logoInputRef.current?.click()}
+                                                disabled={isUploadingLogo}
+                                            >
+                                                {isUploadingLogo ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Upload className="h-4 w-4" />
+                                                )}
+                                                {isUploadingLogo ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
+                                            </Button>
+                                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                                        </div>
+
+                                        {/* URL Input */}
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={settings.logoUrl}
+                                                onChange={(e) => updateSetting("logoUrl", e.target.value)}
+                                                placeholder="วาง URL โลโก้..."
+                                                className="flex-1"
+                                            />
+                                            {settings.logoUrl && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => updateSetting("logoUrl", "")}
+                                                    className="text-red-500 hover:text-red-600"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {settings.logoUrl ? (
+                                            <div className="p-4 bg-muted rounded-lg border h-full flex items-center justify-center">
+                                                <Image
+                                                    src={settings.logoUrl}
+                                                    alt="Logo Preview"
+                                                    width={160}
+                                                    height={60}
+                                                    className="object-contain"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = "https://placehold.co/160x60/f1f5f9/64748b?text=Logo";
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border bg-muted h-full flex items-center justify-center p-4">
+                                                <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <Label className="flex items-center gap-2">
+                                    <Wallpaper className="h-4 w-4" />
+                                    รูปพื้นหลัง
+                                </Label>
+
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <div className="space-y-3">
+                                        {/* File Upload */}
+                                        <div className="flex gap-2">
+                                            <input
+                                                ref={bgInputRef}
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                className="hidden"
+                                                onChange={handleBgUpload}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-2"
+                                                onClick={() => bgInputRef.current?.click()}
+                                                disabled={isUploadingBg}
+                                            >
+                                                {isUploadingBg ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Upload className="h-4 w-4" />
+                                                )}
+                                                {isUploadingBg ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
+                                            </Button>
+                                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                                        </div>
+
+                                        {/* URL Input */}
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={settings.backgroundImage}
+                                                onChange={(e) => updateSetting("backgroundImage", e.target.value)}
+                                                placeholder="วาง URL รูปพื้นหลัง..."
+                                                className="flex-1"
+                                            />
+                                            {settings.backgroundImage && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => updateSetting("backgroundImage", "")}
+                                                    className="text-red-500 hover:text-red-600"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        <p className="text-xs text-muted-foreground">
+                                            รูปภาพจะแสดงเป็นพื้นหลังของเว็บไซต์ทั้งหมด (แนะนำ: 1920x1080 พิกเซล)
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        {settings.backgroundImage ? (
+                                            <div className="relative aspect-video rounded-lg overflow-hidden bg-muted border">
+                                                <img
+                                                    src={settings.backgroundImage}
+                                                    alt="Background Preview"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = "https://placehold.co/800x400/f1f5f9/64748b?text=Invalid+URL";
+                                                    }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border bg-muted h-full flex items-center justify-center p-4">
+                                                <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="space-y-6 xl:col-span-7">
+                    {/* Banner Images */}
+                    <div>
+                        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <ImageIcon className="h-5 w-5" />
+                            รูปภาพ Banner (Carousel)
+                        </h2>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 2000x500px
+                        </p>
+                        <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+                            {[1, 2, 3].map((num) => (
+                                <BannerCard
+                                    key={num}
+                                    number={num}
+                                    image={settings[`bannerImage${num}` as keyof SiteSettings] as string}
+                                    title={settings[`bannerTitle${num}` as keyof SiteSettings] as string}
+                                    subtitle={settings[`bannerSubtitle${num}` as keyof SiteSettings] as string}
+                                    onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
+                                    onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
+                                    onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Save Button Bottom */}
+                    <div className="flex justify-end">
+                        <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2">
+                            {isSaving ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="h-4 w-4" />
+                            )}
+                            บันทึกการตั้งค่า
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -471,6 +494,7 @@ function BannerCard({
 }) {
     const [isUploading, setIsUploading] = React.useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [showUrlInput, setShowUrlInput] = React.useState(false);
 
     // Check if image is a valid URL or local path
     const isValidUrl = (url: string) => {
@@ -525,83 +549,25 @@ function BannerCard({
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-4">
-                        <div className="space-y-3">
-                            <Label>รูปภาพ</Label>
+                <div className="space-y-2">
+                    <Label>รูปภาพ</Label>
 
-                            {/* File Upload */}
-                            <div className="flex gap-2">
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                    className="hidden"
-                                    onChange={handleFileUpload}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isUploading}
-                                >
-                                    {isUploading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Upload className="h-4 w-4" />
-                                    )}
-                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
-                                </Button>
-                                <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                            </div>
+                    {/* File Upload */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                    />
 
-                            {/* URL Input */}
-                            <div className="flex gap-2">
-                                <Input
-                                    value={image}
-                                    onChange={(e) => onImageChange(e.target.value)}
-                                    placeholder="วาง URL รูปภาพ..."
-                                    className="flex-1"
-                                />
-                                {image && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => onImageChange("")}
-                                        className="text-red-500 hover:text-red-600"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
-
-                            <p className="text-xs text-muted-foreground">
-                                รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 2000x500px
-                            </p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>หัวข้อ</Label>
-                            <Input
-                                value={title}
-                                onChange={(e) => onTitleChange(e.target.value)}
-                                placeholder="Game ID Marketplace"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>คำอธิบาย</Label>
-                            <Input
-                                value={subtitle}
-                                onChange={(e) => onSubtitleChange(e.target.value)}
-                                placeholder="ซื้อขายไอดีเกมปลอดภัย 100%"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-center">
+                    <button
+                        type="button"
+                        className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-muted border group"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
                         {hasValidImage ? (
-                            <div className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-muted border">
+                            <>
                                 {/* Using img tag to avoid next/image URL validation issues */}
                                 <img
                                     src={image}
@@ -611,16 +577,92 @@ function BannerCard({
                                         (e.target as HTMLImageElement).src = "https://placehold.co/800x200/f1f5f9/64748b?text=Invalid+URL";
                                     }}
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent flex flex-col justify-center p-4">
-                                    <p className="text-white font-bold text-sm truncate">{title || "หัวข้อ"}</p>
-                                    <p className="text-white/80 text-xs truncate">{subtitle || "คำอธิบาย"}</p>
-                                </div>
-                            </div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
+                            </>
                         ) : (
-                            <div className="w-full aspect-[4/1] rounded-xl bg-muted flex items-center justify-center border">
-                                <p className="text-muted-foreground text-sm">อัพโหลดหรือใส่ URL รูปภาพเพื่อดูตัวอย่าง</p>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <p className="text-muted-foreground text-sm">คลิกเพื่ออัพโหลดรูป Banner</p>
                             </div>
                         )}
+
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="flex items-center gap-2 rounded-lg bg-background/90 text-foreground px-3 py-2 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                {isUploading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Upload className="h-4 w-4" />
+                                )}
+                                <span className="text-sm font-medium">
+                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลด / เปลี่ยนรูป"}
+                                </span>
+                            </div>
+                        </div>
+                    </button>
+
+                    <div className="flex items-center justify-between">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-0"
+                            onClick={() => setShowUrlInput((v) => !v)}
+                        >
+                            {showUrlInput ? "ซ่อน URL" : "ใส่ URL"}
+                        </Button>
+                        {image && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-600"
+                                onClick={() => onImageChange("")}
+                            >
+                                ล้างรูป
+                            </Button>
+                        )}
+                    </div>
+
+                    {showUrlInput && (
+                        <div className="flex gap-2">
+                            <Input
+                                value={image}
+                                onChange={(e) => onImageChange(e.target.value)}
+                                placeholder="วาง URL รูปภาพ..."
+                                className="flex-1"
+                            />
+                            {image && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onImageChange("")}
+                                    className="text-red-500 hover:text-red-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <Label>หัวข้อ</Label>
+                        <Input
+                            value={title}
+                            onChange={(e) => onTitleChange(e.target.value)}
+                            placeholder="Game ID Marketplace"
+                            className="rounded-md"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>คำอธิบาย</Label>
+                        <Input
+                            value={subtitle}
+                            onChange={(e) => onSubtitleChange(e.target.value)}
+                            placeholder="ซื้อขายไอดีเกมปลอดภัย 100%"
+                            className="rounded-md"
+                        />
                     </div>
                 </div>
             </CardContent>

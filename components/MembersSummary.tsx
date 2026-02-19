@@ -59,29 +59,29 @@ const KPI_CARDS = [
         key: "todayCount" as const,
         label: "วันนี้",
         icon: Sun,
-        iconBg: "bg-violet-100 dark:bg-violet-900/40",
-        iconColor: "text-violet-500 dark:text-violet-400",
+        iconBg: "bg-sky-500/15 dark:bg-sky-500/20",
+        iconColor: "text-sky-700 dark:text-sky-400",
     },
     {
         key: "weekCount" as const,
         label: "อาทิตย์นี้",
         icon: Clock,
-        iconBg: "bg-violet-100 dark:bg-violet-900/40",
-        iconColor: "text-violet-500 dark:text-violet-400",
+        iconBg: "bg-sky-500/15 dark:bg-sky-500/20",
+        iconColor: "text-sky-700 dark:text-sky-400",
     },
     {
         key: "monthCount" as const,
         label: "เดือนนี้",
         icon: CalendarDays,
-        iconBg: "bg-violet-100 dark:bg-violet-900/40",
-        iconColor: "text-violet-500 dark:text-violet-400",
+        iconBg: "bg-sky-500/15 dark:bg-sky-500/20",
+        iconColor: "text-sky-700 dark:text-sky-400",
     },
     {
         key: "totalCount" as const,
         label: "ทั้งหมด",
         icon: Database,
-        iconBg: "bg-violet-100 dark:bg-violet-900/40",
-        iconColor: "text-violet-500 dark:text-violet-400",
+        iconBg: "bg-sky-500/15 dark:bg-sky-500/20",
+        iconColor: "text-sky-700 dark:text-sky-400",
     },
 ];
 
@@ -135,7 +135,7 @@ export function MembersSummary() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+                <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
             </div>
         );
     }
@@ -232,8 +232,8 @@ export function MembersSummary() {
                                         {data.dailyTrend.map((_, index) => (
                                             <Cell
                                                 key={`cell-${index}`}
-                                                fill="#a78bfa"
-                                                fillOpacity={0.7}
+                                                fill="var(--chart-bar-fill)"
+                                                fillOpacity={0.85}
                                             />
                                         ))}
                                         <LabelList
@@ -282,13 +282,12 @@ export function MembersSummary() {
                         </div>
                     </div>
 
-                    {/* Purple divider */}
-                    <div className="h-0.5 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full mb-4" />
+                    <div className="h-0.5 bg-gradient-to-r from-sky-500 to-blue-500 rounded-full mb-4" />
 
                     {/* Area Chart */}
                     {historyLoading ? (
                         <div className="flex items-center justify-center h-[250px]">
-                            <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+                            <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
                         </div>
                     ) : historyData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={250}>
@@ -298,8 +297,8 @@ export function MembersSummary() {
                             >
                                 <defs>
                                     <linearGradient id="memberAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#7dd3fc" stopOpacity={0.5} />
-                                        <stop offset="100%" stopColor="#7dd3fc" stopOpacity={0.05} />
+                                        <stop offset="0%" stopColor="var(--chart-area-gradient-from)" stopOpacity={0.5} />
+                                        <stop offset="100%" stopColor="var(--chart-area-gradient-from)" stopOpacity={0.05} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid
@@ -340,19 +339,19 @@ export function MembersSummary() {
                                 <Area
                                     type="monotone"
                                     dataKey="count"
-                                    stroke="#38bdf8"
-                                    strokeWidth={2}
+                                    stroke="var(--chart-area-stroke)"
+                                    strokeWidth={2.5}
                                     fill="url(#memberAreaGradient)"
                                     dot={{
                                         r: 4,
-                                        fill: "#38bdf8",
-                                        stroke: "#fff",
+                                        fill: "var(--chart-dot-fill)",
+                                        stroke: "var(--card)",
                                         strokeWidth: 2,
                                     }}
                                     activeDot={{
                                         r: 6,
-                                        fill: "#38bdf8",
-                                        stroke: "#fff",
+                                        fill: "var(--chart-dot-fill)",
+                                        stroke: "var(--card)",
                                         strokeWidth: 2,
                                     }}
                                 >
@@ -361,7 +360,7 @@ export function MembersSummary() {
                                         position="top"
                                         style={{
                                             fontSize: "11px",
-                                            fill: "#38bdf8",
+                                            fill: "var(--chart-area-label)",
                                             fontWeight: 600,
                                         }}
                                     />
@@ -383,14 +382,13 @@ export function MembersSummary() {
                 <Card className="border-border/50">
                     <CardContent className="p-6">
                         <div className="mb-4">
-                            <h4 className="text-base font-semibold text-violet-600 dark:text-violet-400">
+                            <h4 className="text-base font-semibold text-sky-700 dark:text-sky-400">
                                 ยอดการสมัครสมาชิกล่าสุด
                             </h4>
                             <p className="text-xs text-muted-foreground">History</p>
                         </div>
 
-                        {/* Purple divider */}
-                        <div className="h-0.5 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full mb-4" />
+                        <div className="h-0.5 bg-gradient-to-r from-sky-500 to-blue-500 rounded-full mb-4" />
 
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -426,7 +424,7 @@ export function MembersSummary() {
                                                 <td className="py-3 px-2">
                                                     <Avatar className="h-9 w-9">
                                                         <AvatarImage src={member.image || undefined} alt={member.username} />
-                                                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400 text-xs">
+                                                        <AvatarFallback className="bg-sky-500/15 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400 text-xs">
                                                             {member.username.slice(0, 2).toUpperCase()}
                                                         </AvatarFallback>
                                                     </Avatar>

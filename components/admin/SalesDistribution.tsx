@@ -17,7 +17,7 @@ export function SalesDistribution() {
             <div className="mb-4">
                 <h3 className="text-lg font-semibold">สัดส่วนยอดขาย</h3>
                 <p className="text-sm text-muted-foreground">
-                    แยกตามช่องทางชำระเงิน
+                    แยกตามช่องทางชำระเงิน (ข้อมูลตัวอย่าง)
                 </p>
             </div>
 
@@ -46,7 +46,7 @@ export function SalesDistribution() {
                         <Tooltip
                             formatter={(value: number) => [
                                 `฿${value.toLocaleString()}`,
-                                "Amount",
+                                "ยอดเงิน",
                             ]}
                             contentStyle={{
                                 backgroundColor: "var(--color-card)",
