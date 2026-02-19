@@ -35,15 +35,17 @@ export default async function AdminLayout({
 
     // User is authenticated and is an admin - render the layout
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-muted">
             <HideMainLayout />
             {/* Fixed Sidebar */}
             <AdminSidebar />
 
-            {/* Main Content */}
-            <main className="ml-0 md:ml-64 flex-1 bg-muted pt-14 md:pt-0 p-4 md:p-6 lg:p-8 w-full min-h-screen animate-page-enter">
-                <div className="w-full max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5 md:p-8">
-                    {children}
+            {/* Main Content — full width next to sidebar */}
+            <main className="ml-0 md:ml-64 flex-1 pt-14 md:pt-0 w-full min-h-screen animate-page-enter">
+                <div className="p-4 md:p-6 lg:p-8">
+                    <div className="w-full max-w-[1600px] mx-auto bg-card rounded-2xl shadow-sm p-5 md:p-8">
+                        {children}
+                    </div>
                 </div>
             </main>
         </div>

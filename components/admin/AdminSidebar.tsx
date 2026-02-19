@@ -24,20 +24,22 @@ import {
     Megaphone,
     Shield,
     Menu,
+    Dices,
 } from "lucide-react";
 
 const sidebarLinks = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/products", label: "Product Manager", icon: Package },
-    { href: "/admin/news", label: "News Manager", icon: Newspaper },
-    { href: "/admin/popups", label: "Pop-up Manager", icon: Megaphone },
-    { href: "/admin/users", label: "User Manager", icon: Users },
-    { href: "/admin/roles", label: "Role Manager", icon: Shield },
-    { href: "/admin/slips", label: "Slip Verification", icon: FileCheck },
-    { href: "/admin/currency-settings", label: "Currency Settings", icon: Gem },
-    { href: "/admin/footer-links", label: "Footer Links", icon: LinkIcon },
-    { href: "/admin/audit-logs", label: "Audit Logs", icon: FileText },
-    { href: "/admin/settings", label: "Site Settings", icon: Settings },
+    { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard },
+    { href: "/admin/products", label: "จัดการสินค้า", icon: Package },
+    { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
+    { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone },
+    { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
+    { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
+    { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
+    { href: "/admin/gacha-settings", label: "ตั้งค่ากาชา", icon: Dices },
+    { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
+    { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
+    { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
+    { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings },
 ];
 
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
@@ -76,7 +78,7 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
                     className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
                 >
                     <LogOut className="h-5 w-5" />
-                    Back to Shop
+                    กลับหน้าร้าน
                 </Link>
             </div>
         </>
@@ -96,7 +98,7 @@ export function AdminSidebar() {
                         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                             <Gamepad2 className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-lg font-bold">Admin Panel</span>
+                        <span className="text-lg font-bold">แผงควบคุมผู้ดูแล</span>
                     </Link>
                 </div>
 
@@ -109,7 +111,7 @@ export function AdminSidebar() {
                     <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
                         <Gamepad2 className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="text-base font-bold">Admin</span>
+                    <span className="text-base font-bold">ผู้ดูแล</span>
                 </Link>
 
                 <Sheet open={open} onOpenChange={setOpen}>
@@ -120,7 +122,7 @@ export function AdminSidebar() {
                     </SheetTrigger>
                     <SheetContent side="left" className="w-64 p-0 bg-slate-900 text-white border-slate-800">
                         <div className="flex h-14 items-center border-b border-slate-800 px-6">
-                            <span className="text-lg font-bold">Admin Panel</span>
+                            <span className="text-lg font-bold">แผงควบคุมผู้ดูแล</span>
                         </div>
                         <div className="flex flex-col h-[calc(100%-3.5rem)]">
                             <SidebarNav onLinkClick={() => setOpen(false)} />

@@ -73,7 +73,7 @@ function CustomTooltip({
 
     return (
         <div
-            className="rounded-xl border border-border/60 bg-white px-4 py-3 shadow-xl dark:bg-slate-900 dark:border-slate-700/60"
+            className="rounded-xl border border-border/60 bg-card px-4 py-3 shadow-xl"
             style={{ minWidth: 160 }}
         >
             <p className="text-xs font-medium text-muted-foreground mb-1.5">
@@ -112,17 +112,17 @@ export function RevenueAreaChart({ data, granularity }: RevenueAreaChartProps) {
                     >
                         <stop
                             offset="0%"
-                            stopColor="#8b5cf6"
+                            stopColor="var(--chart-area-gradient-from)"
                             stopOpacity={0.35}
                         />
                         <stop
                             offset="50%"
-                            stopColor="#3b82f6"
+                            stopColor="var(--chart-area-stroke)"
                             stopOpacity={0.12}
                         />
                         <stop
                             offset="100%"
-                            stopColor="#3b82f6"
+                            stopColor="var(--chart-area-stroke)"
                             stopOpacity={0.02}
                         />
                     </linearGradient>
@@ -133,8 +133,8 @@ export function RevenueAreaChart({ data, granularity }: RevenueAreaChartProps) {
                         x2="1"
                         y2="0"
                     >
-                        <stop offset="0%" stopColor="#8b5cf6" />
-                        <stop offset="100%" stopColor="#3b82f6" />
+                        <stop offset="0%" stopColor="var(--chart-area-gradient-from)" />
+                        <stop offset="100%" stopColor="var(--chart-area-stroke)" />
                     </linearGradient>
                 </defs>
 
@@ -187,8 +187,8 @@ export function RevenueAreaChart({ data, granularity }: RevenueAreaChartProps) {
                     dot={false}
                     activeDot={{
                         r: 6,
-                        fill: "#8b5cf6",
-                        stroke: "#ffffff",
+                        fill: "var(--chart-dot-fill)",
+                        stroke: "var(--card)",
                         strokeWidth: 2.5,
                         className: "drop-shadow-md",
                     }}

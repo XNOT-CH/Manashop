@@ -41,9 +41,7 @@ export default function RootLayout({
               <DynamicFavicon />
 
               {/* Navbar */}
-              <div id="main-navbar">
-                <Navbar />
-              </div>
+              <Navbar />
 
               {/* Main Content - Responsive Container with Page Transition */}
               <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -32,21 +32,12 @@ function formatTime(date: Date) {
 }
 
 export function LiveDateTime() {
-    const [now, setNow] = useState<Date | null>(null);
+    const [now, setNow] = useState<Date>(() => new Date());
 
     useEffect(() => {
-        setNow(new Date());
         const interval = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(interval);
     }, []);
-
-    if (!now) {
-        return (
-            <div className="flex items-center gap-3 text-sm text-muted-foreground animate-pulse">
-                <div className="h-4 w-40 bg-muted rounded" />
-            </div>
-        );
-    }
 
     const { day, d, month, year } = formatThaiDate(now);
     const time = formatTime(now);

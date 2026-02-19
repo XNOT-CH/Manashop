@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -143,7 +143,7 @@ async function main() {
             createdAt: randomDate(60),
         });
     }
-    await prisma.product.createMany({ data: products as any });
+    await prisma.product.createMany({ data: products as unknown as Prisma.ProductCreateManyInput[] });
     console.log(`   ✅ สินค้า ${products.length} รายการ\n`);
 
     // ═══════════════════════════════════════════════

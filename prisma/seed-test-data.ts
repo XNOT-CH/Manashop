@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -100,7 +100,7 @@ async function main() {
     console.log(`\n👥 ผู้ใช้ทั้งหมด: ${createdUsers.length} คน\n`);
 
     // --- 2. สร้าง Topup ข้อมูลทดลอง รวม ~20,000 บาท (APPROVED) ---
-    const topups: any[] = [];
+    const topups: Prisma.TopupCreateManyInput[] = [];
     const now = new Date();
 
     // กำหนดยอดเป้าหมายให้แต่ละ user (รวมได้ ~20,000)
@@ -173,7 +173,7 @@ async function main() {
         const user = createdUsers[userIdx];
         const userApproved = topups
             .filter((t) => t.userId === user.id && t.status === "APPROVED")
-            .reduce((sum, t) => sum + t.amount, 0);
+            .reduce((sum, t) => sum + Number(t.amount), 0);
 
         await prisma.user.update({
             where: { id: user.id },
@@ -188,7 +188,7 @@ async function main() {
     // --- สรุป ---
     const totalApproved = topups
         .filter((t) => t.status === "APPROVED")
-        .reduce((sum, t) => sum + t.amount, 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0);
     const totalPending = topups.filter((t) => t.status === "PENDING").length;
     const totalRejected = topups.filter((t) => t.status === "REJECTED").length;
 
