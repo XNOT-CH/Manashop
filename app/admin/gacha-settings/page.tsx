@@ -23,8 +23,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { showSuccess, showError } from "@/lib/swal";
-import { Save, Loader2, Dices, Coins, Timer, Layers, Plus, Trash2, Upload, ImageIcon, X } from "lucide-react";
+import { Save, Loader2, Dices, Coins, Timer, Layers, Plus, Trash2, Upload, ImageIcon, X, Pencil } from "lucide-react";
 import Image from "next/image";
+import { resizeFileToSquare } from "@/lib/imageResize";
 
 interface GachaSettings {
     isEnabled: boolean;
@@ -74,6 +75,11 @@ export default function AdminGachaSettingsPage() {
     const [newRewardImageUrl, setNewRewardImageUrl] = useState<string>("");
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Edit image for existing rewards
+    const [editingImageRewardId, setEditingImageRewardId] = useState<string | null>(null);
+    const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
 
     const [settings, setSettings] = useState<GachaSettings>({
         isEnabled: true,
@@ -136,8 +142,10 @@ export default function AdminGachaSettingsPage() {
     const handleUploadImage = async (file: File) => {
         setIsUploadingImage(true);
         try {
+            // Auto-resize to 400×400 square WebP before upload
+            const resized = await resizeFileToSquare(file, 400);
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", resized);
             const res = await fetch("/api/admin/gacha-rewards/upload-image", {
                 method: "POST",
                 body: formData,
@@ -210,7 +218,33 @@ export default function AdminGachaSettingsPage() {
         }
     };
 
-    const handleUpdateReward = async (id: string, patch: Partial<Pick<RewardRow, "tier" | "isActive">>) => {
+    const handleUploadEditImage = async (file: File, rewardId: string) => {
+        setIsUploadingEditImage(true);
+        try {
+            // Auto-resize to 400×400 square WebP before upload
+            const resized = await resizeFileToSquare(file, 400);
+            const formData = new FormData();
+            formData.append("file", resized);
+            const res = await fetch("/api/admin/gacha-rewards/upload-image", {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                showError(data.message || "อัปโหลดรูปภาพไม่สำเร็จ");
+                return;
+            }
+            // Update the reward with new image URL
+            await handleUpdateReward(rewardId, { rewardImageUrl: data.url } as Parameters<typeof handleUpdateReward>[1]);
+        } catch {
+            showError("อัปโหลดรูปภาพไม่สำเร็จ");
+        } finally {
+            setIsUploadingEditImage(false);
+            setEditingImageRewardId(null);
+        }
+    };
+
+    const handleUpdateReward = async (id: string, patch: Partial<Pick<RewardRow, "tier" | "isActive"> & { rewardImageUrl?: string }>) => {
         try {
             const res = await fetch(`/api/admin/gacha-rewards/${id}`, {
                 method: "PUT",
@@ -538,7 +572,12 @@ export default function AdminGachaSettingsPage() {
                         {/* Image upload (CREDIT/POINT only) */}
                         {newRewardType !== "PRODUCT" && (
                             <div className="space-y-2">
-                                <Label>รูปภาพรางวัล (ไม่บังคับ)</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label>รูปภาพรางวัล (ไม่บังคับ)</Label>
+                                    <span className="text-xs text-muted-foreground">
+                                        ✨ อัปโหลดรูปขนาดไหนก็ได้ — ระบบปรับให้อัตโนมัติ
+                                    </span>
+                                </div>
                                 <div className="flex items-center gap-3">
                                     <input
                                         ref={fileInputRef}
@@ -602,6 +641,21 @@ export default function AdminGachaSettingsPage() {
                         </div>
                     </div>
 
+                    {/* Hidden file input for editing existing reward image */}
+                    <input
+                        ref={editFileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const file = e.target.files?.[0];
+                            if (file && editingImageRewardId) {
+                                void handleUploadEditImage(file, editingImageRewardId);
+                            }
+                            e.target.value = "";
+                        }}
+                    />
+
                     {/* Table */}
                     {isRewardLoading ? (
                         <div className="flex items-center justify-center py-10">
@@ -629,21 +683,43 @@ export default function AdminGachaSettingsPage() {
                                         r.rewardType === "PRODUCT"
                                             ? r.product?.imageUrl
                                             : r.rewardImageUrl;
+                                    const canEditImage = r.rewardType !== "PRODUCT";
                                     return (
                                         <TableRow key={r.id}>
                                             {/* รูป */}
                                             <TableCell>
-                                                <div className="h-10 w-10 rounded-md border overflow-hidden bg-muted/30 flex items-center justify-center flex-shrink-0">
-                                                    {imgSrc ? (
-                                                        <Image
-                                                            src={imgSrc}
-                                                            alt="reward"
-                                                            width={40}
-                                                            height={40}
-                                                            className="object-cover w-full h-full"
-                                                        />
-                                                    ) : (
-                                                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="h-10 w-10 rounded-md border overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
+                                                        {imgSrc ? (
+                                                            <Image
+                                                                src={imgSrc}
+                                                                alt="reward"
+                                                                width={40}
+                                                                height={40}
+                                                                className="object-contain w-full h-full"
+                                                            />
+                                                        ) : (
+                                                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+                                                    {canEditImage && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                                            disabled={isUploadingEditImage && editingImageRewardId === r.id}
+                                                            title="แก้ไขรูปภาพ"
+                                                            onClick={() => {
+                                                                setEditingImageRewardId(r.id);
+                                                                editFileInputRef.current?.click();
+                                                            }}
+                                                        >
+                                                            {isUploadingEditImage && editingImageRewardId === r.id ? (
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                            )}
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </TableCell>

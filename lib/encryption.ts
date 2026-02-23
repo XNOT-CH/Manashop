@@ -1,7 +1,19 @@
 import crypto from "crypto";
 
-// Get encryption key from environment or use a default (CHANGE IN PRODUCTION!)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "gamestore-secret-key-12345678901"; // Must be 32 characters
+// Get encryption key from environment — MUST be set in production
+const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY;
+
+if (process.env.NODE_ENV === "production" && !ENCRYPTION_KEY_RAW) {
+    throw new Error("[encryption] ENCRYPTION_KEY environment variable is not set. Please set a 32-character key.");
+}
+
+// Development fallback — NOT safe for production
+const ENCRYPTION_KEY = ENCRYPTION_KEY_RAW ?? "gamestore-secret-key-12345678901";
+
+if (Buffer.byteLength(ENCRYPTION_KEY, "utf8") !== 32) {
+    throw new Error(`[encryption] ENCRYPTION_KEY must be exactly 32 bytes for AES-256, got ${Buffer.byteLength(ENCRYPTION_KEY, "utf8")}.`);
+}
+
 const IV_LENGTH = 16;
 
 /**

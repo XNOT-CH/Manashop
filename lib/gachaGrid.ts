@@ -98,6 +98,11 @@ export function buildGrid(products: GachaProductLite[]): Tile[] {
         legendary: products.filter((p) => p.tier === "legendary"),
     };
 
+    // Fallback: if a tier has no products at all, use any available product
+    const allProducts = products.length > 0 ? products : [];
+    const fillPool = (tier: GachaTier): GachaProductLite[] =>
+        byTier[tier].length > 0 ? byTier[tier] : allProducts;
+
     const tierIndex: Record<GachaTier, number> = { common: 0, rare: 0, epic: 0, legendary: 0 };
 
     let leftCount = 0;
@@ -121,9 +126,10 @@ export function buildGrid(products: GachaProductLite[]): Tile[] {
             }
 
             if (type === "common" || type === "rare" || type === "epic" || type === "legendary") {
-                const pool = byTier[type];
-                if (tierIndex[type] < pool.length) {
-                    tile.product = pool[tierIndex[type]];
+                const pool = fillPool(type);
+                if (pool.length > 0) {
+                    // Cycle through pool using modulo so every tile gets a product
+                    tile.product = pool[tierIndex[type] % pool.length];
                     tierIndex[type]++;
                 }
             }
@@ -161,4 +167,48 @@ export function getPathItemProductIds(tiles: Tile[], selectorLabel: string): str
     }
 
     return ids;
+}
+
+// --- Two-diagonal intersection mechanic ---
+
+/**
+ * Pre-computed intersection tile for every (L, R) pair.
+ * L path goes top-left → bottom-right; R path goes top-right → bottom-left.
+ * The cell listed here is the one tile shared by both paths.
+ */
+export const INTERSECTION_MAP: Record<string, Record<string, [number, number]>> = {
+    L1: { R1: [2, 1], R2: [3, 2], R3: [4, 3], R4: [5, 3] },
+    L2: { R1: [3, 1], R2: [4, 2], R3: [5, 2], R4: [6, 2] },
+    L3: { R1: [4, 1], R2: [5, 1], R3: [6, 1], R4: [7, 1] },
+    L4: { R1: [5, 0], R2: [6, 0], R3: [7, 0], R4: [8, 0] },
+};
+
+/** Returns the tile at the intersection of the chosen L and R diagonal paths. */
+export function getIntersectionTile(tiles: Tile[], lLabel: string, rLabel: string): Tile | null {
+    const pos = INTERSECTION_MAP[lLabel]?.[rLabel];
+    if (!pos) return null;
+    const idx = findTileIndex(tiles, pos[0], pos[1]);
+    return idx >= 0 ? tiles[idx] : null;
+}
+
+/** L selectors that have at least one R partner whose intersection tile has a product. */
+export function getValidLSelectors(tiles: Tile[]): string[] {
+    return ["L1", "L2", "L3", "L4"].filter((lLabel) =>
+        ["R1", "R2", "R3", "R4"].some((rLabel) => {
+            const pos = INTERSECTION_MAP[lLabel]?.[rLabel];
+            if (!pos) return false;
+            const idx = findTileIndex(tiles, pos[0], pos[1]);
+            return idx >= 0 && !!tiles[idx].product;
+        })
+    );
+}
+
+/** R selectors whose intersection with the given L tile has a product. */
+export function getValidRSelectorsFor(tiles: Tile[], lLabel: string): string[] {
+    return ["R1", "R2", "R3", "R4"].filter((rLabel) => {
+        const pos = INTERSECTION_MAP[lLabel]?.[rLabel];
+        if (!pos) return false;
+        const idx = findTileIndex(tiles, pos[0], pos[1]);
+        return idx >= 0 && !!tiles[idx].product;
+    });
 }

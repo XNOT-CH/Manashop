@@ -80,19 +80,19 @@ export default async function Navbar() {
             { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
         ];
 
-    // Always include gacha link (insert after /shop if exists, else append)
-    const hasGacha = baseNavLinks.some(l => l.href === "/gacha");
-    const navLinks = hasGacha
+    // Always include gacha hub link (insert after /shop if exists, else append)
+    const hasGachapons = baseNavLinks.some(l => l.href === "/gachapons");
+    const navLinks = hasGachapons
         ? baseNavLinks
         : (() => {
             const shopIdx = baseNavLinks.findIndex(l => l.href === "/shop");
-            const gachaItem = { href: "/gacha", label: "สุ่ม", icon: Dices };
+            const hubItem = { href: "/gachapons", label: "หมวดหมู่กาชา", icon: Dices };
+            const base = [...baseNavLinks];
             if (shopIdx >= 0) {
-                const result = [...baseNavLinks];
-                result.splice(shopIdx + 1, 0, gachaItem);
-                return result;
+                base.splice(shopIdx + 1, 0, hubItem);
+                return base;
             }
-            return [...baseNavLinks, gachaItem];
+            return [...base, hubItem];
         })();
 
     return (

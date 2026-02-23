@@ -2000,3 +2000,90 @@ body.admin-layout #main-container {
   animation: confettiFall 3s ease-in forwards;
   pointer-events: none;
 }
+
+/* ========================================
+   GACHA ANIMATIONS
+   ======================================== */
+
+/* Tile flip during scan cycle */
+@keyframes gachaTileFlip {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+
+  40% {
+    transform: rotateY(90deg) scale(1.12);
+  }
+
+  60% {
+    transform: rotateY(270deg) scale(1.12);
+  }
+
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+.gacha-tile-flip {
+  animation: gachaTileFlip 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Win particle burst */
+@keyframes gachaWinBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+
+  80% {
+    opacity: 0.8;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.3);
+  }
+}
+
+.gacha-win-particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: gachaWinBurst var(--dur, 0.8s) ease-out var(--delay, 0s) forwards;
+}
+
+/* Tile glow pulse (active highlight) */
+@keyframes gachaTilePulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 12px 4px rgba(251, 191, 36, 0.6);
+  }
+}
+
+.gacha-tile-pulse {
+  animation: gachaTilePulse 0.5s ease-in-out infinite;
+}
+
+/* Scale-in entrance for history items */
+@keyframes historySlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.gacha-history-item {
+  animation: historySlideIn 0.25s ease-out both;
+}

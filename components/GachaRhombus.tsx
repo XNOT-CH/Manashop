@@ -2,280 +2,443 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dices, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Dices, Loader2, Gamepad2 } from "lucide-react";
 import { showError } from "@/lib/swal";
 import { GachaResultModal } from "@/components/GachaResultModal";
+import { GachaRecentFeed } from "@/components/GachaRecentFeed";
+import { DropRateModal } from "@/components/DropRateModal";
 import {
     buildGrid,
     findTileIndex,
     GRID_DEFINITION,
     SELECTOR_PATHS,
+    INTERSECTION_MAP,
     type TileType,
     type GachaProductLite,
 } from "@/lib/gachaGrid";
 
-type Phase = "idle" | "selectRow" | "scanning" | "result";
+type Phase = "idle" | "rolling1" | "waitSpin2" | "rolling2" | "revealing" | "result";
 
-// --- Tier Colors ---
-const tierColors: Record<TileType, string> = {
-    start: "ring-zinc-800 dark:ring-zinc-400",
-    selector: "ring-white dark:ring-zinc-300",
-    common: "ring-orange-500", rare: "ring-green-500",
-    epic: "ring-blue-500", legendary: "ring-red-500",
+const tierRing: Record<TileType, string> = {
+    start: "ring-1 ring-zinc-700/40",
+    selector: "ring-1 ring-zinc-400/60",
+    common: "ring-1 ring-amber-400/80 shadow-[0_0_8px_rgba(251,191,36,0.3)]",
+    rare: "ring-2 ring-emerald-400/80 shadow-[0_0_12px_rgba(52,211,153,0.4)]",
+    epic: "ring-2 ring-violet-500/90 shadow-[0_0_15px_rgba(139,92,246,0.6)]",
+    legendary: "ring-[3px] ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse",
 };
-const tierGlow: Record<TileType, string> = {
-    start: "", selector: "",
-    common: "shadow-orange-500/40", rare: "shadow-green-500/40",
-    epic: "shadow-blue-500/40", legendary: "shadow-red-500/40",
+
+const tierDot: Record<string, string> = {
+    common: "bg-amber-400",
+    rare: "bg-emerald-400",
+    epic: "bg-violet-400",
+    legendary: "bg-red-500",
 };
+
 const tierBg: Record<TileType, string> = {
-    start: "bg-zinc-800 dark:bg-zinc-600", selector: "bg-white dark:bg-zinc-300",
-    common: "bg-orange-500/20", rare: "bg-green-500/20",
-    epic: "bg-blue-500/20", legendary: "bg-red-500/20",
-};
-const tierLabels: Record<TileType, string> = {
-    start: "", selector: "", common: "Common", rare: "Rare", epic: "Epic", legendary: "Legendary",
+    start: "bg-zinc-900",
+    selector: "bg-zinc-800",
+    common: "bg-gradient-to-br from-amber-500/10 to-amber-700/5",
+    rare: "bg-gradient-to-br from-emerald-500/10 to-emerald-700/5",
+    epic: "bg-gradient-to-br from-violet-500/20 to-indigo-900/40",
+    legendary: "bg-gradient-to-br from-red-500/30 via-orange-500/20 to-rose-900/40",
 };
 
-// --- Component ---
+const tierParticles: Record<string, string[]> = {
+    common: ["#fbbf24", "#fde68a"],
+    rare: ["#34d399", "#a7f3d0"],
+    epic: ["#8b5cf6", "#c4b5fd", "#e9d5ff"],
+    legendary: ["#ef4444", "#fca5a5", "#fde68a"],
+};
+
+interface Particle { id: number; tx: string; ty: string; color: string; dur: string; delay: string; size: number }
+
+function WinBurst({ tier }: { tier: string }) {
+    const colors = tierParticles[tier] ?? tierParticles.common;
+    const particles: Particle[] = Array.from({ length: 20 }, (_, i) => {
+        const angle = (i / 20) * 360;
+        const rad = angle * (Math.PI / 180);
+        const dist = 50 + Math.random() * 70;
+        return {
+            id: i,
+            tx: `${Math.cos(rad) * dist}px`,
+            ty: `${Math.sin(rad) * dist}px`,
+            color: colors[i % colors.length],
+            dur: `${0.5 + Math.random() * 0.4}s`,
+            delay: `${Math.random() * 0.15}s`,
+            size: 5 + Math.floor(Math.random() * 6),
+        };
+    });
+    return (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
+            {particles.map((p) => (
+                <div key={p.id} className="gacha-win-particle absolute rounded-full"
+                    style={{
+                        width: p.size, height: p.size, backgroundColor: p.color,
+                        // @ts-expect-error CSS custom properties
+                        "--tx": p.tx, "--ty": p.ty, "--dur": p.dur, "--delay": p.delay,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
 interface GachaRhombusProps {
     products: GachaProductLite[];
     settings: { isEnabled: boolean; costType: string; costAmount: number; dailySpinLimit: number };
+    userBalance?: number;
 }
 
-export function GachaRhombus({ products, settings }: GachaRhombusProps) {
+export function GachaRhombus({ products, settings, userBalance = 0 }: GachaRhombusProps) {
     const tiles = useMemo(() => buildGrid(products), [products]);
+
     const [phase, setPhase] = useState<Phase>("idle");
     const [highlightedTile, setHighlightedTile] = useState<number | null>(null);
-    const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
-    const [pathTiles, setPathTiles] = useState<number[]>([]);
+    const [selectedLLabel, setSelectedLLabel] = useState<string | null>(null);
+    const [selectedRLabel, setSelectedRLabel] = useState<string | null>(null);
+    const [lPathTiles, setLPathTiles] = useState<number[]>([]);
+    const [rPathTiles, setRPathTiles] = useState<number[]>([]);
     const [resultProduct, setResultProduct] = useState<GachaProductLite | null>(null);
+    const [winTier, setWinTier] = useState<string>("common");
+    const [showBurst, setShowBurst] = useState(false);
+    const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+    const [flipKey, setFlipKey] = useState<Record<number, number>>({});
+    const [showDropRate, setShowDropRate] = useState(false);
+
     const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (intervalRef.current) clearTimeout(intervalRef.current); }, []);
 
-    useEffect(() => { return () => { if (intervalRef.current) clearTimeout(intervalRef.current); }; }, []);
+    const lSelectorIndices = useMemo(
+        () => tiles.map((t, i) => (t.type === "selector" && t.side === "left" ? i : -1)).filter(i => i >= 0),
+        [tiles]
+    );
+    const rSelectorIndices = useMemo(
+        () => tiles.map((t, i) => (t.type === "selector" && t.side === "right" ? i : -1)).filter(i => i >= 0),
+        [tiles]
+    );
 
-    const startScanning = useCallback((label: string, targetProductId: string) => {
-        setPhase("scanning");
-        const path = SELECTOR_PATHS[label] || [];
-        const pathIndices = path.map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
-        setPathTiles(pathIndices);
+    const runRoulette = useCallback(
+        (side: "L" | "R", chosenLabel: string, onDone: () => void) => {
+            const idx = side === "L" ? lSelectorIndices : rSelectorIndices;
+            if (idx.length === 0) { onDone(); return; }
+            const total = 12 + Math.floor(Math.random() * 6);
+            let step = 0;
+            const flash = () => {
+                const isLast = step >= total - 1;
+                const tileIdx = isLast
+                    ? tiles.findIndex(t => t.type === "selector" && t.label === chosenLabel)
+                    : idx[step % idx.length];
+                setHighlightedTile(tileIdx >= 0 ? tileIdx : idx[0]);
+                step++;
+                if (isLast) { setTimeout(onDone, 400); return; }
+                const delay = step < 4 ? 280 : step < 8 ? 160 : 200 + (step - 8) * 30;
+                intervalRef.current = setTimeout(flash, delay);
+            };
+            intervalRef.current = setTimeout(flash, 200);
+        },
+        [tiles, lSelectorIndices, rSelectorIndices]
+    );
 
-        // Items with products on this path
-        const itemsOnPath = pathIndices.filter((i) => tiles[i].product);
-        if (itemsOnPath.length === 0) { setPhase("idle"); return; }
-
-        const targetIndex = itemsOnPath.find((i) => tiles[i].product?.id === targetProductId) ?? itemsOnPath[0];
-
-        // Trace down the path one by one, then cycle through items
-        let step = 0;
-        const traceSteps = pathIndices.length;
-        const extraCycles = 4 + Math.floor(Math.random() * 4);
-        const totalSteps = traceSteps + extraCycles;
-
-        const scan = () => {
-            if (step < traceSteps) {
-                // Trace: highlight each tile in path sequentially
-                setHighlightedTile(pathIndices[step]);
-            } else {
-                // Cycle through only item tiles on this path
-                const cycleIdx = (step - traceSteps) % itemsOnPath.length;
-                setHighlightedTile(itemsOnPath[cycleIdx]);
-            }
-            step++;
-
-            if (step >= totalSteps) {
-                const finalTile = tiles[targetIndex];
-                setHighlightedTile(targetIndex);
+    const revealIntersection = useCallback(
+        (lLabel: string, rLabel: string, product: GachaProductLite) => {
+            const lPath = (SELECTOR_PATHS[lLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
+            const rPath = (SELECTOR_PATHS[rLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
+            setLPathTiles(lPath);
+            setRPathTiles(rPath);
+            const intersPos = INTERSECTION_MAP[lLabel]?.[rLabel];
+            const intersIdx = intersPos ? findTileIndex(tiles, intersPos[0], intersPos[1]) : -1;
+            setTimeout(() => {
+                if (intersIdx >= 0) {
+                    setHighlightedTile(intersIdx);
+                    setFlipKey(prev => ({ ...prev, [intersIdx]: (prev[intersIdx] ?? 0) + 1 }));
+                }
                 setTimeout(() => {
-                    if (finalTile.product) { setResultProduct(finalTile.product); setPhase("result"); }
-                }, 600);
-                return;
-            }
-            const delay = step < traceSteps ? 250 : 120 + (step - traceSteps) * 40;
-            intervalRef.current = setTimeout(scan, delay);
-        };
-        intervalRef.current = setTimeout(scan, 300);
-    }, [tiles]);
+                    setWinTier(product.tier ?? "common");
+                    setShowBurst(true);
+                    setTimeout(() => setShowBurst(false), 1200);
+                    setResultProduct(product);
+                    setPhase("result");
+                    setHistoryRefreshKey(k => k + 1);
+                }, 900);
+            }, 500);
+        },
+        [tiles]
+    );
 
-    const startRollFromServer = useCallback(async () => {
-        if (phase !== "idle") return;
-
-        setPhase("selectRow");
-        setResultProduct(null);
-        setSelectedLabel(null);
-        setPathTiles([]);
-
-        try {
-            const res = await fetch("/api/gacha/roll", { method: "POST" });
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                showError(data.message || "สุ่มไม่สำเร็จ");
-                setPhase("idle");
-                setHighlightedTile(null);
-                return;
-            }
-
-            const selectorLabel = data.data?.selectorLabel as string | undefined;
-            const product = data.data?.product as GachaProductLite | undefined;
-
-            if (!selectorLabel || !product?.id) {
-                showError("ข้อมูลสุ่มไม่ครบถ้วน");
-                setPhase("idle");
-                setHighlightedTile(null);
-                return;
-            }
-
-            const selectorTileIndex = tiles.findIndex((t) => t.type === "selector" && t.label === selectorLabel);
-            if (selectorTileIndex < 0) {
-                showError("ไม่พบแถวที่สุ่มได้ในกริด");
-                setPhase("idle");
-                setHighlightedTile(null);
-                return;
-            }
-
-            setHighlightedTile(selectorTileIndex);
-            setSelectedLabel(selectorLabel);
-            setTimeout(() => startScanning(selectorLabel, product.id), 800);
-        } catch {
-            showError("เกิดข้อผิดพลาดในการสุ่ม");
-            setPhase("idle");
-            setHighlightedTile(null);
-        }
-    }, [phase, tiles, startScanning]);
-
-    const handleSpin = () => {
-        if (phase !== "idle") return;
-        void startRollFromServer();
-    };
-    const handleSpinAgain = () => {
-        setResultProduct(null); setPhase("idle"); setHighlightedTile(null);
-        setSelectedLabel(null); setPathTiles([]);
-        setTimeout(() => void startRollFromServer(), 200);
-    };
-    const handleCloseResult = () => {
-        setResultProduct(null); setPhase("idle"); setHighlightedTile(null);
-        setSelectedLabel(null); setPathTiles([]);
-    };
-
-    // --- Layout ---
-    const spacingX = 110, spacingY = 44, tileSize = 56;
-    const maxRowSize = Math.max(...GRID_DEFINITION.map((r) => r.length));
-    const gridWidth = (maxRowSize - 1) * spacingX + tileSize;
-    const gridHeight = (GRID_DEFINITION.length - 1) * spacingY + tileSize;
-
-    function getTilePosition(row: number, col: number) {
-        const rowSize = GRID_DEFINITION[row].length;
-        const offsetX = (maxRowSize - rowSize) * (spacingX / 2);
-        return { x: offsetX + col * spacingX, y: row * spacingY };
+    async function callRollApi(spinNum: 1 | 2) {
+        const res = await fetch("/api/gacha/roll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ spin: spinNum }),
+        });
+        try { return await res.json(); }
+        catch { return { success: false, message: res.status === 401 ? "กรุณาเข้าสู่ระบบก่อน" : "เกิดข้อผิดพลาด" }; }
     }
 
-    const isSpinning = phase === "selectRow" || phase === "scanning";
+    const reset = () => {
+        setResultProduct(null); setPhase("idle"); setHighlightedTile(null);
+        setSelectedLLabel(null); setSelectedRLabel(null);
+        setLPathTiles([]); setRPathTiles([]);
+    };
+
+    const handleFirstSpin = useCallback(async () => {
+        if (phase !== "idle") return;
+        setPhase("rolling1"); setResultProduct(null); setSelectedLLabel(null);
+        setSelectedRLabel(null); setLPathTiles([]); setRPathTiles([]);
+        setShowBurst(false); setHighlightedTile(null);
+        try {
+            const data = await callRollApi(1);
+            if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
+            const lLabel = data.data?.lLabel;
+            if (!lLabel) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            runRoulette("L", lLabel, () => { setSelectedLLabel(lLabel); setPhase("waitSpin2"); });
+        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [phase, runRoulette]);
+
+    const handleSecondSpin = useCallback(async () => {
+        if (phase !== "waitSpin2") return;
+        setPhase("rolling2"); setLPathTiles([]); setRPathTiles([]);
+        try {
+            const data = await callRollApi(2);
+            if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
+            const { rLabel, product } = data.data ?? {};
+            if (!rLabel || !product) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            runRoulette("R", rLabel, () => {
+                setSelectedRLabel(rLabel);
+                setPhase("revealing");
+                revealIntersection(selectedLLabel!, rLabel, product);
+            });
+        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [phase, selectedLLabel, runRoulette, revealIntersection]);
+
+    // ── Layout ─────────────────────────────────────────────────────────────────
+    const spacingX = 110, spacingY = 44, tileSize = 52;
+    const maxRowSize = Math.max(...GRID_DEFINITION.map(r => r.length));
+    const gridWidth = (maxRowSize - 1) * spacingX + tileSize + 4;
+    const gridHeight = (GRID_DEFINITION.length - 1) * spacingY + tileSize + 4;
+
+    function getTilePos(row: number, col: number) {
+        const rowSize = GRID_DEFINITION[row].length;
+        const offsetX = (maxRowSize - rowSize) * (spacingX / 2);
+        return { x: offsetX + col * spacingX + 2, y: row * spacingY + 2 };
+    }
+
+    // Responsive scaling — measure the card container's real width via ResizeObserver
+    const [scale, setScale] = useState(1);
+    const cardRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = cardRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            const w = entries[0]?.contentRect.width ?? el.clientWidth;
+            setScale(Math.min(1, w / gridWidth));
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [gridWidth]);
 
     return (
-        <div className="flex flex-col items-center gap-6">
-            <div className="relative mx-auto" style={{ width: gridWidth, height: gridHeight }}>
-                {tiles.map((tile, index) => {
-                    const pos = getTilePosition(tile.row, tile.col);
-                    const isHighlighted = highlightedTile === index;
-                    const isItemTile = tile.type !== "start" && tile.type !== "selector";
-                    const isOnPath = pathTiles.includes(index);
-                    const isSelectorSelected = tile.type === "selector" && tile.label === selectedLabel;
-                    const isDimmed = phase === "scanning" && isItemTile && !isOnPath;
+        <div className="flex flex-col items-center gap-8 w-full max-w-[640px]">
 
-                    return (
-                        <motion.div
-                            key={index}
-                            className="absolute"
-                            style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }}
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: index * 0.02, type: "spring", stiffness: 300 }}
-                        >
-                            <div className={`
-                                relative w-full h-full rounded-full overflow-hidden
-                                ring-2 ${tierColors[tile.type]} transition-all duration-300
-                                ${isHighlighted ? `ring-4 shadow-lg ${tierGlow[tile.type]} gacha-pulse` : ""}
-                                ${isSelectorSelected ? "ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/40" : ""}
-                                ${isDimmed ? "opacity-20 scale-90" : ""}
-                                ${isOnPath && !isHighlighted ? "ring-3 ring-yellow-400/40" : ""}
-                                ${tile.type !== "selector" && !isItemTile && !isHighlighted && !isSelectorSelected ? "opacity-70" : ""}
-                            `}>
-                                {tile.type === "start" && (
-                                    <div className="w-full h-full bg-zinc-800 dark:bg-zinc-600 flex items-center justify-center">
-                                        <Dices className="h-6 w-6 text-white" />
-                                    </div>
-                                )}
-                                {tile.type === "selector" && (
-                                    <div className={`
-                                        w-full h-full flex items-center justify-center
-                                        bg-gradient-to-br from-violet-500 to-indigo-600
-                                        ${isSelectorSelected ? "from-yellow-400 to-orange-500" : ""}
-                                        ${isHighlighted ? "from-yellow-400 to-orange-500" : ""}
-                                    `}>
-                                        <span className="text-[11px] font-extrabold text-white drop-shadow">{tile.label}</span>
-                                    </div>
-                                )}
-                                {isItemTile && tile.product && (
-                                    tile.product.imageUrl ? (
-                                        <img src={tile.product.imageUrl} alt={tile.product.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`}>
-                                            <span className="text-lg">🎁</span>
-                                        </div>
-                                    )
-                                )}
-                                {isItemTile && !tile.product && (
-                                    <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`}>
-                                        <span className="text-xs text-muted-foreground">?</span>
-                                    </div>
-                                )}
-                                {isHighlighted && (
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-yellow-300"
-                                        animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }}
-                                        transition={{ duration: 0.6, repeat: Infinity }}
-                                    />
-                                )}
-                            </div>
-                            {isItemTile && tile.product && (
-                                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                                    <span className="text-[10px] text-muted-foreground bg-card/80 px-1.5 py-0.5 rounded-full border border-border">
-                                        {tile.product.name.substring(0, 12)}
-                                    </span>
-                                </div>
+            {/* ── Grid (framed) ── */}
+            <div ref={cardRef} className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 sm:p-8 md:p-10 shadow-sm w-full flex justify-center overflow-hidden relative">
+                {/* Drop rate button — top-left corner of grid card */}
+                <button onClick={() => setShowDropRate(true)}
+                    className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-background/80 hover:bg-background border border-border/60 rounded-full px-2.5 py-1 shadow-sm hover:text-[#145de7] transition-all">
+                    ℹ️ อัตราดรอป
+                </button>
+                {/*
+                  Outer wrapper is sized to the SCALED visual footprint (gridWidth*scale × gridHeight*scale)
+                  so the flex container doesn't see the full native gridWidth causing right-side clipping.
+                  The inner div sits at position:absolute top-left, scaled to fit perfectly inside.
+                */}
+                <div style={{ width: gridWidth * scale, height: gridHeight * scale, position: "relative", flexShrink: 0 }}>
+                    <div
+                        className="absolute top-0 left-0"
+                        style={{ width: gridWidth, height: gridHeight, transform: `scale(${scale})`, transformOrigin: "top left" }}
+                    >
+                        <AnimatePresence>
+                            {showBurst && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
+                                    <WinBurst tier={winTier} />
+                                </motion.div>
                             )}
-                        </motion.div>
-                    );
-                })}
+                        </AnimatePresence>
+
+                        {tiles.map((tile, index) => {
+                            const pos = getTilePos(tile.row, tile.col);
+                            const isItem = tile.type !== "start" && tile.type !== "selector";
+                            const isHL = highlightedTile === index;
+                            const isLSel = tile.label === selectedLLabel;
+                            const isRSel = tile.label === selectedRLabel;
+                            const onL = lPathTiles.includes(index);
+                            const onR = rPathTiles.includes(index);
+                            const onBoth = onL && onR;
+
+                            const fade =
+                                (phase === "rolling1" && (isItem || tile.side === "right")) ||
+                                (phase === "rolling2" && (isItem || tile.side === "left")) ||
+                                (phase === "revealing" && isItem && !onL && !onR);
+
+                            return (
+                                <motion.div key={index} className="absolute"
+                                    style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }}
+                                    initial={{ opacity: 0, scale: 0.6 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
+                                    <div
+                                        key={`f-${flipKey[index] ?? 0}`}
+                                        className={[
+                                            "relative w-full h-full rounded-full overflow-hidden transition-all duration-150",
+                                            tierRing[tile.type],
+                                            isHL && !onBoth ? "ring-2 ring-white/80 scale-110 brightness-125" : "",
+                                            onBoth ? "ring-2 ring-white scale-115 brightness-125" : "",
+                                            isLSel && phase !== "rolling2" && phase !== "revealing" ? "ring-2 ring-violet-400" : "",
+                                            isRSel ? "ring-2 ring-emerald-400" : "",
+                                            onL && !onBoth && phase === "revealing" ? "ring-2 ring-violet-400/50" : "",
+                                            onR && !onBoth && phase === "revealing" ? "ring-2 ring-emerald-400/50" : "",
+                                            fade ? "opacity-10 scale-90" : "",
+                                        ].join(" ")}
+                                    >
+                                        {tile.type === "start" && (
+                                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                                <Dices className="h-5 w-5 text-zinc-400" />
+                                            </div>
+                                        )}
+                                        {tile.type === "selector" && (
+                                            <div className={["w-full h-full flex items-center justify-center bg-zinc-800",
+                                                isHL ? "bg-white/90" : "",
+                                                isLSel && phase !== "rolling2" && phase !== "revealing" ? "bg-violet-500/20" : "",
+                                                isRSel ? "bg-emerald-500/20" : "",
+                                            ].join(" ")}>
+                                                <span className={["text-[10px] font-bold tracking-wide",
+                                                    isHL ? "text-zinc-900" : "text-zinc-300",
+                                                    isLSel && !isHL ? "text-violet-400" : "",
+                                                    isRSel && !isHL ? "text-emerald-400" : "",
+                                                ].join(" ")}>{tile.label}</span>
+                                            </div>
+                                        )}
+                                        {isItem && (
+                                            tile.product?.imageUrl ? (
+                                                <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center">
+                                                    <img src={tile.product.imageUrl} alt={tile.product.name} className="w-full h-full object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`}>
+                                                    {tile.product
+                                                        ? <span className={`w-2 h-2 rounded-full ${tierDot[tile.type] ?? "bg-zinc-500"}`} />
+                                                        : <span className="text-[10px] text-zinc-600">—</span>
+                                                    }
+                                                </div>
+                                            )
+                                        )}
+                                        {isHL && (
+                                            <motion.div className="absolute inset-0 rounded-full border border-white/60"
+                                                animate={{ scale: [1, 1.35, 1], opacity: [0.7, 0, 0.7] }}
+                                                transition={{ duration: 0.65, repeat: Infinity }} />
+                                        )}
+                                    </div>
+                                    {isItem && tile.product && (
+                                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100">
+                                            <span className="text-[9px] text-zinc-500">{tile.product.name.substring(0, 14)}</span>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
 
-            {/* Legend */}
-            <div className="flex flex-wrap justify-center gap-2">
-                {(["common", "rare", "epic", "legendary"] as const).map((tier) => (
-                    <Badge key={tier} variant="outline" className={`gap-1.5 text-xs ${tierColors[tier]} bg-card`}>
-                        <span className={`w-2.5 h-2.5 rounded-full ${tier === "common" ? "bg-orange-500" : tier === "rare" ? "bg-green-500"
-                            : tier === "epic" ? "bg-blue-500" : "bg-red-500"
-                            }`} />
-                        {tierLabels[tier]}
-                    </Badge>
-                ))}
+            {/* ── Controls ── */}
+            <div className="flex flex-col gap-4 w-full">
+
+                {/* Status line */}
+                <div className="min-h-[20px]">
+                    <AnimatePresence mode="wait">
+                        {phase === "waitSpin2" && selectedLLabel && (
+                            <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className="text-xs text-muted-foreground text-center">
+                                เลือกแล้ว{" "}
+                                <span className="text-violet-400 font-semibold">{selectedLLabel}</span>
+                                {" — กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}
+                            </motion.p>
+                        )}
+                        {phase === "revealing" && selectedLLabel && selectedRLabel && (
+                            <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className="text-xs text-muted-foreground text-center">
+                                <span className="text-violet-400 font-semibold">{selectedLLabel}</span>
+                                {" × "}
+                                <span className="text-emerald-400 font-semibold">{selectedRLabel}</span>
+                                {" → "}
+                                <span className="text-white font-semibold">จุดตัด</span>
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Spin CTA panel */}
+                <div className="w-full flex flex-col items-center mt-6">
+                    <div className="text-center mb-4 space-y-1">
+                        <h2 className="text-[18px] md:text-[22px] font-bold text-[#145de7]">
+                            สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}
+                        </h2>
+                        <p className="text-[13px] md:text-[14px] font-medium text-gray-800 dark:text-gray-200">
+                            * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}ได้ในทุกกรณี *
+                        </p>
+                    </div>
+
+                    <div className="w-full bg-[#d0e3ff] dark:bg-[#d0e3ff]/10 text-[#145de7] dark:text-[#7ba2f5] font-bold text-sm md:text-base py-3.5 rounded-md text-center mb-6">
+                        ยอด{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}สะสม:{" "}
+                        {userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                        {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}{" "}
+                        <span className="font-normal opacity-90">(แนะนำให้รีเฟรชเพื่อดูยอดล่าสุด)</span>
+                    </div>
+
+                    <div className="w-full">
+                        {phase === "idle" && (
+                            <button onClick={() => void handleFirstSpin()} disabled={!settings.isEnabled}
+                                className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <Gamepad2 className="h-5 w-5" /> สุ่ม
+                            </button>
+                        )}
+                        {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && (
+                            <button disabled
+                                className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d]/60 text-white/80 font-bold text-[15px] md:text-base cursor-not-allowed flex items-center justify-center gap-2">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}
+                            </button>
+                        )}
+                        {phase === "waitSpin2" && (
+                            <button onClick={() => void handleSecondSpin()}
+                                className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                <Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
 
-            {/* Spin */}
-            <div className="flex flex-col items-center gap-3">
-                <Button onClick={handleSpin} disabled={isSpinning || !settings.isEnabled}
-                    size="lg" className="gap-2 rounded-xl px-8 text-lg font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-shadow">
-                    {isSpinning ? (<><Loader2 className="h-5 w-5 animate-spin" />กำลังสุ่ม...</>) : (<><Dices className="h-5 w-5" />สุ่มเลย!</>)}
-                </Button>
+            {/* Recent Winners Feed */}
+            <div className="w-full mt-4">
+                <GachaRecentFeed refreshKey={historyRefreshKey} />
             </div>
 
-            <AnimatePresence>
-                {phase === "result" && resultProduct && (
-                    <GachaResultModal product={resultProduct} onClose={handleCloseResult} onSpinAgain={handleSpinAgain} />
-                )}
-            </AnimatePresence>
+            {/* Drop rate modal */}
+            <DropRateModal open={showDropRate} onClose={() => setShowDropRate(false)} />
+
+            {/* Result modal */}
+            {phase === "result" && resultProduct && (
+                <GachaResultModal
+                    product={resultProduct}
+                    onClose={reset}
+                    onSpinAgain={() => { reset(); setTimeout(() => void handleFirstSpin(), 200); }}
+                />
+            )}
         </div>
     );
 }
