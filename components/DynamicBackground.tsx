@@ -17,9 +17,7 @@ export function DynamicBackground() {
 
         const fetchBackground = async () => {
             try {
-                const res = await fetch("/api/admin/settings", {
-                    next: { revalidate: 3600 } // Cache for 1 hour
-                });
+                const res = await fetch("/api/admin/settings");
                 const data = await res.json();
                 if (data.success && data.data?.backgroundImage) {
                     setBackgroundImage(data.data.backgroundImage);

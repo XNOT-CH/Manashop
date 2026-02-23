@@ -1,23 +1,28 @@
 import { db } from "@/lib/db";
 import { Lock } from "lucide-react";
+import { cookies } from "next/headers";
+import Link from "next/link";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
 
 export const metadata = {
-    title: "กาชา | Manashop",
-    description: "ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่มกาชา Rhombus Grid",
+    title: "สุ่มตัว X | Manashop",
+    description: "ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่มตัว X",
 };
 
 export default async function GachaPage() {
-    let settings = {
-        isEnabled: true,
-        costType: "FREE",
-        costAmount: 0,
-        dailySpinLimit: 0,
-    };
+    let settings = { isEnabled: true, costType: "FREE", costAmount: 0, dailySpinLimit: 0 };
+
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+    let userBalance = 0;
 
     try {
-        const raw = await db.gachaSettings.findFirst();
+        const [raw, user] = await Promise.all([
+            db.gachaSettings.findFirst(),
+            userId ? db.user.findUnique({ where: { id: userId }, select: { creditBalance: true, pointBalance: true } }) : Promise.resolve(null),
+        ]);
+
         if (raw) {
             settings = {
                 isEnabled: raw.isEnabled ?? true,
@@ -26,14 +31,15 @@ export default async function GachaPage() {
                 dailySpinLimit: raw.dailySpinLimit ?? 0,
             };
         }
-    } catch {
-        // gachaSettings table might not exist yet
-    }
+
+        if (user) {
+            userBalance = Number(settings.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
+        }
+    } catch { /* table may not exist yet */ }
 
     let products: GachaProductLite[] = [];
     try {
-        const prisma = db as unknown as any;
-        const rewards = await prisma.gachaReward.findMany({
+        const rewards = await (db as any).gachaReward.findMany({
             where: {
                 isActive: true,
                 OR: [
@@ -43,83 +49,62 @@ export default async function GachaPage() {
                 ],
             },
             include: {
-                product: {
-                    select: { id: true, name: true, price: true, imageUrl: true, isSold: true },
-                },
+                product: { select: { id: true, name: true, price: true, imageUrl: true, isSold: true } },
             },
         });
         products = rewards
-            .filter((r: any) => {
-                if (r.rewardType === "PRODUCT") return r.product && !r.product.isSold;
-                return true; // CREDIT / POINT always eligible
-            })
+            .filter((r: any) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : true))
             .map((r: any) => {
                 if (r.rewardType === "PRODUCT") {
-                    return {
-                        id: r.product.id,
-                        name: r.product.name,
-                        price: Number(r.product.price),
-                        imageUrl: r.product.imageUrl,
-                        tier: (r.tier as GachaTier) ?? "common",
-                    };
+                    return { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" };
                 }
-                // Currency reward (CREDIT / POINT)
-                return {
-                    id: `reward:${r.id}`,
-                    name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"),
-                    price: Number(r.rewardAmount ?? 0),
-                    imageUrl: r.rewardImageUrl ?? null,
-                    tier: (r.tier as GachaTier) ?? "common",
-                };
+                return { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" };
             });
-    } catch {
-        // rewards not available
-    }
+    } catch { /* rewards not available */ }
 
     return (
-        <main className="bg-background">
-            <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
+        <div className="min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-zinc-950 overflow-x-hidden mb-8">
 
-                {/* Header */}
-                <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
-                        🎲 กาชา
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่ม Rhombus Grid
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-3 pt-1">
-                        {settings.costType !== "FREE" && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs font-semibold text-violet-600 dark:text-violet-400">
-                                💰 ค่าสุ่ม {settings.costAmount.toLocaleString()}{" "}
-                                {settings.costType === "CREDIT" ? "฿" : "พอยต์"} / ครั้ง
-                            </span>
-                        )}
-                        {settings.dailySpinLimit > 0 && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-xs font-semibold text-orange-600 dark:text-orange-400">
-                                ⏱ จำกัด {settings.dailySpinLimit} ครั้ง / วัน
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Gacha disabled */}
-                {!settings.isEnabled ? (
-                    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center rounded-2xl border bg-muted/20">
-                        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                            <Lock className="h-7 w-7 text-muted-foreground" />
-                        </div>
-                        <p className="text-base font-semibold text-foreground">ระบบกาชาปิดอยู่ชั่วคราว</p>
-                        <p className="text-sm text-muted-foreground">กรุณากลับมาใหม่ภายหลัง</p>
-                    </div>
-                ) : (
-                    <div className="flex justify-center overflow-x-auto">
-                        <div className="min-w-fit mx-auto">
-                            <GachaRhombus products={products} settings={settings} />
-                        </div>
+            {/* Hero Banner — matches hub page */}
+            <div className="bg-gradient-to-br from-[#1a56db] via-[#1e40af] to-[#1e3a5f] relative overflow-hidden py-10 px-6 text-center">
+                <div className="absolute inset-0 opacity-10" style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
+                    backgroundSize: "60px 52px"
+                }} />
+                <h1 className="text-3xl font-bold text-white mb-2 relative z-10 tracking-wide">สุ่มตัว X</h1>
+                <p className="text-blue-200 text-sm relative z-10 font-medium flex items-center justify-center gap-1.5">
+                    <Link href="/" className="hover:text-white transition-colors">หน้าหลัก</Link>
+                    <span className="opacity-60">&gt;</span>
+                    <Link href="/gachapons" className="hover:text-white transition-colors">หมวดหมู่กาชา</Link>
+                    <span className="opacity-60">&gt;</span>
+                    <span className="text-white font-semibold">สุ่มตัว X</span>
+                </p>
+                {settings.dailySpinLimit > 0 && (
+                    <div className="relative z-10 mt-3">
+                        <span className="text-sm font-medium text-white/90 bg-white/20 border border-white/30 rounded-full px-3 py-1">
+                            สุ่มได้ {settings.dailySpinLimit} ครั้ง/วัน
+                        </span>
                     </div>
                 )}
             </div>
-        </main>
+
+            <div className="flex flex-col items-center gap-6 px-4 sm:px-6 md:px-10 py-8">
+
+                {/* Body */}
+                {!settings.isEnabled ? (
+                    <div className="flex flex-col items-center gap-3 py-20 text-center">
+                        <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center">
+                            <Lock className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium text-foreground">ระบบสุ่มตัว X ปิดอยู่ชั่วคราว</p>
+                        <p className="text-xs text-muted-foreground">กรุณากลับมาใหม่ภายหลัง</p>
+                    </div>
+                ) : (
+                    <div className="w-full flex justify-center">
+                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} />
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

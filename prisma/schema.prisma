@@ -325,6 +325,43 @@ model Role {
   updatedAt   DateTime  @updatedAt
 }
 
+// --- หมวดหมู่กาชา (Gacha Categories) ---
+model GachaCategory {
+  id        String         @id @default(uuid())
+  name      String                                  // ชื่อหมวดหมู่
+  sortOrder Int            @default(0)
+  isActive  Boolean        @default(true)
+
+  machines  GachaMachine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- ตู้กาชาแต่ละใบ (Gacha Machines) ---
+model GachaMachine {
+  id            String   @id @default(uuid())
+  name          String                                // ชื่อตู้กาชา
+  imageUrl      String?  @db.Text                     // รูปปก
+  categoryId    String?
+  category      GachaCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  costType      String   @default("FREE")             // FREE, CREDIT, POINT
+  costAmount    Decimal  @default(0) @db.Decimal(10, 2)
+  dailySpinLimit Int     @default(0)
+  tierMode      String   @default("PRICE")
+  isActive      Boolean  @default(true)
+  isEnabled     Boolean  @default(true)
+  sortOrder     Int      @default(0)
+
+  rewards       GachaReward[]
+  rollLogs      GachaRollLog[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
 // --- ตั้งค่าระบบกาชา (Gacha Settings) ---
 model GachaSettings {
   id              String   @id @default("default")
@@ -355,8 +392,14 @@ model GachaReward {
   tier      String   @default("common") // common, rare, epic, legendary
   isActive  Boolean  @default(true)
 
+  // FK to GachaMachine (null = legacy global pool)
+  gachaMachineId  String?
+  gachaMachine    GachaMachine? @relation(fields: [gachaMachineId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([gachaMachineId])
 }
 
 // --- ประวัติการสุ่มกาชา (ใช้สำหรับจำกัดครั้ง/วัน) ---
@@ -368,12 +411,20 @@ model GachaRollLog {
   productId     String?
   product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
+  rewardName    String?           // ชื่อรางวัล (สำหรับ CREDIT/POINT หรือชื่อสินค้า)
+  rewardImageUrl String? @db.Text // URL รูปภาพรางวัล
+
   tier          String   // common, rare, epic, legendary
   selectorLabel String?  // L1..L4 / R1..R4
   costType      String   // FREE, CREDIT, POINT
   costAmount    Decimal  @default(0) @db.Decimal(10, 2)
 
+  // FK to GachaMachine (null = legacy global)
+  gachaMachineId  String?
+  gachaMachine    GachaMachine? @relation(fields: [gachaMachineId], references: [id], onDelete: SetNull)
+
   createdAt     DateTime @default(now())
 
   @@index([userId, createdAt])
+  @@index([gachaMachineId])
 }

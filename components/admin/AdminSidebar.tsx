@@ -8,6 +8,8 @@ import {
     Sheet,
     SheetContent,
     SheetTrigger,
+    SheetTitle,
+    SheetHeader,
 } from "@/components/ui/sheet";
 import {
     LayoutDashboard,
@@ -36,6 +38,7 @@ const sidebarLinks = [
     { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
     { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
     { href: "/admin/gacha-settings", label: "ตั้งค่ากาชา", icon: Dices },
+    { href: "/admin/gacha-machines", label: "หมวดหมู่กาชา", icon: Dices },
     { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
     { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
     { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
@@ -121,9 +124,9 @@ export function AdminSidebar() {
                         </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="w-64 p-0 bg-slate-900 text-white border-slate-800">
-                        <div className="flex h-14 items-center border-b border-slate-800 px-6">
-                            <span className="text-lg font-bold">แผงควบคุมผู้ดูแล</span>
-                        </div>
+                        <SheetHeader className="h-14 items-center justify-center border-b border-slate-800 px-6 text-left shrink-0">
+                            <SheetTitle className="text-lg font-bold text-white w-full">แผงควบคุมผู้ดูแล</SheetTitle>
+                        </SheetHeader>
                         <div className="flex flex-col h-[calc(100%-3.5rem)]">
                             <SidebarNav onLinkClick={() => setOpen(false)} />
                         </div>
