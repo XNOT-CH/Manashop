@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Edit, LayoutGrid, ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
 import { showSuccess, showError } from "@/lib/swal";
+import Image from "next/image";
 
 interface GachaCategory {
     id: string;
@@ -201,7 +202,7 @@ export default function GachaMachinesAdminPage() {
                                 machines.map((m) => (
                                     <div key={m.id} className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
                                         {m.imageUrl ? (
-                                            <img src={m.imageUrl} alt={m.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                            <Image src={m.imageUrl} alt={m.name} width={40} height={40} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                                         ) : (
                                             <div className="w-10 h-10 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
                                                 <LayoutGrid className="w-5 h-5 text-muted-foreground/30" />
