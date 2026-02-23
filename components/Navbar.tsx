@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { getSiteSettings } from "@/lib/getSiteSettings";
@@ -101,11 +102,12 @@ export default async function Navbar() {
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2.5 font-semibold text-lg text-primary">
                     {siteSettings?.logoUrl ? (
-                        <img
+                        <Image
                             src={siteSettings.logoUrl}
                             alt="Logo"
                             width={48}
                             height={48}
+                            priority
                             className="rounded-xl object-contain h-12 w-12"
                         />
                     ) : (
