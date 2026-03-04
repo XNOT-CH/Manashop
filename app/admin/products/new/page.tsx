@@ -3,13 +3,12 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Shield, Gem, Banknote, Package, Eye, Plus, Pencil, Trash2, Check, X, Upload, ImageIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Shield, Gem, Banknote, Package, Eye, Plus, Trash2, Upload, X } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showSuccess, showError } from "@/lib/swal";
 import { splitStock, type StockSeparatorType } from "@/lib/stock";
@@ -191,15 +190,18 @@ export default function AddProductPage() {
             {/* Form - 2 Column Layout */}
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
                     {/* Left Column - Product Info */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-2xl">
-                                <Shield className="h-6 w-6 text-indigo-600" />
-                                ข้อมูลสินค้า
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-border overflow-hidden">
+                        {/* Card Header */}
+                        <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                            <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                <Shield className="h-3.5 w-3.5 text-white" />
+                            </div>
+                            <span className="font-bold text-foreground">ข้อมูลสินค้า</span>
+                        </div>
+
+                        <div className="p-5 space-y-6">
                             {/* Title */}
                             <div className="space-y-2">
                                 <Label htmlFor="title">ชื่อสินค้า *</Label>
@@ -285,7 +287,7 @@ export default function AddProductPage() {
                                         className="border-red-200 focus:border-red-400"
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        หากกรอกราคานี้ สินค้าจะแสดงใน "สินค้าลดราคา"
+                                        หากกรอกราคานี้ สินค้าจะแสดงใน &quot;สินค้าลดราคา&quot;
                                     </p>
                                 </div>
                             </div>
@@ -387,25 +389,25 @@ export default function AddProductPage() {
                                     onChange={handleChange}
                                 />
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
 
                     {/* Right Column - Stock Management */}
                     <div className="space-y-6">
                         {/* Add Single Stock */}
-                        <Card className="border-amber-200 bg-amber-50/50">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base flex items-center gap-2 text-amber-700">
-                                    <Package className="h-5 w-5" />
-                                    เพิ่มสต็อก 1 รายการ
-                                    {stockItems.length > 0 && (
-                                        <Badge variant="secondary" className="ml-auto">
-                                            {stockItems.length} รายการ
-                                        </Badge>
-                                    )}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
+                        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-border overflow-hidden">
+                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                                <div className="w-6 h-6 bg-amber-500 rounded flex items-center justify-center">
+                                    <Package className="h-3.5 w-3.5 text-white" />
+                                </div>
+                                <span className="font-bold text-foreground">เพิ่มสต็อก 1 รายการ</span>
+                                {stockItems.length > 0 && (
+                                    <Badge variant="secondary" className="ml-auto">
+                                        {stockItems.length} รายการ
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="p-5 space-y-3">
                                 <div className="space-y-2">
                                     <Label htmlFor="singleUser">User *</Label>
                                     <Input
@@ -428,7 +430,7 @@ export default function AddProductPage() {
                                 </div>
                                 <Button
                                     type="button"
-                                    className="w-full gap-2"
+                                    className="w-full gap-2 bg-[#1a56db] hover:bg-[#1e40af] text-white"
                                     onClick={handleAddSingleStock}
                                 >
                                     <Plus className="h-4 w-4" />
@@ -437,22 +439,22 @@ export default function AddProductPage() {
                                 <p className="text-xs text-amber-600">
                                     ⚠️ แต่ละรายการจะถูกส่งให้ลูกค้าทีละ 1 ชิ้นเมื่อซื้อ
                                 </p>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
                         {/* Stock List */}
                         {stockItems.length > 0 && (
-                            <Card className="border-blue-200 bg-blue-50/50">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base flex items-center gap-2 text-blue-700">
-                                        <Eye className="h-5 w-5" />
-                                        รายการสต็อก
-                                        <Badge variant="secondary" className="ml-auto">
-                                            {stockItems.length} รายการ
-                                        </Badge>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
+                            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-border overflow-hidden">
+                                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                        <Eye className="h-3.5 w-3.5 text-white" />
+                                    </div>
+                                    <span className="font-bold text-foreground">รายการสต็อก</span>
+                                    <Badge variant="secondary" className="ml-auto">
+                                        {stockItems.length} รายการ
+                                    </Badge>
+                                </div>
+                                <div className="p-5">
                                     <div className="max-h-64 overflow-y-auto space-y-2">
                                         {stockItems.map((item, index) => (
                                             <div
@@ -479,8 +481,8 @@ export default function AddProductPage() {
                                             </div>
                                         ))}
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -488,7 +490,7 @@ export default function AddProductPage() {
                 {/* Submit Button - Full Width */}
                 <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-[#1a56db] hover:bg-[#1e40af] text-white"
                     size="lg"
                     disabled={isLoading}
                 >

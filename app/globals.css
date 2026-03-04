@@ -88,27 +88,27 @@
 
 
 
-/* Light Blue Gradient Theme - Similar to Reference */
+/* Clean Neutral Professional Theme */
 
 :root {
 
-  --radius: 1rem;
+  --radius: 0.75rem;
 
 
 
-  /* Background - Light Blue Gradient (set via body) */
+  /* Background - Clean white */
 
-  --background: #e8f4fc;
+  --background: #f6f7f9;
 
-  --foreground: #1e3a5f;
+  --foreground: #111827;
 
 
 
-  /* Card - Clean White with subtle shadow */
+  /* Card - Pure white */
 
   --card: #ffffff;
 
-  --card-foreground: #334155;
+  --card-foreground: #1f2937;
 
 
 
@@ -116,13 +116,13 @@
 
   --popover: #ffffff;
 
-  --popover-foreground: #334155;
+  --popover-foreground: #1f2937;
 
 
 
-  /* Primary - Vibrant Blue */
+  /* Primary - Blue */
 
-  --primary: #3b82f6;
+  --primary: #1a56db;
 
   --primary-foreground: #ffffff;
 
@@ -130,23 +130,23 @@
 
   /* Secondary */
 
-  --secondary: #f0f9ff;
+  --secondary: #f1f5f9;
 
-  --secondary-foreground: #1e40af;
+  --secondary-foreground: #374151;
 
 
 
   /* Muted */
 
-  --muted: #f1f5f9;
+  --muted: #f3f4f6;
 
-  --muted-foreground: #64748b;
+  --muted-foreground: #6b7280;
 
 
 
   /* Accent */
 
-  --accent: #dbeafe;
+  --accent: #eff6ff;
 
   --accent-foreground: #1e40af;
 
@@ -160,17 +160,17 @@
 
   /* Border */
 
-  --border: #bfdbfe;
+  --border: #e5e7eb;
 
-  --input: #e0e7ff;
+  --input: #e5e7eb;
 
-  --ring: #3b82f6;
+  --ring: #1a56db;
 
 
 
   /* Chart Colors */
 
-  --chart-1: #3b82f6;
+  --chart-1: #1a56db;
 
   --chart-2: #0ea5e9;
 
@@ -182,25 +182,25 @@
 
 
 
-  /* Chart adaptive colors (light) */
+  /* Chart adaptive */
 
-  --chart-bar-fill: #0ea5e9;
+  --chart-bar-fill: #1a56db;
 
-  --chart-bar-label: #0369a1;
+  --chart-bar-label: #1e40af;
 
-  --chart-area-stroke: #0ea5e9;
+  --chart-area-stroke: #1a56db;
 
-  --chart-area-label: #0284c7;
+  --chart-area-label: #1e40af;
 
-  --chart-area-gradient-from: #38bdf8;
+  --chart-area-gradient-from: #60a5fa;
 
-  --chart-dot-fill: #0ea5e9;
+  --chart-dot-fill: #1a56db;
 
 
 
   /* Sidebar */
 
-  --sidebar: #1e40af;
+  --sidebar: #1e3a8a;
 
   --sidebar-foreground: #ffffff;
 
@@ -208,11 +208,11 @@
 
   --sidebar-primary-foreground: #ffffff;
 
-  --sidebar-accent: #3b82f6;
+  --sidebar-accent: #1d4ed8;
 
   --sidebar-accent-foreground: #ffffff;
 
-  --sidebar-border: #2563eb;
+  --sidebar-border: #1d4ed8;
 
   --sidebar-ring: #60a5fa;
 
@@ -364,11 +364,7 @@
 
   body {
 
-    @apply text-foreground;
-
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 50%, #c7d2fe 100%);
-
-    background-attachment: fixed;
+    @apply text-foreground bg-background;
 
     min-height: 100vh;
 
@@ -383,6 +379,7 @@
     background: linear-gradient(180deg, #0c1222 0%, #0f1729 50%, #0c1222 100%);
 
     background-attachment: fixed;
+
 
   }
 

@@ -19,12 +19,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+
 import {
     Loader2,
     FileText,
@@ -34,8 +29,8 @@ import {
     Filter,
     RefreshCw,
     Eye,
-    ArrowRight,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 interface AuditChange {
     field: string;
@@ -180,9 +175,66 @@ export default function AdminAuditLogsPage() {
     const [actionFilter, setActionFilter] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Detail dialog
-    const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-    const [detailOpen, setDetailOpen] = useState(false);
+    // Detail (SweetAlert2)
+
+    const openDetail = (log: AuditLog) => {
+        const details = parseDetails(log.details);
+        const hasChanges = details?.changes && details.changes.length > 0;
+        const changesHtml = hasChanges ? details!.changes!.map((change, i) => `
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 mb-2">
+                <p class="text-sm font-semibold text-gray-700 mb-2">${getFieldLabel(change.field)}</p>
+                <div class="flex items-center gap-2 text-sm">
+                    <div class="flex-1 bg-red-50 text-red-700 px-2 py-1 rounded text-xs"><span class="text-gray-500 mr-1">เดิม:</span><span class="font-mono break-all">${change.old || 'null'}</span></div>
+                    <span class="text-gray-400">→</span>
+                    <div class="flex-1 bg-green-50 text-green-700 px-2 py-1 rounded text-xs"><span class="text-gray-500 mr-1">ใหม่:</span><span class="font-mono break-all">${change.new || 'null'}</span></div>
+                </div>
+            </div>
+        `).join('') : '';
+
+        Swal.fire({
+            title: 'รายละเอียดกิจกรรม',
+            width: 'min(96vw, 620px)',
+            showConfirmButton: false,
+            showCloseButton: true,
+            customClass: { popup: 'rounded-2xl', closeButton: 'text-gray-400 hover:text-gray-600' },
+            html: `
+                <div class="text-left space-y-4 pb-2">
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <p class="text-gray-500 mb-1">ผู้ดำเนินการ</p>
+                            <p class="font-semibold">${log.user?.username || 'ระบบ'}</p>
+                            ${log.user?.id ? `<p class="text-xs text-gray-400 font-mono">${log.user.id}</p>` : ''}
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <p class="text-gray-500 mb-1">เวลา</p>
+                            <p class="font-semibold text-sm">${formatDate(log.createdAt)}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <p class="text-gray-500 mb-1">IP Address</p>
+                            <p class="font-mono text-sm">${log.ipAddress || '-'}</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-3">
+                            <p class="text-gray-500 mb-1">สถานะ</p>
+                            <p class="font-semibold ${log.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600'}">${log.status === 'SUCCESS' ? '✓ สำเร็จ' : '✗ ล้มเหลว'}</p>
+                        </div>
+                    </div>
+                    ${details?.resourceName || log.resource ? `
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm">
+                            <p class="text-blue-500 text-xs font-semibold uppercase tracking-wide mb-1">รายการที่เกี่ยวข้อง</p>
+                            ${details?.resourceName ? `<p class="font-medium">${details.resourceName}</p>` : ''}
+                            ${log.resource ? `<p class="text-gray-500 text-xs">${RESOURCE_LABELS[log.resource] || log.resource}</p>` : ''}
+                        </div>
+                    ` : ''}
+                    ${hasChanges ? `
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700 mb-2">การเปลี่ยนแปลง (${details!.changes!.length} รายการ)</p>
+                            ${changesHtml}
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+        });
+    };
 
     const fetchLogs = async () => {
         setLoading(true);
@@ -258,23 +310,16 @@ export default function AdminAuditLogsPage() {
         );
     });
 
-    const openDetail = (log: AuditLog) => {
-        setSelectedLog(log);
-        setDetailOpen(true);
-    };
-
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                        <FileText className="h-6 w-6" />
+                        <FileText className="h-6 w-6 text-[#1a56db]" />
                         Audit Logs
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        ประวัติกิจกรรมทั้งหมดในระบบ
-                    </p>
+                    <p className="text-muted-foreground mt-1">ประวัติกิจกรรมทั้งหมดในระบบ</p>
                 </div>
                 <Button onClick={fetchLogs} variant="outline" disabled={loading}>
                     <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -311,7 +356,13 @@ export default function AdminAuditLogsPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                        <FileText className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="font-bold">ประวัติกิจกรรม</span>
+                </div>
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -446,95 +497,6 @@ export default function AdminAuditLogsPage() {
                 </div>
             )}
 
-            {/* Detail Dialog */}
-            <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            รายละเอียดกิจกรรม
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    {selectedLog && (() => {
-                        const details = parseDetails(selectedLog.details);
-                        return (
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <p className="text-muted-foreground mb-1">ผู้ดำเนินการ</p>
-                                        <p className="font-medium">{selectedLog.user?.username || "ระบบ"}</p>
-                                        {selectedLog.user?.id && (
-                                            <p className="text-xs text-muted-foreground font-mono">{selectedLog.user.id}</p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground mb-1">เวลา</p>
-                                        <p className="font-medium">{formatDate(selectedLog.createdAt)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground mb-1">กิจกรรม</p>
-                                        <Badge className={ACTION_COLORS[selectedLog.action] || ""}>
-                                            {getActionLabel(selectedLog.action)}
-                                        </Badge>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground mb-1">IP Address</p>
-                                        <p className="font-medium font-mono">{selectedLog.ipAddress || "-"}</p>
-                                    </div>
-                                </div>
-
-                                {(selectedLog.resource || details?.resourceName) && (
-                                    <div className="bg-muted/50 rounded-lg p-4">
-                                        <p className="text-sm text-muted-foreground mb-2">รายการที่เกี่ยวข้อง</p>
-                                        <div className="space-y-1">
-                                            {details?.resourceName && (
-                                                <p className="font-medium">{details.resourceName}</p>
-                                            )}
-                                            {selectedLog.resource && (
-                                                <p className="text-sm text-muted-foreground">
-                                                    ประเภท: {RESOURCE_LABELS[selectedLog.resource] || selectedLog.resource}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {details?.changes && details.changes.length > 0 && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground mb-3">
-                                            การเปลี่ยนแปลง ({details.changes.length} รายการ)
-                                        </p>
-                                        <div className="space-y-2">
-                                            {details.changes.map((change, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="bg-muted/30 rounded-lg p-3 border border-border"
-                                                >
-                                                    <p className="text-sm font-medium mb-2">
-                                                        {getFieldLabel(change.field)}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <div className="flex-1 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 px-2 py-1 rounded">
-                                                            <span className="text-xs text-muted-foreground mr-1">เดิม:</span>
-                                                            <span className="font-mono break-all">{change.old || "null"}</span>
-                                                        </div>
-                                                        <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                                                        <div className="flex-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 px-2 py-1 rounded">
-                                                            <span className="text-xs text-muted-foreground mr-1">ใหม่:</span>
-                                                            <span className="font-mono break-all">{change.new || "null"}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })()}
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

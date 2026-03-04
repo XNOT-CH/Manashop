@@ -1,19 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { showWarning, showError, showSuccess } from "@/lib/swal";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Swal from "sweetalert2";
+import { showError, showSuccess, showDeleteConfirm, showLoading, hideLoading } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -30,19 +22,16 @@ import {
     Megaphone,
     ExternalLink,
     Image as ImageIcon,
-    Upload,
-    X,
 } from "lucide-react";
 import Image from "next/image";
 
-// Helper function to check if a URL is valid
 function isValidUrl(url: string): boolean {
     if (!url || url.length < 5) return false;
     try {
         new URL(url);
         return url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/");
     } catch {
-        return url.startsWith("/"); // Allow relative paths starting with /
+        return url.startsWith("/");
     }
 }
 
@@ -60,25 +49,9 @@ interface AnnouncementPopup {
 export default function AdminPopupsPage() {
     const [popups, setPopups] = useState<AnnouncementPopup[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedPopup, setSelectedPopup] = useState<AnnouncementPopup | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Form state
-    const [formData, setFormData] = useState({
-        title: "",
-        imageUrl: "",
-        linkUrl: "",
-        sortOrder: 0,
-        isActive: true,
-        dismissOption: "show_always",
-    });
-
-    // Fetch popups
-    const fetchPopups = async () => {
+    const fetchPopups = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetch("/api/admin/popups");
@@ -91,94 +64,191 @@ export default function AdminPopupsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchPopups();
-    }, []);
+    }, [fetchPopups]);
 
-    // Open dialog for create/edit
-    const openDialog = (popup?: AnnouncementPopup) => {
-        if (popup) {
-            setSelectedPopup(popup);
-            setFormData({
-                title: popup.title || "",
-                imageUrl: popup.imageUrl,
-                linkUrl: popup.linkUrl || "",
-                sortOrder: popup.sortOrder,
-                isActive: popup.isActive,
-                dismissOption: popup.dismissOption || "show_always",
-            });
-        } else {
-            setSelectedPopup(null);
-            setFormData({
-                title: "",
-                imageUrl: "",
-                linkUrl: "",
-                sortOrder: 0,
-                isActive: true,
-                dismissOption: "show_always",
-            });
+    // Handle image upload inside Swal
+    const handleFileUploadInSwal = async (file: File): Promise<string | null> => {
+        try {
+            showLoading("กำลังอัพโหลดรูป...");
+            const compressed = await compressImage(file);
+            const uploadFormData = new FormData();
+            uploadFormData.append("file", compressed);
+            const res = await fetch("/api/upload", { method: "POST", body: uploadFormData });
+            const data = await res.json();
+            hideLoading();
+            if (data.success) {
+                showSuccess("อัพโหลดรูปสำเร็จ!");
+                return data.url as string;
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+                return null;
+            }
+        } catch {
+            hideLoading();
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+            return null;
         }
-        setIsDialogOpen(true);
     };
 
-    // Save popup
-    const handleSave = async () => {
-        if (!formData.imageUrl) {
-            showWarning("กรุณาระบุ URL รูปภาพ");
-            return;
-        }
+    // Open Create/Edit form in SweetAlert2
+    const openDialog = (popup?: AnnouncementPopup) => {
+        Swal.fire({
+            title: popup ? "แก้ไข Pop-up" : "เพิ่ม Pop-up ใหม่",
+            width: "min(96vw, 560px)",
+            showCancelButton: true,
+            confirmButtonText: popup ? "บันทึก" : "เพิ่ม",
+            cancelButtonText: "ยกเลิก",
+            confirmButtonColor: "#1a56db",
+            cancelButtonColor: "#6b7280",
+            reverseButtons: true,
+            focusConfirm: false,
+            customClass: {
+                popup: "rounded-2xl text-left",
+                confirmButton: "rounded-xl px-6 py-2",
+                cancelButton: "rounded-xl px-6 py-2",
+            },
+            html: `
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ (สำหรับ admin)</label>
+                        <input id="swal-title" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="เช่น โปรโมชั่นวาเลนไทน์" value="${popup?.title || ""}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">รูปภาพ *</label>
+                        <div class="flex gap-2 mb-2">
+                            <button id="swal-upload-btn" type="button" class="flex items-center gap-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                                📷 อัพโหลดรูป
+                            </button>
+                            <span class="text-sm text-gray-400 self-center">หรือ</span>
+                        </div>
+                        <input id="swal-imageUrl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="วาง URL รูปภาพ..." value="${popup?.imageUrl || ""}">
+                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 1500x1500px</p>
+                        <div id="swal-img-preview" class="mt-2 ${popup?.imageUrl ? "" : "hidden"}">
+                            <img src="${popup?.imageUrl || ""}" class="w-40 h-40 object-cover rounded-lg border mx-auto" onerror="this.src='https://placehold.co/200x200/ef4444/ffffff?text=Invalid+URL'">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ลิงก์ (เมื่อคลิก)</label>
+                        <input id="swal-linkUrl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/promo" value="${popup?.linkUrl || ""}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ลำดับการแสดง</label>
+                            <input id="swal-sortOrder" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${popup?.sortOrder ?? 0}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
+                            <select id="swal-isActive" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="true" ${(popup?.isActive ?? true) ? "selected" : ""}>แสดง</option>
+                                <option value="false" ${!(popup?.isActive ?? true) ? "selected" : ""}>ซ่อน</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เมื่อปิด Popup</label>
+                        <select id="swal-dismissOption" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="show_always" ${(popup?.dismissOption ?? "show_always") === "show_always" ? "selected" : ""}>แสดงทุกครั้งเมื่อเข้าเว็บ</option>
+                            <option value="hide_1_hour" ${popup?.dismissOption === "hide_1_hour" ? "selected" : ""}>ปิดการแจ้งเตือน 1 ชั่วโมง</option>
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">กำหนดว่าเมื่อผู้ใช้ปิด popup จะแสดงอีกครั้งเมื่อไหร่</p>
+                    </div>
+                </div>
+            `,
+            didOpen: () => {
+                const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
+                const preview = document.getElementById("swal-img-preview");
+                const previewImg = preview?.querySelector("img");
 
-        setSaving(true);
-        try {
-            const url = selectedPopup
-                ? `/api/admin/popups/${selectedPopup.id}`
-                : "/api/admin/popups";
-            const method = selectedPopup ? "PUT" : "POST";
+                urlInput?.addEventListener("input", () => {
+                    if (urlInput.value) {
+                        if (preview) preview.classList.remove("hidden");
+                        if (previewImg) previewImg.src = urlInput.value;
+                    } else {
+                        if (preview) preview.classList.add("hidden");
+                    }
+                });
 
-            const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+                const uploadBtn = document.getElementById("swal-upload-btn");
+                uploadBtn?.addEventListener("click", () => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/jpeg,image/png,image/webp,image/gif";
+                    input.onchange = async () => {
+                        const file = input.files?.[0];
+                        if (!file) return;
+                        const url = await handleFileUploadInSwal(file);
+                        if (url) {
+                            if (urlInput) urlInput.value = url;
+                            if (preview) preview.classList.remove("hidden");
+                            if (previewImg) previewImg.src = url;
+                        }
+                    };
+                    input.click();
+                });
+            },
+            preConfirm: () => {
+                const imageUrl = (document.getElementById("swal-imageUrl") as HTMLInputElement)?.value?.trim();
+                if (!imageUrl) {
+                    Swal.showValidationMessage("กรุณาระบุ URL รูปภาพ");
+                    return false;
+                }
+                return {
+                    title: (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim() || null,
+                    imageUrl,
+                    linkUrl: (document.getElementById("swal-linkUrl") as HTMLInputElement)?.value?.trim() || null,
+                    sortOrder: parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0,
+                    isActive: (document.getElementById("swal-isActive") as HTMLSelectElement)?.value === "true",
+                    dismissOption: (document.getElementById("swal-dismissOption") as HTMLSelectElement)?.value || "show_always",
+                };
+            },
+        }).then(async (result) => {
+            if (!result.isConfirmed || !result.value) return;
 
-            if (res.ok) {
-                setIsDialogOpen(false);
-                fetchPopups();
-            } else {
+            showLoading("กำลังบันทึก...");
+            try {
+                const url = popup ? `/api/admin/popups/${popup.id}` : "/api/admin/popups";
+                const method = popup ? "PUT" : "POST";
+                const res = await fetch(url, {
+                    method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(result.value),
+                });
+                hideLoading();
+                if (res.ok) {
+                    showSuccess(popup ? "แก้ไข Pop-up สำเร็จ!" : "เพิ่ม Pop-up สำเร็จ!");
+                    fetchPopups();
+                } else {
+                    showError("เกิดข้อผิดพลาดในการบันทึก");
+                }
+            } catch {
+                hideLoading();
                 showError("เกิดข้อผิดพลาดในการบันทึก");
             }
-        } catch (error) {
-            console.error("Error saving popup:", error);
-            showError("เกิดข้อผิดพลาดในการบันทึก");
-        } finally {
-            setSaving(false);
-        }
+        });
     };
 
     // Delete popup
-    const handleDelete = async () => {
-        if (!selectedPopup) return;
+    const handleDelete = async (popup: AnnouncementPopup) => {
+        const confirmed = await showDeleteConfirm(popup.title || "Pop-up ไม่มีชื่อ");
+        if (!confirmed) return;
 
-        setSaving(true);
+        showLoading("กำลังลบ...");
         try {
-            const res = await fetch(`/api/admin/popups/${selectedPopup.id}`, {
-                method: "DELETE",
-            });
-
+            const res = await fetch(`/api/admin/popups/${popup.id}`, { method: "DELETE" });
+            hideLoading();
             if (res.ok) {
-                setIsDeleteDialogOpen(false);
-                setSelectedPopup(null);
+                showSuccess("ลบ Pop-up สำเร็จ!");
                 fetchPopups();
             } else {
                 showError("เกิดข้อผิดพลาดในการลบ");
             }
-        } catch (error) {
-            console.error("Error deleting popup:", error);
+        } catch {
+            hideLoading();
             showError("เกิดข้อผิดพลาดในการลบ");
-        } finally {
-            setSaving(false);
         }
     };
 
@@ -188,52 +258,19 @@ export default function AdminPopupsPage() {
             const res = await fetch(`/api/admin/popups/${popup.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...popup,
-                    isActive: !popup.isActive,
-                }),
+                body: JSON.stringify({ ...popup, isActive: !popup.isActive }),
             });
-
-            if (res.ok) {
-                fetchPopups();
-            }
+            if (res.ok) fetchPopups();
         } catch (error) {
             console.error("Error toggling active:", error);
         }
     };
 
-    // Handle file upload
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        try {
-            const compressed = await compressImage(file);
-            const uploadFormData = new FormData();
-            uploadFormData.append("file", compressed);
-
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: uploadFormData,
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                setFormData((prev) => ({ ...prev, imageUrl: data.url }));
-                showSuccess("อัพโหลดรูปสำเร็จ!");
-            } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
-            }
-        } catch (error) {
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
     return (
         <div className="space-y-6">
+            {/* Hidden file input ref (unused, kept for TS) */}
+            <input ref={fileInputRef} type="file" className="hidden" />
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -261,11 +298,7 @@ export default function AdminPopupsPage() {
                     <div className="text-center py-12 text-muted-foreground">
                         <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>ยังไม่มี Pop-up</p>
-                        <Button
-                            variant="link"
-                            className="mt-2"
-                            onClick={() => openDialog()}
-                        >
+                        <Button variant="link" className="mt-2" onClick={() => openDialog()}>
                             เพิ่ม Pop-up แรก
                         </Button>
                     </div>
@@ -323,9 +356,7 @@ export default function AdminPopupsPage() {
                                             <span className="text-muted-foreground text-xs">-</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-center">
-                                        {popup.sortOrder}
-                                    </TableCell>
+                                    <TableCell className="text-center">{popup.sortOrder}</TableCell>
                                     <TableCell className="text-center">
                                         <Switch
                                             checked={popup.isActive}
@@ -345,10 +376,7 @@ export default function AdminPopupsPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="text-destructive hover:text-destructive"
-                                                onClick={() => {
-                                                    setSelectedPopup(popup);
-                                                    setIsDeleteDialogOpen(true);
-                                                }}
+                                                onClick={() => handleDelete(popup)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -360,217 +388,6 @@ export default function AdminPopupsPage() {
                     </Table>
                 )}
             </div>
-
-            {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {selectedPopup ? "แก้ไข Pop-up" : "เพิ่ม Pop-up ใหม่"}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="title">ชื่อ (สำหรับ admin)</Label>
-                            <Input
-                                id="title"
-                                value={formData.title}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, title: e.target.value })
-                                }
-                                placeholder="เช่น โปรโมชั่นวาเลนไทน์"
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label>รูปภาพ *</Label>
-
-                            {/* File Upload */}
-                            <div className="flex gap-2">
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                    className="hidden"
-                                    onChange={handleFileUpload}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isUploading}
-                                >
-                                    {isUploading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Upload className="h-4 w-4" />
-                                    )}
-                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
-                                </Button>
-                                <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                            </div>
-
-                            {/* URL Input */}
-                            <div className="flex gap-2">
-                                <Input
-                                    id="imageUrl"
-                                    value={formData.imageUrl}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, imageUrl: e.target.value })
-                                    }
-                                    placeholder="วาง URL รูปภาพ..."
-                                    className="flex-1"
-                                />
-                                {formData.imageUrl && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: "" }))}
-                                        className="text-red-500 hover:text-red-600"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
-
-                            <p className="text-xs text-muted-foreground">
-                                รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 1500x1500px
-                            </p>
-
-                            {/* Preview */}
-                            {formData.imageUrl && isValidUrl(formData.imageUrl) && (
-                                <div className="relative w-full aspect-square max-w-[200px] rounded-lg overflow-hidden mt-2 mx-auto border">
-                                    <Image
-                                        src={formData.imageUrl}
-                                        alt="Preview"
-                                        fill
-                                        sizes="200px"
-                                        className="object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src =
-                                                "https://placehold.co/400x400/ef4444/ffffff?text=Invalid+URL";
-                                        }}
-                                    />
-                                </div>
-                            )}
-                            {formData.imageUrl && !isValidUrl(formData.imageUrl) && (
-                                <div className="flex items-center gap-2 mt-2 text-amber-500 text-xs">
-                                    <ImageIcon className="h-4 w-4" />
-                                    กรุณาใส่ URL ที่ถูกต้อง (เริ่มต้นด้วย http:// หรือ https://)
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="linkUrl">ลิงก์ (เมื่อคลิก)</Label>
-                            <Input
-                                id="linkUrl"
-                                value={formData.linkUrl}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, linkUrl: e.target.value })
-                                }
-                                placeholder="https://example.com/promo"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="sortOrder">ลำดับการแสดง</Label>
-                                <Input
-                                    id="sortOrder"
-                                    type="number"
-                                    value={formData.sortOrder}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            sortOrder: parseInt(e.target.value) || 0,
-                                        })
-                                    }
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>สถานะ</Label>
-                                <div className="flex items-center gap-2 h-9">
-                                    <Switch
-                                        checked={formData.isActive}
-                                        onCheckedChange={(checked) =>
-                                            setFormData({ ...formData, isActive: checked })
-                                        }
-                                    />
-                                    <span className="text-sm text-muted-foreground">
-                                        {formData.isActive ? "แสดง" : "ซ่อน"}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>เมื่อปิด Popup</Label>
-                            <select
-                                value={formData.dismissOption}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, dismissOption: e.target.value })
-                                }
-                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                            >
-                                <option value="show_always">แสดงทุกครั้งเมื่อเข้าเว็บ</option>
-                                <option value="hide_1_hour">ปิดการแจ้งเตือน 1 ชั่วโมง</option>
-                            </select>
-                            <p className="text-xs text-muted-foreground">
-                                กำหนดว่าเมื่อผู้ใช้ปิด popup จะแสดงอีกครั้งเมื่อไหร่
-                            </p>
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDialogOpen(false)}
-                            disabled={saving}
-                        >
-                            ยกเลิก
-                        </Button>
-                        <Button onClick={handleSave} disabled={saving}>
-                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            {selectedPopup ? "บันทึก" : "เพิ่ม"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>ยืนยันการลบ</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-muted-foreground">
-                        คุณต้องการลบ Pop-up &quot;{selectedPopup?.title || "ไม่มีชื่อ"}&quot; ใช่หรือไม่?
-                    </p>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDeleteDialogOpen(false)}
-                            disabled={saving}
-                        >
-                            ยกเลิก
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={saving}
-                        >
-                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            ลบ
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

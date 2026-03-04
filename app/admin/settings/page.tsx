@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -191,57 +190,55 @@ export default function AdminSettingsPage() {
             {/* Header */}
             <div className="sticky top-0 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-background/85 backdrop-blur border-b">
                 <div className="flex items-center justify-between py-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">ตั้งค่าเว็บไซต์</h1>
-                    <p className="text-muted-foreground">จัดการรูปภาพและข้อความบนเว็บไซต์</p>
-                </div>
-                <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-                    {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="h-4 w-4" />
-                    )}
-                    บันทึก
-                </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">ตั้งค่าเว็บไซต์</h1>
+                        <p className="text-muted-foreground">จัดการรูปภาพและข้อความบนเว็บไซต์</p>
+                    </div>
+                    <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+                        {isSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Save className="h-4 w-4" />
+                        )}
+                        บันทึก
+                    </Button>
                 </div>
             </div>
 
             <div className="grid gap-6 xl:grid-cols-12">
                 <div className="space-y-6 xl:col-span-5">
                     {/* Homepage Section Toggles */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <LayoutGrid className="h-5 w-5" />
-                                ส่วนแสดงผลหน้าแรก
-                            </CardTitle>
-                            <CardDescription>เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                    <Label className="text-base font-medium">สินค้าทั้งหมด</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        แสดงรายการสินค้าทั้งหมดบนหน้าแรก
-                                    </p>
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                        <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                            <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                <LayoutGrid className="h-3.5 w-3.5 text-white" />
+                            </div>
+                            <span className="font-bold">ส่วนแสดงผลหน้าแรก</span>
+                            <span className="text-sm text-muted-foreground ml-1">— เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</span>
+                        </div>
+                        <div className="p-5">
+                            <div className="flex items-center justify-between rounded-xl border border-border p-4 bg-gray-50 dark:bg-zinc-800">
+                                <div>
+                                    <p className="font-medium text-sm">สินค้าทั้งหมด</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">แสดงรายการสินค้าทั้งหมดบนหน้าแรก</p>
                                 </div>
                                 <Switch
                                     checked={settings.showAllProducts}
                                     onCheckedChange={(checked) => updateSetting("showAllProducts", checked)}
                                 />
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
 
                     {/* General Settings */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Type className="h-5 w-5" />
-                                ข้อความทั่วไป
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                        <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                            <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                <Type className="h-3.5 w-3.5 text-white" />
+                            </div>
+                            <span className="font-bold">ข้อความทั่วไป</span>
+                        </div>
+                        <div className="p-5 grid gap-6 md:grid-cols-2">
                             <div className="space-y-2">
                                 <Label>ชื่อเว็บไซต์</Label>
                                 <Input
@@ -427,8 +424,8 @@ export default function AdminSettingsPage() {
                                     </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="space-y-6 xl:col-span-7">
@@ -542,13 +539,11 @@ function BannerCard({
     };
 
     return (
-        <Card>
-            <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                    <Badge variant="secondary">Banner {number}</Badge>
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="border-b border-border py-2.5 px-4 flex items-center gap-2">
+                <Badge variant="secondary" className="bg-blue-100 text-[#1a56db] font-semibold">Banner {number}</Badge>
+            </div>
+            <div className="p-4 space-y-4">
                 <div className="space-y-2">
                     <Label>รูปภาพ</Label>
 
@@ -665,7 +660,7 @@ function BannerCard({
                         />
                     </div>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

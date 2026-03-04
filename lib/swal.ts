@@ -76,7 +76,7 @@ export const showDeleteConfirm = async (
 ): Promise<boolean> => {
     const result = await Swal.fire({
         title: "ยืนยันการลบ?",
-        html: `คุณต้องการลบ <strong>"${itemName}"</strong> ใช่หรือไม่?<br><small class="text-red-500">การกระทำนี้ไม่สามารถยกเลิกได้</small>`,
+        html: `คุณต้องการลบ <strong>"${itemName}"</strong> ใช่หรือไม่?`,
         icon: "warning",
         width: "min(92vw, 32rem)",
         showCancelButton: true,

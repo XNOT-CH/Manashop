@@ -2,9 +2,26 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon } from "lucide-react";
+import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, HelpCircle, Copy, GripVertical } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import Image from "next/image";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+    arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface GachaCategory {
     id: string;
@@ -76,10 +93,11 @@ export default function GachaMachinesAdminPage() {
     });
     const [savingMachine, setSavingMachine] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const loadAll = async () => {
-        setLoading(true);
+    const loadAll = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const [catRes, machRes] = await Promise.all([
                 fetch("/api/admin/gacha-categories"),
@@ -90,7 +108,7 @@ export default function GachaMachinesAdminPage() {
             if (catJson.success) setCategories(catJson.data);
             if (machJson.success) setMachines(machJson.data);
         } catch { /* ignore */ }
-        setLoading(false);
+        if (!silent) setLoading(false);
     };
 
     useEffect(() => { void loadAll(); }, []);
@@ -177,8 +195,20 @@ export default function GachaMachinesAdminPage() {
 
     const deleteMachine = async (id: string) => {
         if (!await showDeleteConfirm("ตู้กาชานี้")) return;
-        await fetch(`/api/admin/gacha-machines/${id}`, { method: "DELETE" });
-        void loadAll();
+        // Optimistic: remove from state immediately
+        setMachines(prev => prev.filter(m => m.id !== id));
+        try {
+            const res = await fetch(`/api/admin/gacha-machines/${id}`, { method: "DELETE" });
+            const json = await res.json() as { success: boolean };
+            if (!json.success) {
+                // Revert if server said no
+                void loadAll();
+                showError("ลบไม่สำเร็จ");
+            }
+        } catch {
+            void loadAll();
+            showError("เกิดข้อผิดพลาดในการลบ");
+        }
     };
 
     if (loading) {
@@ -192,50 +222,6 @@ export default function GachaMachinesAdminPage() {
     return (
         <div className="space-y-6">
 
-            {/* ── เพิ่มหมวดหมู่ ── */}
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-                <div className="mb-5">
-                    <h1 className="text-base font-bold text-[#145de7]">หมวดหมู่</h1>
-                    <p className="text-xs text-muted-foreground">จัดการหมวดหมู่กาชา</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className={labelCls}>ชื่อหมวดหมู่ *</label>
-                        <input
-                            value={newCatName}
-                            onChange={e => setNewCatName(e.target.value)}
-                            placeholder="จำเป็น"
-                            className={inputCls}
-                            onKeyDown={e => e.key === "Enter" && void addCategory()}
-                        />
-                    </div>
-                </div>
-                <button
-                    onClick={() => void addCategory()}
-                    disabled={savingCat || !newCatName.trim()}
-                    className="w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1148c0] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                    {savingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    เพิ่มหมวดหมู่
-                </button>
-
-                {categories.length > 0 && (
-                    <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {categories.map(cat => (
-                            <div key={cat.id} className="flex items-center justify-between bg-muted/50 rounded-xl px-4 py-3 border border-border/40">
-                                <div>
-                                    <p className="text-sm font-semibold text-foreground">{cat.name}</p>
-                                    <p className="text-xs text-muted-foreground">{cat._count.machines} ตู้</p>
-                                </div>
-                                <button onClick={() => void deleteCategory(cat.id)} className="text-red-400 hover:text-red-600 transition p-1 ml-2">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
 
             {/* ── เพิ่มตู้กาชา ── */}
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
@@ -279,7 +265,7 @@ export default function GachaMachinesAdminPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* ชื่อตู้กาชา */}
+                    {/* แถว 1: ชื่อตู้กาชา + หมวดหมู่ */}
                     <div>
                         <label className={labelCls}>ชื่อตู้กาชา *</label>
                         <input
@@ -290,12 +276,12 @@ export default function GachaMachinesAdminPage() {
                         />
                     </div>
 
-                    {/* ประเภทราคา */}
+                    {/* แถว 2: ประเภทราคา + ราคาต่อครั้ง */}
                     <div>
                         <label className={labelCls}>ประเภทราคา</label>
                         <select
                             value={machineForm.costType}
-                            onChange={e => setMachineForm(f => ({ ...f, costType: e.target.value }))}
+                            onChange={e => setMachineForm(f => ({ ...f, costType: e.target.value, costAmount: 0 }))}
                             className={inputCls}
                         >
                             <option value="FREE">ฟรี</option>
@@ -303,59 +289,21 @@ export default function GachaMachinesAdminPage() {
                             <option value="POINT">พอยต์</option>
                         </select>
                     </div>
-
-                    {/* หมวดหมู่ */}
                     <div>
-                        <label className={labelCls}>หมวดหมู่</label>
-                        <select
-                            value={machineForm.categoryId}
-                            onChange={e => setMachineForm(f => ({ ...f, categoryId: e.target.value }))}
-                            className={inputCls}
-                        >
-                            <option value="">เลือกหมวดหมู่</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-
-                    {/* ราคาต่อครั้ง */}
-                    <div>
-                        <label className={labelCls}>ราคาต่อครั้ง</label>
+                        <label className={`${labelCls} ${machineForm.costType === "FREE" ? "opacity-40" : ""}`}>
+                            ราคาต่อครั้ง {machineForm.costType === "FREE" && <span className="font-normal text-muted-foreground">(ไม่ใช้เมื่อเลือก ฟรี)</span>}
+                        </label>
                         <input
                             type="number"
-                            value={machineForm.costAmount}
+                            value={machineForm.costType === "FREE" ? "" : machineForm.costAmount}
                             onChange={e => setMachineForm(f => ({ ...f, costAmount: Number(e.target.value) }))}
                             min={0}
-                            placeholder="0"
+                            placeholder={machineForm.costType === "FREE" ? "—" : "0"}
                             disabled={machineForm.costType === "FREE"}
-                            className={inputCls + " disabled:opacity-40"}
+                            className={`${inputCls} disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-muted/40`}
                         />
                     </div>
 
-                    {/* ลิมิตต่อวัน */}
-                    <div>
-                        <label className={labelCls}>ลิมิตต่อวัน (0 = ไม่จำกัด)</label>
-                        <input
-                            type="number"
-                            value={machineForm.dailySpinLimit}
-                            onChange={e => setMachineForm(f => ({ ...f, dailySpinLimit: Number(e.target.value) }))}
-                            min={0}
-                            placeholder="0"
-                            className={inputCls}
-                        />
-                    </div>
-
-                    {/* ลำดับ */}
-                    <div>
-                        <label className={labelCls}>ลำดับการแสดง</label>
-                        <input
-                            type="number"
-                            value={machineForm.sortOrder}
-                            onChange={e => setMachineForm(f => ({ ...f, sortOrder: Number(e.target.value) }))}
-                            min={0}
-                            placeholder="0"
-                            className={inputCls}
-                        />
-                    </div>
                 </div>
 
                 {/* ── รูปภาพ ── */}
@@ -365,12 +313,24 @@ export default function GachaMachinesAdminPage() {
 
                     {/* Preview + upload zone */}
                     <div className="flex items-start gap-3">
-                        {/* Preview box */}
-                        <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-muted/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                        {/* Preview / Drop box */}
+                        <div
+                            className={`w-20 h-20 rounded-xl border-2 border-dashed flex-shrink-0 overflow-hidden flex items-center justify-center transition-colors
+                                ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/30"}
+                            `}
+                            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                setIsDragging(false);
+                                const file = e.dataTransfer.files?.[0];
+                                if (file) void handleImageUpload(file);
+                            }}
+                        >
                             {validImageUrl(machineForm.imageUrl) ? (
-                                <Image src={machineForm.imageUrl} alt="preview" width={80} height={80} className="w-full h-full object-cover" />
+                                <Image src={machineForm.imageUrl} alt="preview" width={80} height={80} className="w-full h-full object-cover pointer-events-none" />
                             ) : (
-                                <ImageIcon className="w-7 h-7 text-muted-foreground/40" />
+                                <ImageIcon className={`w-7 h-7 ${isDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
                             )}
                         </div>
 
@@ -451,39 +411,238 @@ export default function GachaMachinesAdminPage() {
             {machines.length > 0 && (
                 <MachineTable
                     machines={machines}
+                    categories={categories}
                     onToggle={toggleMachine}
                     onDelete={deleteMachine}
+                    onRefresh={() => void loadAll(true)}
                 />
             )}
         </div>
     );
 }
 
+// ── Sortable row component ────────────────────────────────────────────────
+function SortableRow({
+    m,
+    i,
+    page,
+    perPage,
+    togglingMap,
+    duplicatingId,
+    handleToggle,
+    handleDuplicate,
+    onDelete,
+    gameTypeLabel,
+}: {
+    m: GachaMachine;
+    i: number;
+    page: number;
+    perPage: number;
+    togglingMap: Record<string, boolean>;
+    duplicatingId: string | null;
+    handleToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => void;
+    handleDuplicate: (id: string, name: string) => void;
+    onDelete: (id: string) => void;
+    gameTypeLabel: (gt: string) => string;
+}) {
+    const router = useRouter();
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        background: isDragging ? "hsl(var(--muted))" : undefined,
+        zIndex: isDragging ? 10 : undefined,
+    };
+
+    return (
+        <tr ref={setNodeRef} style={style} className="border-b border-border/40 hover:bg-muted/30 transition-colors">
+            {/* drag handle + row number */}
+            <td className="px-3 py-2.5 text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                    <button
+                        {...attributes}
+                        {...listeners}
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground p-0.5 rounded touch-none"
+                        title="ลากเพื่อเรียงลำดับ"
+                    >
+                        <GripVertical className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs">{(page - 1) * perPage + i + 1}</span>
+                </div>
+            </td>
+            <td className="px-3 py-2.5">
+                {validImageUrl(m.imageUrl) ? (
+                    <Image src={m.imageUrl!} alt={m.name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" />
+                ) : (
+                    <div className="w-9 h-9 rounded-lg bg-[#eef4ff] flex items-center justify-center">
+                        <LayoutGrid className="w-4 h-4 text-[#145de7]/40" />
+                    </div>
+                )}
+            </td>
+            <td className="px-3 py-2.5 font-medium text-foreground max-w-[160px] truncate">{m.name}</td>
+            <td className="px-3 py-2.5">
+                <span className="text-xs px-2 py-0.5 rounded-md bg-[#eef4ff] text-[#145de7] font-semibold">
+                    {gameTypeLabel(m.gameType)}
+                </span>
+            </td>
+            <td className="px-3 py-2.5 text-foreground whitespace-nowrap">
+                {m.costType === "FREE" ? (
+                    <span className="text-green-600 font-medium">ฟรี</span>
+                ) : (
+                    `${Number(m.costAmount).toLocaleString()} ${m.costType === "CREDIT" ? "เครดิต" : "พอยต์"}`
+                )}
+            </td>
+            <td className="px-3 py-2.5 text-muted-foreground">{m._count.rewards}</td>
+            <td className="px-3 py-2.5">
+                <button
+                    onClick={() => void handleToggle(m.id, "isActive", !m.isActive)}
+                    disabled={togglingMap[m.id]}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${m.isActive ? "bg-[#145de7]" : "bg-gray-300 dark:bg-zinc-600"}`}
+                    title={m.isActive ? "คลิกเพื่อซ่อน" : "คลิกเพื่อแสดง"}
+                >
+                    <span className={`inline-flex h-4 w-4 items-center justify-center transform rounded-full bg-white shadow transition-transform duration-200 ${m.isActive ? "translate-x-6" : "translate-x-1"}`}>
+                        {togglingMap[m.id] && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />}
+                    </span>
+                </button>
+            </td>
+            <td className="px-3 py-2.5">
+                <button
+                    onClick={() => void handleDuplicate(m.id, m.name)}
+                    disabled={duplicatingId === m.id}
+                    className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 flex items-center justify-center transition disabled:opacity-50"
+                    title="คัดลอก"
+                >
+                    {duplicatingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+            </td>
+            <td className="px-3 py-2.5">
+                <button
+                    onClick={() => router.push(`/admin/gacha-machines/${m.id}/edit`)}
+                    className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-400 flex items-center justify-center transition"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                </button>
+            </td>
+            <td className="px-3 py-2.5">
+                <button
+                    onClick={() => onDelete(m.id)}
+                    className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 flex items-center justify-center transition"
+                >
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
+            </td>
+        </tr>
+    );
+}
+
 // ── Data table component ───────────────────────────────────────────────────
 function MachineTable({
     machines,
+    categories,
     onToggle,
     onDelete,
+    onRefresh,
 }: {
     machines: GachaMachine[];
+    categories: GachaCategory[];
     onToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => void;
     onDelete: (id: string) => void;
+    onRefresh: () => void;
 }) {
-    const router = useRouter();
     const [search, setSearch] = useState("");
+    const [filterCategory, setFilterCategory] = useState("");
     const [perPage, setPerPage] = useState(10);
     const [page, setPage] = useState(1);
+    const [sortField, setSortField] = useState<"name" | "costAmount" | "isActive" | null>(null);
+    const [sortAsc, setSortAsc] = useState(true);
+    const [togglingMap, setTogglingMap] = useState<Record<string, boolean>>({});
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+    const [localMachines, setLocalMachines] = useState<GachaMachine[]>(machines);
 
-    const filtered = machines.filter(m =>
-        m.name.toLowerCase().includes(search.toLowerCase()) ||
-        (m.category?.name ?? "").toLowerCase().includes(search.toLowerCase())
+    // Sync when prop changes
+    useEffect(() => { setLocalMachines(machines); }, [machines]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-    const paged = filtered.slice((page - 1) * perPage, page * perPage);
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
 
-    const gameTypeLabel = (gt: string) =>
-        gt === "GRID_3X3" ? "3×3" : "สุ่มตัว X";
+        const oldIndex = localMachines.findIndex(m => m.id === active.id);
+        const newIndex = localMachines.findIndex(m => m.id === over.id);
+        const reordered = arrayMove(localMachines, oldIndex, newIndex);
+        setLocalMachines(reordered);
+
+        // Persist to DB
+        try {
+            await fetch("/api/admin/gacha-machines/reorder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orders: reordered.map((m, idx) => ({ id: m.id, sortOrder: idx })),
+                }),
+            });
+        } catch {
+            // Revert on failure
+            setLocalMachines(machines);
+            showError("เกิดข้อผิดพลาดในการบันทึกลำดับ");
+        }
+    };
+
+    // Toggle wrapper with loading state
+    const handleToggle = async (id: string, field: "isActive" | "isEnabled", val: boolean) => {
+        if (togglingMap[id]) return;
+        setTogglingMap(p => ({ ...p, [id]: true }));
+        try { await onToggle(id, field, val); }
+        finally { setTogglingMap(p => ({ ...p, [id]: false })); }
+    };
+
+    const handleDuplicate = async (id: string, name: string) => {
+        setDuplicatingId(id);
+        try {
+            const res = await fetch(`/api/admin/gacha-machines/${id}/duplicate`, { method: "POST" });
+            const json = await res.json() as { success: boolean; message?: string };
+            if (json.success) { showSuccess(`คัดลอก "${name}" สำเร็จ`); onRefresh(); }
+            else showError(json.message ?? "เกิดข้อผิดพลาดในการคัดลอก");
+        } catch { showError("เกิดข้อผิดพลาดในการคัดลอก"); }
+        finally { setDuplicatingId(null); }
+    };
+
+    const handleSort = (field: "name" | "costAmount" | "isActive") => {
+        if (sortField === field) { setSortAsc(!sortAsc); }
+        else { setSortField(field); setSortAsc(true); }
+    };
+
+    const sortedAndFiltered = localMachines
+        .filter(m => {
+            const matchSearch = m.name.toLowerCase().includes(search.toLowerCase()) ||
+                (m.category?.name ?? "").toLowerCase().includes(search.toLowerCase());
+            const matchCategory = !filterCategory || m.categoryId === filterCategory;
+            return matchSearch && matchCategory;
+        })
+        .sort((a, b) => {
+            if (!sortField) return 0;
+            const aVal = a[sortField];
+            const bVal = b[sortField];
+            if (sortField === "name") {
+                const cmp = String(aVal).localeCompare(String(bVal));
+                return sortAsc ? cmp : -cmp;
+            } else {
+                if (aVal === bVal) return 0;
+                const cmp = aVal < bVal ? -1 : 1;
+                return sortAsc ? cmp : -cmp;
+            }
+        });
+
+    const totalPages = Math.max(1, Math.ceil(sortedAndFiltered.length / perPage));
+    const paged = sortedAndFiltered.slice((page - 1) * perPage, page * perPage);
+
+    const gameTypeLabel = (gt: string) => gt === "GRID_3X3" ? "3×3" : "สุ่มตัว X";
 
     return (
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
@@ -512,83 +671,69 @@ function MachineTable({
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-border bg-muted/40">
-                            {["ลำดับ", "รูป", "ชื่อ", "มินิเกม", "ราคา", "หมวดหมู่", "รางวัล", "สถานะ", "แก้ไข", "ลบ"].map(h => (
-                                <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                                    {h}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void handleDragEnd(e)}>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-border bg-muted/40">
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลำดับ</th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">รูป</th>
+                                <th
+                                    className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                    onClick={() => handleSort("name")}
+                                >
+                                    <div className="flex items-center gap-1">ชื่อ {sortField === "name" && (sortAsc ? "↑" : "↓")}</div>
                                 </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paged.length === 0 ? (
-                            <tr>
-                                <td colSpan={10} className="text-center py-10 text-muted-foreground text-sm">ไม่พบรายการ</td>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">มินิเกม</th>
+                                <th
+                                    className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                    onClick={() => handleSort("costAmount")}
+                                >
+                                    <div className="flex items-center gap-1">ราคา {sortField === "costAmount" && (sortAsc ? "↑" : "↓")}</div>
+                                </th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">รางวัล</th>
+                                <th
+                                    className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                    onClick={() => handleSort("isActive")}
+                                >
+                                    <div className="flex items-center gap-1">สถานะ {sortField === "isActive" && (sortAsc ? "↑" : "↓")}</div>
+                                </th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">คัดลอก</th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">แก้ไข</th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลบ</th>
                             </tr>
-                        ) : paged.map((m, i) => (
-                            <tr key={m.id} className="border-b border-border/40 hover:bg-muted/30 transition-colors">
-                                <td className="px-3 py-2.5 text-muted-foreground">{(page - 1) * perPage + i + 1}</td>
-                                <td className="px-3 py-2.5">
-                                    {validImageUrl(m.imageUrl) ? (
-                                        <Image src={m.imageUrl!} alt={m.name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" />
-                                    ) : (
-                                        <div className="w-9 h-9 rounded-lg bg-[#eef4ff] flex items-center justify-center">
-                                            <LayoutGrid className="w-4 h-4 text-[#145de7]/40" />
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="px-3 py-2.5 font-medium text-foreground max-w-[160px] truncate">{m.name}</td>
-                                <td className="px-3 py-2.5">
-                                    <span className="text-xs px-2 py-0.5 rounded-md bg-[#eef4ff] text-[#145de7] font-semibold">
-                                        {gameTypeLabel(m.gameType)}
-                                    </span>
-                                </td>
-                                <td className="px-3 py-2.5 text-foreground whitespace-nowrap">
-                                    {m.costType === "FREE" ? (
-                                        <span className="text-green-600 font-medium">ฟรี</span>
-                                    ) : (
-                                        `${Number(m.costAmount).toLocaleString()} ${m.costType === "CREDIT" ? "เครดิต" : "พอยต์"}`
-                                    )}
-                                </td>
-                                <td className="px-3 py-2.5 text-muted-foreground">{m.category?.name ?? "—"}</td>
-                                <td className="px-3 py-2.5 text-muted-foreground">{m._count.rewards}</td>
-                                <td className="px-3 py-2.5">
-                                    <button
-                                        onClick={() => onToggle(m.id, "isActive", !m.isActive)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${m.isActive ? "bg-[#145de7]" : "bg-gray-300 dark:bg-zinc-600"}`}
-                                        title={m.isActive ? "คลิกเพื่อซ่อน" : "คลิกเพื่อแสดง"}
-                                    >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${m.isActive ? "translate-x-6" : "translate-x-1"}`} />
-                                    </button>
-                                </td>
-                                <td className="px-3 py-2.5">
-                                    <button
-                                        onClick={() => router.push(`/admin/gacha-machines/${m.id}/edit`)}
-                                        className="w-8 h-8 rounded-lg bg-violet-500 hover:bg-violet-600 text-white flex items-center justify-center transition"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                                    </button>
-                                </td>
-                                <td className="px-3 py-2.5">
-                                    <button
-                                        onClick={() => onDelete(m.id)}
-                                        className="w-8 h-8 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <SortableContext items={paged.map(m => m.id)} strategy={verticalListSortingStrategy}>
+                            <tbody>
+                                {paged.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={10} className="text-center py-10 text-muted-foreground text-sm">ไม่พบรายการ</td>
+                                    </tr>
+                                ) : paged.map((m, i) => (
+                                    <SortableRow
+                                        key={m.id}
+                                        m={m}
+                                        i={i}
+                                        page={page}
+                                        perPage={perPage}
+                                        togglingMap={togglingMap}
+                                        duplicatingId={duplicatingId}
+                                        handleToggle={handleToggle}
+                                        handleDuplicate={handleDuplicate}
+                                        onDelete={onDelete}
+                                        gameTypeLabel={gameTypeLabel}
+                                    />
+                                ))}
+                            </tbody>
+                        </SortableContext>
+                    </table>
+                </div>
+            </DndContext>
+
 
             {/* Footer */}
             <div className="px-4 py-3 border-t border-border flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                <span>แสดง {filtered.length === 0 ? 0 : (page - 1) * perPage + 1} ถึง {Math.min(page * perPage, filtered.length)} จาก {filtered.length} รายการ</span>
+                <span>แสดง {sortedAndFiltered.length === 0 ? 0 : (page - 1) * perPage + 1} ถึง {Math.min(page * perPage, sortedAndFiltered.length)} จาก {sortedAndFiltered.length} รายการ</span>
                 <div className="flex gap-1">
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -612,3 +757,4 @@ function MachineTable({
         </div>
     );
 }
+

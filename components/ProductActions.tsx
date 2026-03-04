@@ -114,7 +114,10 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             {/* 2. Buy Now */}
             <Button
                 size="lg"
-                className="w-full gap-2 text-lg rounded-xl"
+                className={`w-full gap-2 text-base rounded-full font-semibold ${disabled
+                        ? "bg-rose-100 text-rose-400 hover:bg-rose-100 cursor-not-allowed border border-rose-200"
+                        : "bg-violet-600 hover:bg-violet-700 text-white"
+                    }`}
                 disabled={disabled || isBuying}
                 onClick={handlePurchase}
             >
@@ -126,32 +129,32 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 ) : (
                     <>
                         <ShoppingCart className="h-5 w-5" />
-                        {disabled ? "ไม่พร้อมขาย" : `ซื้อเลย - ฿${totalPrice.toLocaleString()}`}
+                        {disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${totalPrice.toLocaleString()}`}
                     </>
                 )}
             </Button>
 
             {/* 3. Add to Cart */}
             <Button
-                variant={inCart ? "secondary" : "outline"}
+                variant="outline"
                 size="lg"
-                className="w-full gap-2 text-lg rounded-xl"
+                className="w-full gap-2 text-base rounded-full border-border hover:bg-muted"
                 disabled={disabled || isAdding || cartLoading}
                 onClick={handleAddToCart}
             >
                 {isAdding ? (
                     <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         กำลังเพิ่ม...
                     </>
                 ) : inCart ? (
                     <>
-                        <Check className="h-5 w-5" />
+                        <Check className="h-4 w-4" />
                         อยู่ในตะกร้าแล้ว
                     </>
                 ) : (
                     <>
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-4 w-4" />
                         เพิ่มลงตะกร้า
                     </>
                 )}
@@ -161,9 +164,9 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             <Button
                 variant="outline"
                 size="lg"
-                className="w-full gap-2 rounded-xl"
+                className="w-full gap-2 text-base rounded-full border-border hover:bg-muted"
             >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className="h-4 w-4" />
                 ติดต่อเรา
             </Button>
         </div>
