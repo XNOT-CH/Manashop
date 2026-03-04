@@ -80,16 +80,14 @@ export function HeroBannerClient({ banners }: HeroBannerClientProps) {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Embla Carousel Container */}
-            <div className="overflow-hidden rounded-2xl" ref={emblaRef}>
+            <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
                     {banners.map((banner) => (
                         <div
                             key={banner.id}
                             className="flex-[0_0_100%] min-w-0"
                         >
-                            <div
-                                className="relative w-full overflow-hidden aspect-[2/1] sm:aspect-[3/1] lg:aspect-[4/1]"
-                            >
+                            <div className="relative w-full overflow-hidden aspect-[2/1] sm:aspect-[3/1] lg:aspect-[4/1]">
                                 <Image
                                     src={banner.image}
                                     alt={banner.title}

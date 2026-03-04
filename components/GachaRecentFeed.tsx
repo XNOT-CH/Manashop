@@ -100,7 +100,7 @@ export function GachaRecentFeed({ refreshKey }: { refreshKey: number }) {
                             >
                                 <div className="w-20 h-20 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-border transition-transform group-hover:scale-105 shadow-sm relative">
                                     {log.rewardImageUrl ? (
-                                        <Image src={log.rewardImageUrl} alt={log.rewardName} fill sizes="80px" className="object-contain p-2" />
+                                        <Image src={log.rewardImageUrl} alt={log.rewardName} fill sizes="80px" className="object-cover" />
                                     ) : (
                                         <Gift className="w-8 h-8 text-muted-foreground/30" />
                                     )}

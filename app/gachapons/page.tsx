@@ -55,7 +55,8 @@ export default function GachaHubPage() {
         : machines;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+        <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
+
             {/* Hero Banner */}
             <div className="bg-gradient-to-br from-[#1a56db] via-[#1e40af] to-[#1e3a5f] relative overflow-hidden py-10 px-6 text-center">
                 <div className="absolute inset-0 opacity-10" style={{
@@ -104,39 +105,7 @@ export default function GachaHubPage() {
                             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 p-5">
-                            {/* สุ่มตัว X — always shown when no category filter */}
-                            {!selectedCatId && (
-                                <Link
-                                    href="/gacha"
-                                    className="group flex flex-col rounded-xl border-2 border-[#1a56db]/40 hover:border-[#1a56db] hover:shadow-md transition-all duration-200 overflow-hidden bg-card"
-                                >
-                                    <div className="aspect-square bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/10 relative flex items-center justify-center">
-                                        <span className="text-5xl font-black text-[#1a56db] select-none">X</span>
-                                        <div className="absolute top-2 right-2 bg-[#1a56db] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">HOT</div>
-                                    </div>
-                                    <div className="p-3 flex-1 flex flex-col gap-1">
-                                        <p className="text-sm font-semibold text-foreground leading-tight">สุ่มตัว X</p>
-                                        <p className="text-[#1a56db] text-xs font-medium mt-auto">กาชาหลัก</p>
-                                    </div>
-                                </Link>
-                            )}
-                            {/* สุ่มกงล้อ — always shown when no category filter */}
-                            {!selectedCatId && (
-                                <Link
-                                    href="/gacha-grid"
-                                    className="group flex flex-col rounded-xl border-2 border-emerald-400/40 hover:border-emerald-500 hover:shadow-md transition-all duration-200 overflow-hidden bg-card"
-                                >
-                                    <div className="aspect-square bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/10 relative flex items-center justify-center">
-                                        <span className="text-4xl select-none">🎡</span>
-                                        <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</div>
-                                    </div>
-                                    <div className="p-3 flex-1 flex flex-col gap-1">
-                                        <p className="text-sm font-semibold text-foreground leading-tight">สุ่มกงล้อ</p>
-                                        <p className="text-emerald-600 text-xs font-medium mt-auto">กริด 3×3</p>
-                                    </div>
-                                </Link>
-                            )}
+                        <div className="grid grid-cols-1 gap-4 p-5">
 
                             {/* DB machines */}
                             {filtered.length === 0 && selectedCatId ? (
@@ -152,14 +121,16 @@ export default function GachaHubPage() {
                                         href={machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`}
                                         className="group flex flex-col rounded-xl border border-border hover:border-blue-400 hover:shadow-md transition-all duration-200 overflow-hidden bg-card"
                                     >
-                                        <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 overflow-hidden relative">
+                                        {/* รูปภาพแนวนอน (wide banner) */}
+                                        <div className="w-full aspect-[2/1] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                                             {machine.imageUrl && (machine.imageUrl.startsWith("/") || machine.imageUrl.startsWith("http")) ? (
                                                 <Image
                                                     src={machine.imageUrl}
                                                     alt={machine.name}
-                                                    fill
-                                                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    width={1200}
+                                                    height={400}
+                                                    sizes="(max-width: 640px) 100vw, 800px"
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">
@@ -167,15 +138,16 @@ export default function GachaHubPage() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="p-3 flex-1 flex flex-col gap-1">
-                                            <p className="text-sm font-semibold text-foreground leading-tight line-clamp-2">{machine.name}</p>
+                                        {/* ข้อความ/ราคาด้านล่าง */}
+                                        <div className="px-5 py-4 flex flex-col gap-1.5 min-h-[72px] justify-center">
+                                            <p className="text-base font-bold text-foreground leading-snug line-clamp-2">{machine.name}</p>
                                             {machine.costType !== "FREE" && (
-                                                <p className="text-[#1a56db] text-xs font-medium mt-auto">
+                                                <p className="text-[#1a56db] text-sm font-semibold">
                                                     ( เล่นครั้งละ {Number(machine.costAmount).toLocaleString()}.00 บาท )
                                                 </p>
                                             )}
                                             {machine.costType === "FREE" && (
-                                                <p className="text-green-600 text-xs font-medium mt-auto">ฟรี!</p>
+                                                <p className="text-green-600 text-sm font-semibold">ฟรี!</p>
                                             )}
                                         </div>
                                     </Link>

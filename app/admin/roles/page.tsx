@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { showWarning, showError, showSuccess, showConfirm } from "@/lib/swal";
+import { useState, useEffect, useCallback } from "react";
+import { showWarning, showError, showSuccess, showDeleteConfirm } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -28,6 +21,7 @@ import {
     Loader2,
     Shield,
     Crown,
+    X,
 } from "lucide-react";
 import Image from "next/image";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -44,7 +38,6 @@ interface Role {
     createdAt: string;
 }
 
-// Permission groups for better UI
 const PERMISSION_GROUPS = {
     "สินค้า": [
         { key: PERMISSIONS.PRODUCT_VIEW, label: "ดูสินค้า" },
@@ -81,11 +74,10 @@ const PERMISSION_GROUPS = {
 export default function AdminRolesPage() {
     const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
     const [saving, setSaving] = useState(false);
 
-    // Form state
     const [formData, setFormData] = useState({
         name: "",
         code: "",
@@ -95,36 +87,25 @@ export default function AdminRolesPage() {
         sortOrder: 0,
     });
 
-    // Fetch roles
-    const fetchRoles = async () => {
+    const fetchRoles = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetch("/api/admin/roles");
-            if (res.ok) {
-                const data = await res.json();
-                setRoles(data);
-            }
+            if (res.ok) setRoles(await res.json());
         } catch (error) {
             console.error("Error fetching roles:", error);
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchRoles();
     }, []);
 
-    // Open dialog for create/edit
-    const openDialog = (role?: Role) => {
+    useEffect(() => { fetchRoles(); }, [fetchRoles]);
+
+    const openPanel = (role?: Role) => {
         if (role) {
             setSelectedRole(role);
             let perms: string[] = [];
-            try {
-                perms = role.permissions ? JSON.parse(role.permissions) : [];
-            } catch {
-                perms = [];
-            }
+            try { perms = role.permissions ? JSON.parse(role.permissions) : []; } catch { perms = []; }
             setFormData({
                 name: role.name,
                 code: role.code,
@@ -135,19 +116,13 @@ export default function AdminRolesPage() {
             });
         } else {
             setSelectedRole(null);
-            setFormData({
-                name: "",
-                code: "",
-                iconUrl: "",
-                description: "",
-                permissions: [],
-                sortOrder: 0,
-            });
+            setFormData({ name: "", code: "", iconUrl: "", description: "", permissions: [], sortOrder: 0 });
         }
-        setIsDialogOpen(true);
+        setIsPanelOpen(true);
     };
 
-    // Toggle permission
+    const closePanel = () => { setIsPanelOpen(false); setSelectedRole(null); };
+
     const togglePermission = (permission: string) => {
         setFormData((prev) => ({
             ...prev,
@@ -157,20 +132,13 @@ export default function AdminRolesPage() {
         }));
     };
 
-    // Save role
     const handleSave = async () => {
-        if (!formData.name) {
-            showWarning("กรุณาระบุชื่อยศ");
-            return;
-        }
+        if (!formData.name) { showWarning("กรุณาระบุชื่อยศ"); return; }
 
         setSaving(true);
         try {
-            const url = selectedRole
-                ? `/api/admin/roles/${selectedRole.id}`
-                : "/api/admin/roles";
+            const url = selectedRole ? `/api/admin/roles/${selectedRole.id}` : "/api/admin/roles";
             const method = selectedRole ? "PUT" : "POST";
-
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
@@ -178,40 +146,27 @@ export default function AdminRolesPage() {
             });
 
             if (res.ok) {
-                setIsDialogOpen(false);
+                closePanel();
                 fetchRoles();
                 showSuccess(selectedRole ? "บันทึกยศเรียบร้อย" : "เพิ่มยศเรียบร้อย");
             } else {
                 const data = await res.json();
                 showError(data.error || "เกิดข้อผิดพลาดในการบันทึก");
             }
-        } catch (error) {
-            console.error("Error saving role:", error);
+        } catch {
             showError("เกิดข้อผิดพลาดในการบันทึก");
         } finally {
             setSaving(false);
         }
     };
 
-    // Delete role
     const handleDelete = async (role: Role) => {
-        if (role.isSystem) {
-            showWarning("ไม่สามารถลบยศระบบได้");
-            return;
-        }
-
-        const confirmed = await showConfirm(
-            "ยืนยันการลบ",
-            `คุณต้องการลบยศ "${role.name}" ใช่หรือไม่?`
-        );
-
+        if (role.isSystem) { showWarning("ไม่สามารถลบยศระบบได้"); return; }
+        const confirmed = await showDeleteConfirm(role.name);
         if (!confirmed) return;
 
         try {
-            const res = await fetch(`/api/admin/roles/${role.id}`, {
-                method: "DELETE",
-            });
-
+            const res = await fetch(`/api/admin/roles/${role.id}`, { method: "DELETE" });
             if (res.ok) {
                 fetchRoles();
                 showSuccess("ลบยศเรียบร้อย");
@@ -219,8 +174,7 @@ export default function AdminRolesPage() {
                 const data = await res.json();
                 showError(data.error || "เกิดข้อผิดพลาดในการลบ");
             }
-        } catch (error) {
-            console.error("Error deleting role:", error);
+        } catch {
             showError("เกิดข้อผิดพลาดในการลบ");
         }
     };
@@ -231,36 +185,36 @@ export default function AdminRolesPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                        <Shield className="h-6 w-6" />
+                        <Shield className="h-6 w-6 text-[#1a56db]" />
                         จัดการยศแอดมิน
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ
-                    </p>
+                    <p className="text-muted-foreground mt-1">เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ</p>
                 </div>
-                <Button onClick={() => openDialog()}>
+                <Button onClick={() => openPanel()} className="bg-[#1a56db] hover:bg-[#1e40af]">
                     <Plus className="h-4 w-4 mr-2" />
                     เพิ่มยศ
                 </Button>
             </div>
 
-            {/* Table */}
-            <div className="bg-card rounded-xl border border-border overflow-hidden">
+            {/* Table Card */}
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                {/* Card Header */}
+                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                        <Shield className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="font-bold text-foreground">รายการยศ</span>
+                </div>
+
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 ) : roles.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
-                        <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <Shield className="h-12 w-12 mx-auto mb-4 opacity-30" />
                         <p>ยังไม่มียศ</p>
-                        <Button
-                            variant="link"
-                            className="mt-2"
-                            onClick={() => openDialog()}
-                        >
-                            เพิ่มยศแรก
-                        </Button>
+                        <Button variant="link" className="mt-2" onClick={() => openPanel()}>เพิ่มยศแรก</Button>
                     </div>
                 ) : (
                     <Table>
@@ -278,13 +232,7 @@ export default function AdminRolesPage() {
                                     <TableCell>
                                         <div className="relative w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                                             {role.iconUrl ? (
-                                                <Image
-                                                    src={role.iconUrl}
-                                                    alt={role.name}
-                                                    fill
-                                                    sizes="40px"
-                                                    className="object-cover"
-                                                />
+                                                <Image src={role.iconUrl} alt={role.name} fill sizes="40px" className="object-cover" />
                                             ) : (
                                                 <Crown className="h-5 w-5 text-muted-foreground" />
                                             )}
@@ -294,22 +242,16 @@ export default function AdminRolesPage() {
                                         <div className="flex items-center gap-2">
                                             <span className="font-medium">{role.name}</span>
                                             {role.isSystem && (
-                                                <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                                                    ระบบ
-                                                </span>
+                                                <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">ระบบ</span>
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
                                         {role.description || "-"}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center justify-center gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openDialog(role)}
-                                            >
+                                            <Button variant="ghost" size="icon" onClick={() => openPanel(role)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
                                             <Button
@@ -330,79 +272,100 @@ export default function AdminRolesPage() {
                 )}
             </div>
 
-            {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {selectedRole ? "แก้ไขยศ" : "เพิ่มยศใหม่"}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="space-y-6 py-4">
-                        {/* Basic Info */}
-                        <div className="space-y-2">
-                            <Label htmlFor="name">ชื่อยศ *</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, name: e.target.value })
-                                }
-                                placeholder="เช่น แอดมินผู้ช่วย"
-                            />
+            {/* Modal Overlay */}
+            {isPanelOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={closePanel}
+                    />
+                    {/* Modal */}
+                    <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 shadow-2xl rounded-2xl flex flex-col max-h-[90vh] overflow-hidden">
+                        {/* Panel Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-gradient-to-r from-[#1a56db] to-[#1e40af]">
+                            <div className="flex items-center gap-2">
+                                <Shield className="h-5 w-5 text-white" />
+                                <h2 className="text-lg font-bold text-white">
+                                    {selectedRole ? "แก้ไขยศ" : "เพิ่มยศใหม่"}
+                                </h2>
+                            </div>
+                            <button
+                                onClick={closePanel}
+                                className="text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
                         </div>
 
-                        {/* Permissions */}
-                        <div className="space-y-4">
-                            <Label>สิทธิ์การใช้งาน</Label>
-                            <div className="border rounded-lg p-4 space-y-4">
-                                {Object.entries(PERMISSION_GROUPS).map(([group, perms]) => (
-                                    <div key={group}>
-                                        <h4 className="font-medium text-sm text-muted-foreground mb-2">
-                                            {group}
-                                        </h4>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {perms.map((perm) => (
-                                                <div
-                                                    key={perm.key}
-                                                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                                                >
-                                                    <Checkbox
-                                                        id={perm.key}
-                                                        checked={formData.permissions.includes(perm.key)}
-                                                        onCheckedChange={() => togglePermission(perm.key)}
-                                                    />
-                                                    <label
-                                                        htmlFor={perm.key}
-                                                        className="text-sm cursor-pointer"
+                        {/* Panel Body */}
+                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                            {/* Name */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="panel-name">ชื่อยศ *</Label>
+                                <Input
+                                    id="panel-name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="เช่น แอดมินผู้ช่วย"
+                                />
+                            </div>
+
+                            {/* Permissions */}
+                            <div className="space-y-3">
+                                <Label>สิทธิ์การใช้งาน</Label>
+                                <div className="rounded-xl border border-border overflow-hidden">
+                                    {Object.entries(PERMISSION_GROUPS).map(([group, perms], idx) => (
+                                        <div key={group} className={idx > 0 ? "border-t border-border" : ""}>
+                                            <div className="px-4 py-2 bg-gray-50 dark:bg-zinc-800">
+                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                                    {group}
+                                                </h4>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-0 px-4 py-2">
+                                                {perms.map((perm) => (
+                                                    <div
+                                                        key={perm.key}
+                                                        className="flex items-center gap-2 py-1.5 cursor-pointer"
+                                                        onClick={() => togglePermission(perm.key)}
                                                     >
-                                                        {perm.label}
-                                                    </label>
-                                                </div>
-                                            ))}
+                                                        <Checkbox
+                                                            id={`panel-${perm.key}`}
+                                                            checked={formData.permissions.includes(perm.key)}
+                                                            onCheckedChange={() => togglePermission(perm.key)}
+                                                        />
+                                                        <label
+                                                            htmlFor={`panel-${perm.key}`}
+                                                            className="text-sm cursor-pointer select-none"
+                                                        >
+                                                            {perm.label}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDialogOpen(false)}
-                            disabled={saving}
-                        >
-                            ยกเลิก
-                        </Button>
-                        <Button onClick={handleSave} disabled={saving}>
-                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            {selectedRole ? "บันทึก" : "เพิ่ม"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        {/* Panel Footer */}
+                        <div className="px-6 py-4 border-t border-border flex gap-3 bg-gray-50 dark:bg-zinc-800">
+                            <Button variant="outline" onClick={closePanel} disabled={saving} className="flex-1">
+                                ยกเลิก
+                            </Button>
+                            <Button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="flex-1 bg-[#1a56db] hover:bg-[#1e40af]"
+                            >
+                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                {selectedRole ? "บันทึก" : "เพิ่มยศ"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

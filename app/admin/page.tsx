@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { Card, CardContent } from "@/components/ui/card";
 import {
     DollarSign,
     Users,
@@ -17,7 +16,6 @@ import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-    // Fetch real stats from database
     const [ordersData, productsCount, usersCount] = await Promise.all([
         db.order.aggregate({
             _sum: { totalPrice: true },
@@ -30,41 +28,44 @@ export default async function AdminDashboardPage() {
     const totalRevenue = Number(ordersData._sum.totalPrice || 0);
     const salesCount = ordersData._count;
 
-    // KPI cards data with icons, values, and mock percentage changes
     const kpiCards = [
         {
             title: "รายได้ทั้งหมด",
             value: `฿${totalRevenue.toLocaleString()}`,
             icon: DollarSign,
-            iconBg: "bg-sky-500/10 dark:bg-sky-500/20",
-            iconColor: "text-sky-600 dark:text-sky-400",
+            gradient: "from-[#1a56db] to-[#1e40af]",
+            lightBg: "bg-blue-50 dark:bg-blue-950/30",
+            iconColor: "text-[#1a56db] dark:text-blue-400",
         },
         {
             title: "ผู้ใช้งานทั้งหมด",
             value: usersCount.toLocaleString(),
             icon: Users,
-            iconBg: "bg-sky-500/10 dark:bg-sky-500/20",
-            iconColor: "text-sky-600 dark:text-sky-400",
+            gradient: "from-violet-500 to-purple-600",
+            lightBg: "bg-violet-50 dark:bg-violet-950/30",
+            iconColor: "text-violet-600 dark:text-violet-400",
         },
         {
             title: "ผู้ใช้งานวันนี้",
             value: Math.floor(usersCount * 0.3).toLocaleString(),
             icon: UserCheck,
-            iconBg: "bg-sky-500/10 dark:bg-sky-500/20",
-            iconColor: "text-sky-600 dark:text-sky-400",
+            gradient: "from-emerald-500 to-teal-600",
+            lightBg: "bg-emerald-50 dark:bg-emerald-950/30",
+            iconColor: "text-emerald-600 dark:text-emerald-400",
         },
         {
             title: "คำสั่งซื้อทั้งหมด",
             value: salesCount.toLocaleString(),
             icon: ShoppingCart,
-            iconBg: "bg-sky-500/10 dark:bg-sky-500/20",
-            iconColor: "text-sky-600 dark:text-sky-400",
+            gradient: "from-amber-500 to-orange-500",
+            lightBg: "bg-amber-50 dark:bg-amber-950/30",
+            iconColor: "text-amber-600 dark:text-amber-400",
         },
     ];
 
     return (
         <div className="space-y-6">
-            {/* Page Header with Date Picker */}
+            {/* Page Header */}
             <AdminDashboardHeader />
 
             {/* Tabbed Content */}
@@ -75,72 +76,75 @@ export default async function AdminDashboardPage() {
                         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                             {kpiCards.map((kpi) => {
                                 const Icon = kpi.icon;
-
                                 return (
-                                    <Card
+                                    <div
                                         key={kpi.title}
-                                        className="relative overflow-hidden border-border/50 hover:shadow-lg transition-shadow duration-300"
+                                        className="relative overflow-hidden bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-300"
                                     >
-                                        <CardContent className="p-6">
+                                        {/* Top gradient bar */}
+                                        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${kpi.gradient}`} />
+                                        <div className="p-5 pt-6">
                                             <div className="flex items-start justify-between">
-                                                <div className="space-y-2">
-                                                    <p className="text-sm font-medium text-muted-foreground">
-                                                        {kpi.title}
-                                                    </p>
-                                                    <p className="text-3xl font-bold tracking-tight">
-                                                        {kpi.value}
-                                                    </p>
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
+                                                    <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
                                                 </div>
-                                                <div
-                                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${kpi.iconBg}`}
-                                                >
-                                                    <Icon
-                                                        className={`h-6 w-6 ${kpi.iconColor}`}
-                                                    />
+                                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${kpi.lightBg}`}>
+                                                    <Icon className={`h-5 w-5 ${kpi.iconColor}`} />
                                                 </div>
                                             </div>
-                                        </CardContent>
-
-                                        {/* Decorative gradient bar at top */}
-                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 to-blue-400" />
-                                    </Card>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
 
-                        {/* Revenue Trend Chart */}
-                        <Card className="border-border/50">
-                            <CardContent className="p-6">
+                        {/* Revenue Chart */}
+                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                                <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                    <DollarSign className="h-3.5 w-3.5 text-white" />
+                                </div>
+                                <span className="font-bold">แนวโน้มรายได้</span>
+                            </div>
+                            <div className="p-5">
                                 <RevenueChart />
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
                 }
-                topupContent={
-                    <TopupSummaryWithDateRange />
-                }
-                membersContent={
-                    <MembersSummary />
-                }
+                topupContent={<TopupSummaryWithDateRange />}
+                membersContent={<MembersSummary />}
                 purchasesContent={
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
-                        {/* Sales Distribution — 2 columns */}
-                        <Card className="lg:col-span-2 border-border/50">
-                            <CardContent className="p-6">
+                        {/* Sales Distribution */}
+                        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                                <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                    <ShoppingCart className="h-3.5 w-3.5 text-white" />
+                                </div>
+                                <span className="font-bold">สัดส่วนการขาย</span>
+                            </div>
+                            <div className="p-5">
                                 <SalesDistribution />
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
 
-                        {/* Recent Transactions — 3 columns */}
-                        <Card className="lg:col-span-3 border-border/50">
-                            <CardContent className="p-6">
+                        {/* Recent Transactions */}
+                        <div className="lg:col-span-3 bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                                <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                    <Users className="h-3.5 w-3.5 text-white" />
+                                </div>
+                                <span className="font-bold">รายการล่าสุด</span>
+                            </div>
+                            <div className="p-5">
                                 <RecentTransactions />
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
                 }
             />
         </div>
     );
 }
-

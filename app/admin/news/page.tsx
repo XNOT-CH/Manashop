@@ -1,20 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { showWarning, showError, showSuccess } from "@/lib/swal";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Swal from "sweetalert2";
+import { showError, showSuccess, showDeleteConfirm, showLoading, hideLoading } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -31,8 +22,6 @@ import {
     Newspaper,
     ExternalLink,
     Image as ImageIcon,
-    Upload,
-    X,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -50,25 +39,11 @@ interface NewsArticle {
 export default function AdminNewsPage() {
     const [news, setNews] = useState<NewsArticle[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedNews, setSelectedNews] = useState<NewsArticle | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // Form state
-    const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        imageUrl: "",
-        link: "",
-        sortOrder: 0,
-        isActive: true,
-    });
+    const uploadedUrlRef = useRef<string>("");
 
     // Fetch news
-    const fetchNews = async () => {
+    const fetchNews = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetch("/api/admin/news");
@@ -81,94 +56,197 @@ export default function AdminNewsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchNews();
-    }, []);
+    }, [fetchNews]);
 
-    // Open dialog for create/edit
-    const openDialog = (article?: NewsArticle) => {
-        if (article) {
-            setSelectedNews(article);
-            setFormData({
-                title: article.title,
-                description: article.description,
-                imageUrl: article.imageUrl || "",
-                link: article.link || "",
-                sortOrder: article.sortOrder,
-                isActive: article.isActive,
-            });
-        } else {
-            setSelectedNews(null);
-            setFormData({
-                title: "",
-                description: "",
-                imageUrl: "",
-                link: "",
-                sortOrder: 0,
-                isActive: true,
-            });
+    // Handle image upload within Swal
+    const handleFileUploadInSwal = async (file: File): Promise<string | null> => {
+        try {
+            showLoading("กำลังอัพโหลดรูป...");
+            const compressed = await compressImage(file);
+            const uploadFormData = new FormData();
+            uploadFormData.append("file", compressed);
+            const res = await fetch("/api/upload", { method: "POST", body: uploadFormData });
+            const data = await res.json();
+            hideLoading();
+            if (data.success) {
+                showSuccess("อัพโหลดรูปสำเร็จ!");
+                return data.url as string;
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+                return null;
+            }
+        } catch {
+            hideLoading();
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+            return null;
         }
-        setIsDialogOpen(true);
     };
 
-    // Save news
-    const handleSave = async () => {
-        if (!formData.title || !formData.description) {
-            showWarning("กรุณากรอกหัวข้อและรายละเอียด");
-            return;
-        }
+    // Open Create/Edit form in SweetAlert2
+    const openDialog = (article?: NewsArticle) => {
+        uploadedUrlRef.current = article?.imageUrl || "";
 
-        setSaving(true);
-        try {
-            const url = selectedNews
-                ? `/api/admin/news/${selectedNews.id}`
-                : "/api/admin/news";
-            const method = selectedNews ? "PUT" : "POST";
+        Swal.fire({
+            title: article ? "แก้ไขข่าวสาร" : "เพิ่มข่าวสารใหม่",
+            width: "min(96vw, 560px)",
+            showCancelButton: true,
+            confirmButtonText: article ? "บันทึก" : "เพิ่ม",
+            cancelButtonText: "ยกเลิก",
+            confirmButtonColor: "#1a56db",
+            cancelButtonColor: "#6b7280",
+            reverseButtons: true,
+            focusConfirm: false,
+            customClass: {
+                popup: "rounded-2xl text-left",
+                confirmButton: "rounded-xl px-6 py-2",
+                cancelButton: "rounded-xl px-6 py-2",
+            },
+            html: `
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หัวข้อ *</label>
+                        <input id="swal-title" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="เช่น โปรโมชั่นเติมเกม" value="${article?.title || ""}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รายละเอียด *</label>
+                        <textarea id="swal-description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="รายละเอียดข่าวสารหรือโปรโมชั่น">${article?.description || ""}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รูปภาพ</label>
+                        <div class="flex gap-2 mb-2">
+                            <button id="swal-upload-btn" type="button" class="flex items-center gap-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
+                                📷 อัพโหลดรูป
+                            </button>
+                            <span class="text-sm text-gray-400 self-center">หรือ</span>
+                        </div>
+                        <input id="swal-imageUrl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="วาง URL รูปภาพ..." value="${article?.imageUrl || ""}">
+                        <div id="swal-img-preview" class="mt-2 ${article?.imageUrl ? "" : "hidden"}">
+                            <img src="${article?.imageUrl || ""}" class="w-full h-28 object-cover rounded-lg border" onerror="this.src='https://placehold.co/400x200/ef4444/ffffff?text=Invalid+URL'">
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลิงก์ (อ่านเพิ่มเติม)</label>
+                        <input id="swal-link" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/promo" value="${article?.link || ""}">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลำดับการแสดง</label>
+                            <input id="swal-sortOrder" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${article?.sortOrder ?? 0}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สถานะ</label>
+                            <select id="swal-isActive" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="true" ${(article?.isActive ?? true) ? "selected" : ""}>แสดง</option>
+                                <option value="false" ${!(article?.isActive ?? true) ? "selected" : ""}>ซ่อน</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `,
+            didOpen: () => {
+                // Image URL live preview
+                const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
+                const preview = document.getElementById("swal-img-preview");
+                const previewImg = preview?.querySelector("img");
+                urlInput?.addEventListener("input", () => {
+                    if (urlInput.value) {
+                        if (preview) preview.classList.remove("hidden");
+                        if (previewImg) previewImg.src = urlInput.value;
+                        uploadedUrlRef.current = urlInput.value;
+                    } else {
+                        if (preview) preview.classList.add("hidden");
+                        uploadedUrlRef.current = "";
+                    }
+                });
 
-            const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+                // Upload button
+                const uploadBtn = document.getElementById("swal-upload-btn");
+                uploadBtn?.addEventListener("click", () => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/jpeg,image/png,image/webp,image/gif";
+                    input.onchange = async () => {
+                        const file = input.files?.[0];
+                        if (!file) return;
+                        const url = await handleFileUploadInSwal(file);
+                        if (url) {
+                            uploadedUrlRef.current = url;
+                            if (urlInput) urlInput.value = url;
+                            if (preview) preview.classList.remove("hidden");
+                            if (previewImg) previewImg.src = url;
+                        }
+                    };
+                    input.click();
+                });
+            },
+            preConfirm: () => {
+                const title = (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim();
+                const description = (document.getElementById("swal-description") as HTMLTextAreaElement)?.value?.trim();
+                const imageUrl = (document.getElementById("swal-imageUrl") as HTMLInputElement)?.value?.trim();
+                const link = (document.getElementById("swal-link") as HTMLInputElement)?.value?.trim();
+                const sortOrder = parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0;
+                const isActive = (document.getElementById("swal-isActive") as HTMLSelectElement)?.value === "true";
 
-            if (res.ok) {
-                setIsDialogOpen(false);
-                fetchNews();
-            } else {
+                if (!title || !description) {
+                    Swal.showValidationMessage("กรุณากรอกหัวข้อและรายละเอียด");
+                    return false;
+                }
+                return { title, description, imageUrl, link, sortOrder, isActive };
+            },
+        }).then(async (result) => {
+            if (!result.isConfirmed || !result.value) return;
+
+            const formData = result.value as {
+                title: string; description: string; imageUrl: string;
+                link: string; sortOrder: number; isActive: boolean;
+            };
+
+            showLoading("กำลังบันทึก...");
+            try {
+                const url = article ? `/api/admin/news/${article.id}` : "/api/admin/news";
+                const method = article ? "PUT" : "POST";
+                const res = await fetch(url, {
+                    method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                });
+                hideLoading();
+                if (res.ok) {
+                    showSuccess(article ? "แก้ไขข่าวสารสำเร็จ!" : "เพิ่มข่าวสารสำเร็จ!");
+                    fetchNews();
+                } else {
+                    showError("เกิดข้อผิดพลาดในการบันทึก");
+                }
+            } catch {
+                hideLoading();
                 showError("เกิดข้อผิดพลาดในการบันทึก");
             }
-        } catch (error) {
-            console.error("Error saving news:", error);
-            showError("เกิดข้อผิดพลาดในการบันทึก");
-        } finally {
-            setSaving(false);
-        }
+        });
     };
 
     // Delete news
-    const handleDelete = async () => {
-        if (!selectedNews) return;
+    const handleDelete = async (article: NewsArticle) => {
+        const confirmed = await showDeleteConfirm(article.title);
+        if (!confirmed) return;
 
-        setSaving(true);
+        showLoading("กำลังลบ...");
         try {
-            const res = await fetch(`/api/admin/news/${selectedNews.id}`, {
-                method: "DELETE",
-            });
-
+            const res = await fetch(`/api/admin/news/${article.id}`, { method: "DELETE" });
+            hideLoading();
             if (res.ok) {
-                setIsDeleteDialogOpen(false);
-                setSelectedNews(null);
+                showSuccess("ลบข่าวสารสำเร็จ!");
                 fetchNews();
             } else {
                 showError("เกิดข้อผิดพลาดในการลบ");
             }
-        } catch (error) {
-            console.error("Error deleting news:", error);
+        } catch {
+            hideLoading();
             showError("เกิดข้อผิดพลาดในการลบ");
-        } finally {
-            setSaving(false);
         }
     };
 
@@ -178,12 +256,8 @@ export default function AdminNewsPage() {
             const res = await fetch(`/api/admin/news/${article.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...article,
-                    isActive: !article.isActive,
-                }),
+                body: JSON.stringify({ ...article, isActive: !article.isActive }),
             });
-
             if (res.ok) {
                 fetchNews();
             }
@@ -192,38 +266,11 @@ export default function AdminNewsPage() {
         }
     };
 
-    // Handle file upload
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        try {
-            const compressed = await compressImage(file);
-            const uploadFormData = new FormData();
-            uploadFormData.append("file", compressed);
-
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: uploadFormData,
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                setFormData((prev) => ({ ...prev, imageUrl: data.url }));
-                showSuccess("อัพโหลดรูปสำเร็จ!");
-            } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
-            }
-        } catch (error) {
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
     return (
         <div className="space-y-6">
+            {/* Hidden file input (unused, kept for ref) */}
+            <input ref={fileInputRef} type="file" className="hidden" />
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -251,11 +298,7 @@ export default function AdminNewsPage() {
                     <div className="text-center py-12 text-muted-foreground">
                         <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>ยังไม่มีข่าวสาร</p>
-                        <Button
-                            variant="link"
-                            className="mt-2"
-                            onClick={() => openDialog()}
-                        >
+                        <Button variant="link" className="mt-2" onClick={() => openDialog()}>
                             เพิ่มข่าวสารแรก
                         </Button>
                     </div>
@@ -314,9 +357,7 @@ export default function AdminNewsPage() {
                                             {article.description}
                                         </p>
                                     </TableCell>
-                                    <TableCell className="text-center">
-                                        {article.sortOrder}
-                                    </TableCell>
+                                    <TableCell className="text-center">{article.sortOrder}</TableCell>
                                     <TableCell className="text-center">
                                         <Switch
                                             checked={article.isActive}
@@ -336,10 +377,7 @@ export default function AdminNewsPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="text-destructive hover:text-destructive"
-                                                onClick={() => {
-                                                    setSelectedNews(article);
-                                                    setIsDeleteDialogOpen(true);
-                                                }}
+                                                onClick={() => handleDelete(article)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -351,207 +389,6 @@ export default function AdminNewsPage() {
                     </Table>
                 )}
             </div>
-
-            {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {selectedNews ? "แก้ไขข่าวสาร" : "เพิ่มข่าวสารใหม่"}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="title">หัวข้อ *</Label>
-                            <Input
-                                id="title"
-                                value={formData.title}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, title: e.target.value })
-                                }
-                                placeholder="เช่น โปรโมชั่นเติมเกม"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="description">รายละเอียด *</Label>
-                            <Textarea
-                                id="description"
-                                value={formData.description}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, description: e.target.value })
-                                }
-                                placeholder="รายละเอียดข่าวสารหรือโปรโมชั่น"
-                                rows={3}
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <Label>รูปภาพ</Label>
-
-                            {/* File Upload */}
-                            <div className="flex gap-2">
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                    className="hidden"
-                                    onChange={handleFileUpload}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isUploading}
-                                >
-                                    {isUploading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Upload className="h-4 w-4" />
-                                    )}
-                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
-                                </Button>
-                                <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                            </div>
-
-                            {/* URL Input */}
-                            <div className="flex gap-2">
-                                <Input
-                                    id="imageUrl"
-                                    value={formData.imageUrl}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, imageUrl: e.target.value })
-                                    }
-                                    placeholder="วาง URL รูปภาพ..."
-                                    className="flex-1"
-                                />
-                                {formData.imageUrl && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: "" }))}
-                                        className="text-red-500 hover:text-red-600"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
-
-                            {/* Preview */}
-                            {formData.imageUrl && (
-                                <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 border">
-                                    <Image
-                                        src={formData.imageUrl}
-                                        alt="Preview"
-                                        fill
-                                        sizes="100%"
-                                        className="object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src =
-                                                "https://placehold.co/400x200/ef4444/ffffff?text=Invalid+URL";
-                                        }}
-                                    />
-                                </div>
-                            )}
-
-                            <p className="text-xs text-muted-foreground">
-                                รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB)
-                            </p>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="link">ลิงก์ (อ่านเพิ่มเติม)</Label>
-                            <Input
-                                id="link"
-                                value={formData.link}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, link: e.target.value })
-                                }
-                                placeholder="https://example.com/promo"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="sortOrder">ลำดับการแสดง</Label>
-                                <Input
-                                    id="sortOrder"
-                                    type="number"
-                                    value={formData.sortOrder}
-                                    onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            sortOrder: parseInt(e.target.value) || 0,
-                                        })
-                                    }
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>สถานะ</Label>
-                                <div className="flex items-center gap-2 h-9">
-                                    <Switch
-                                        checked={formData.isActive}
-                                        onCheckedChange={(checked) =>
-                                            setFormData({ ...formData, isActive: checked })
-                                        }
-                                    />
-                                    <span className="text-sm text-muted-foreground">
-                                        {formData.isActive ? "แสดง" : "ซ่อน"}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDialogOpen(false)}
-                            disabled={saving}
-                        >
-                            ยกเลิก
-                        </Button>
-                        <Button onClick={handleSave} disabled={saving}>
-                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            {selectedNews ? "บันทึก" : "เพิ่ม"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>ยืนยันการลบ</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-muted-foreground">
-                        คุณต้องการลบข่าวสาร &quot;{selectedNews?.title}&quot; ใช่หรือไม่?
-                    </p>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDeleteDialogOpen(false)}
-                            disabled={saving}
-                        >
-                            ยกเลิก
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDelete}
-                            disabled={saving}
-                        >
-                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            ลบ
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

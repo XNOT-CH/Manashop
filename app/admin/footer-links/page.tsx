@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Table,
     TableBody,
@@ -15,15 +14,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, ExternalLink, Loader2, Link as LinkIcon, GripVertical } from "lucide-react";
+import Swal from "sweetalert2";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 
 interface FooterLink {
@@ -52,12 +44,6 @@ export default function FooterLinksAdminPage() {
     const [newHref, setNewHref] = useState("");
     const [newOpenInNewTab, setNewOpenInNewTab] = useState(false);
 
-    // Edit modal
-    const [editingLink, setEditingLink] = useState<FooterLink | null>(null);
-    const [editLabel, setEditLabel] = useState("");
-    const [editHref, setEditHref] = useState("");
-    const [editOpenInNewTab, setEditOpenInNewTab] = useState(false);
-    const [editIsActive, setEditIsActive] = useState(true);
 
 
 
@@ -135,47 +121,64 @@ export default function FooterLinksAdminPage() {
     };
 
     const openEditModal = (link: FooterLink) => {
-        setEditingLink(link);
-        setEditLabel(link.label);
-        setEditHref(link.href);
-        setEditOpenInNewTab(link.openInNewTab);
-        setEditIsActive(link.isActive);
+        Swal.fire({
+            title: "แก้ไขลิงก์",
+            width: "min(96vw, 480px)",
+            showCancelButton: true,
+            confirmButtonText: "บันทึก",
+            cancelButtonText: "ยกเลิก",
+            confirmButtonColor: "#1a56db",
+            cancelButtonColor: "#6b7280",
+            reverseButtons: true,
+            focusConfirm: false,
+            customClass: { popup: "rounded-2xl text-left", confirmButton: "rounded-xl px-6 py-2", cancelButton: "rounded-xl px-6 py-2" },
+            html: `
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ข้อความที่โชว์</label>
+                        <input id="swal-label" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${link.label}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ลิงก์ไปที่</label>
+                        <input id="swal-href" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${link.href}">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input id="swal-newtab" type="checkbox" class="w-4 h-4" ${link.openInNewTab ? "checked" : ""}>
+                        <label for="swal-newtab" class="text-sm">เปิดแท็บใหม่</label>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input id="swal-active" type="checkbox" class="w-4 h-4" ${link.isActive ? "checked" : ""}>
+                        <label for="swal-active" class="text-sm">แสดงผลลิงก์นี้</label>
+                    </div>
+                </div>
+            `,
+            preConfirm: () => ({
+                label: (document.getElementById("swal-label") as HTMLInputElement)?.value?.trim(),
+                href: (document.getElementById("swal-href") as HTMLInputElement)?.value?.trim(),
+                openInNewTab: (document.getElementById("swal-newtab") as HTMLInputElement)?.checked,
+                isActive: (document.getElementById("swal-active") as HTMLInputElement)?.checked,
+            }),
+        }).then(async (result) => {
+            if (!result.isConfirmed || !result.value) return;
+            if (!result.value.label || !result.value.href) { showError("กรุณากรอกข้อมูลให้ครบ"); return; }
+            setSaving(true);
+            try {
+                const res = await fetch(`/api/admin/footer-links/${link.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(result.value),
+                });
+                if (res.ok) {
+                    const updated = await res.json();
+                    setLinks(prev => prev.map(l => l.id === updated.id ? updated : l));
+                    showSuccess("แก้ไขลิงก์เรียบร้อย");
+                } else { showError("ไม่สามารถแก้ไขลิงก์ได้"); }
+            } catch { showError("เกิดข้อผิดพลาด"); }
+            finally { setSaving(false); }
+        });
     };
 
-    const handleEditLink = async () => {
-        if (!editingLink || !editLabel.trim() || !editHref.trim()) {
-            showError("กรุณากรอกข้อมูลให้ครบ");
-            return;
-        }
 
-        setSaving(true);
-        try {
-            const res = await fetch(`/api/admin/footer-links/${editingLink.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    label: editLabel.trim(),
-                    href: editHref.trim(),
-                    openInNewTab: editOpenInNewTab,
-                    isActive: editIsActive,
-                }),
-            });
-
-            if (res.ok) {
-                const updated = await res.json();
-                setLinks(links.map((l) => (l.id === updated.id ? updated : l)));
-                setEditingLink(null);
-                showSuccess("แก้ไขลิงก์เรียบร้อย");
-            } else {
-                showError("ไม่สามารถแก้ไขลิงก์ได้");
-            }
-        } catch (error) {
-            console.error("Error editing link:", error);
-            showError("เกิดข้อผิดพลาด");
-        } finally {
-            setSaving(false);
-        }
-    };
 
     const handleDeleteLink = async (link: FooterLink) => {
         const confirmed = await showDeleteConfirm(link.label);
@@ -210,238 +213,139 @@ export default function FooterLinksAdminPage() {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold">จัดการเมนูลัดส่วนท้าย (Footer Widget)</h1>
-                <p className="text-muted-foreground">
-                    เพิ่ม แก้ไข หรือลบลิงก์ที่แสดงในส่วนท้ายของเว็บไซต์
-                </p>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <LinkIcon className="h-6 w-6 text-[#1a56db]" />
+                    จัดการเมนูลัดส่วนท้าย
+                </h1>
+                <p className="text-muted-foreground mt-1">เพิ่ม แก้ไข หรือลบลิงก์ที่แสดงในส่วนท้ายของเว็บไซต์</p>
             </div>
 
             {/* Toggle Active */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                        <span>แสดงผลบนหน้าเว็บ</span>
-                        <Switch
-                            checked={settings?.isActive ?? false}
-                            onCheckedChange={handleToggleActive}
-                        />
-                    </CardTitle>
-                    <CardDescription>
-                        เปิดเพื่อโชว์เมนูนี้ให้ลูกค้าเห็น
-                    </CardDescription>
-                </CardHeader>
-            </Card>
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm px-5 py-4 flex items-center justify-between">
+                <div>
+                    <p className="font-medium">แสดงผลบนหน้าเว็บ</p>
+                    <p className="text-sm text-muted-foreground">เปิดเพื่อโชว์เมนูนี้ให้ลูกค้าเห็น</p>
+                </div>
+                <Switch
+                    checked={settings?.isActive ?? false}
+                    onCheckedChange={handleToggleActive}
+                />
+            </div>
 
             {/* Add New Link Form */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Plus className="h-5 w-5" />
-                        เพิ่มลิงก์ใหม่
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleAddLink} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="newLabel">ข้อความที่โชว์</Label>
-                                <Input
-                                    id="newLabel"
-                                    placeholder="เช่น วิธีเติมเงิน, ติดต่อเรา"
-                                    value={newLabel}
-                                    onChange={(e) => setNewLabel(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="newHref">ลิงก์ไปที่</Label>
-                                <Input
-                                    id="newHref"
-                                    placeholder="เช่น /how-to-topup หรือ https://facebook.com/..."
-                                    value={newHref}
-                                    onChange={(e) => setNewHref(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="newOpenInNewTab"
-                                    checked={newOpenInNewTab}
-                                    onCheckedChange={(checked) =>
-                                        setNewOpenInNewTab(checked === true)
-                                    }
-                                />
-                                <Label
-                                    htmlFor="newOpenInNewTab"
-                                    className="text-sm font-normal cursor-pointer"
-                                >
-                                    เปิดแท็บใหม่ (สำหรับลิงก์ออกไปเว็บอื่น)
-                                </Label>
-                            </div>
-                            <Button type="submit" disabled={saving}>
-                                {saving ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                ) : (
-                                    <Plus className="h-4 w-4 mr-2" />
-                                )}
-                                เพิ่มลิงก์
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-
-            {/* Links List */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <LinkIcon className="h-5 w-5" />
-                        รายการลิงก์ ({links.length})
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {links.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            ยังไม่มีลิงก์ เพิ่มลิงก์แรกของคุณด้านบน
-                        </div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                    <TableHead>ข้อความ</TableHead>
-                                    <TableHead>ลิงก์</TableHead>
-                                    <TableHead className="text-center">แท็บใหม่</TableHead>
-                                    <TableHead className="text-center">สถานะ</TableHead>
-                                    <TableHead className="text-right">จัดการ</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {links.map((link) => (
-                                    <TableRow key={link.id}>
-                                        <TableCell>
-                                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                        </TableCell>
-                                        <TableCell className="font-medium">
-                                            {link.label}
-                                        </TableCell>
-                                        <TableCell>
-                                            <a
-                                                href={link.href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline group max-w-[250px]"
-                                            >
-                                                <span className="truncate">{link.href}</span>
-                                                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </a>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {link.openInNewTab && (
-                                                <ExternalLink className="h-4 w-4 mx-auto text-blue-500" />
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <span
-                                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${link.isActive
-                                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
-                                                    }`}
-                                            >
-                                                {link.isActive ? "แสดง" : "ซ่อน"}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => openEditModal(link)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-destructive hover:text-destructive"
-                                                    onClick={() => handleDeleteLink(link)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Edit Modal */}
-            <Dialog open={!!editingLink} onOpenChange={() => setEditingLink(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>แก้ไขลิงก์</DialogTitle>
-                        <DialogDescription>
-                            แก้ไขข้อมูลลิงก์ด้านล่าง
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                        <Plus className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="font-bold">เพิ่มลิงก์ใหม่</span>
+                </div>
+                <form onSubmit={handleAddLink} className="p-5 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="editLabel">ข้อความที่โชว์</Label>
-                            <Input
-                                id="editLabel"
-                                value={editLabel}
-                                onChange={(e) => setEditLabel(e.target.value)}
-                            />
+                            <Label htmlFor="newLabel">ข้อความที่โชว์</Label>
+                            <Input id="newLabel" placeholder="เช่น วิธีเติมเงิน, ติดต่อเรา" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="editHref">ลิงก์ไปที่</Label>
-                            <Input
-                                id="editHref"
-                                value={editHref}
-                                onChange={(e) => setEditHref(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="editOpenInNewTab"
-                                checked={editOpenInNewTab}
-                                onCheckedChange={(checked) =>
-                                    setEditOpenInNewTab(checked === true)
-                                }
-                            />
-                            <Label htmlFor="editOpenInNewTab" className="cursor-pointer">
-                                เปิดแท็บใหม่
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="editIsActive"
-                                checked={editIsActive}
-                                onCheckedChange={(checked) =>
-                                    setEditIsActive(checked === true)
-                                }
-                            />
-                            <Label htmlFor="editIsActive" className="cursor-pointer">
-                                แสดงผลลิงก์นี้
-                            </Label>
+                            <Label htmlFor="newHref">ลิงก์ไปที่</Label>
+                            <Input id="newHref" placeholder="เช่น /how-to-topup" value={newHref} onChange={(e) => setNewHref(e.target.value)} />
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingLink(null)}>
-                            ยกเลิก
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="newOpenInNewTab" checked={newOpenInNewTab} onCheckedChange={(checked) => setNewOpenInNewTab(checked === true)} />
+                            <Label htmlFor="newOpenInNewTab" className="text-sm font-normal cursor-pointer">เปิดแท็บใหม่ (สำหรับลิงก์ออกไปเว็บอื่น)</Label>
+                        </div>
+                        <Button type="submit" disabled={saving} className="bg-[#1a56db] hover:bg-[#1e40af]">
+                            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                            เพิ่มลิงก์
                         </Button>
-                        <Button onClick={handleEditLink} disabled={saving}>
-                            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                            บันทึก
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </div>
+                </form>
+            </div>
 
-
+            {/* Links List */}
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
+                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                        <LinkIcon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="font-bold">รายการลิงก์ ({links.length})</span>
+                </div>
+                {links.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground">ยังไม่มีลิงก์ เพิ่มลิงก์แรกของคุณด้านบน</div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50px]"></TableHead>
+                                <TableHead>ข้อความ</TableHead>
+                                <TableHead>ลิงก์</TableHead>
+                                <TableHead className="text-center">แท็บใหม่</TableHead>
+                                <TableHead className="text-center">สถานะ</TableHead>
+                                <TableHead className="text-right">จัดการ</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {links.map((link) => (
+                                <TableRow key={link.id}>
+                                    <TableCell>
+                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        {link.label}
+                                    </TableCell>
+                                    <TableCell>
+                                        <a
+                                            href={link.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline group max-w-[250px]"
+                                        >
+                                            <span className="truncate">{link.href}</span>
+                                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </a>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {link.openInNewTab && (
+                                            <ExternalLink className="h-4 w-4 mx-auto text-blue-500" />
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <span
+                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${link.isActive
+                                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                                                }`}
+                                        >
+                                            {link.isActive ? "แสดง" : "ซ่อน"}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => openEditModal(link)}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-destructive hover:text-destructive"
+                                                onClick={() => handleDeleteLink(link)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </div>
         </div>
     );
 }

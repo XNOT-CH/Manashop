@@ -19,7 +19,10 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "GameStore - Game ID Marketplace",
+  title: {
+    default: "Manashop - Game ID Marketplace",
+    template: "%s | Manashop",
+  },
   description: "แหล่งซื้อขายไอดีเกมที่ปลอดภัยที่สุด",
 };
 

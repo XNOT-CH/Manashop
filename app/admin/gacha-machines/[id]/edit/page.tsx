@@ -51,6 +51,8 @@ const defaultAddForm = {
     rewardName: "",
     probability: "" as string | number,
     rewardAmount: "" as string | number,
+    rewardType: "POINT",
+    productId: "",
     tier: "common",
     rewardImageUrl: "",
 };
@@ -66,7 +68,7 @@ export default function EditGachaMachinePage() {
     // rewards
     const [rewards, setRewards] = useState<GachaReward[]>([]);
     const [rewardsLoading, setRewardsLoading] = useState(true);
-    const [rewardSearch, setRewardSearch] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
     const [rewardPerPage, setRewardPerPage] = useState(10);
     const [rewardPage, setRewardPage] = useState(1);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -76,19 +78,30 @@ export default function EditGachaMachinePage() {
     const [addSaving, setAddSaving] = useState(false);
     const [addUploadingImage, setAddUploadingImage] = useState(false);
     const addFileInputRef = useRef<HTMLInputElement>(null);
+    const [isAddDragging, setIsAddDragging] = useState(false);
 
     // edit reward modal
     const [editReward, setEditReward] = useState<GachaReward | null>(null);
     const [editSaving, setEditSaving] = useState(false);
     const [editUploadingImage, setEditUploadingImage] = useState(false);
+    const [isEditDragging, setIsEditDragging] = useState(false);
     const editFileInputRef = useRef<HTMLInputElement>(null);
     const [editForm, setEditForm] = useState({
         rewardName: "",
         probability: 1,
         rewardAmount: 0,
+        rewardType: "POINT",
+        productId: "",
         tier: "common",
         rewardImageUrl: "",
     });
+
+    // products for product picker
+    const [products, setProducts] = useState<{ id: string; name: string; imageUrl: string | null; price: number; category: string; stockCount: number }[]>([]);
+    const [productSearch, setProductSearch] = useState("");
+    const [productCategory, setProductCategory] = useState("");
+    const [editProductSearch, setEditProductSearch] = useState("");
+    const [editProductCategory, setEditProductCategory] = useState("");
 
     const loadMachine = useCallback(async () => {
         try {
@@ -116,34 +129,49 @@ export default function EditGachaMachinePage() {
     useEffect(() => {
         void loadMachine();
         void loadRewards();
+        // Load products for product picker
+        fetch("/api/admin/gacha-products")
+            .then(r => r.json())
+            .then((j: { success: boolean; data?: { id: string; name: string; imageUrl: string | null; price: number; category: string; stockCount: number }[] }) => {
+                if (j.success && j.data) setProducts(j.data);
+            })
+            .catch(() => { /* ignore */ });
     }, [loadMachine, loadRewards]);
 
     // ── Add reward ──
     const handleAddReward = async () => {
-        if (!String(addForm.rewardName).trim()) return showError("กรุณากรอกชื่อรางวัล");
+        if (addForm.rewardType === "PRODUCT") {
+            if (!addForm.productId) return showError("กรุณาเลือกสินค้า");
+        } else {
+            if (!String(addForm.rewardName).trim()) return showError("กรุณากรอกชื่อรางวัล");
+        }
         const prob = Number(addForm.probability);
         if (!prob || prob <= 0 || prob > 100) return showError("โอกาสได้รับต้องอยู่ระหว่าง 0.01-100");
         const currentTotal = rewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0);
         if (currentTotal + prob > 100) return showError(`โอกาสรวมทั้งหมดต้องไม่เกิน 100% (ปัจจุบันใช้ไป ${Math.round(currentTotal * 100) / 100}% เหลือ ${Math.max(0, Math.round((100 - currentTotal) * 100) / 100)}%)`);
         setAddSaving(true);
         try {
-            const res = await fetch("/api/admin/gacha-rewards", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    rewardType: "CREDIT",
+            const body = addForm.rewardType === "PRODUCT"
+                ? { rewardType: "PRODUCT", productId: addForm.productId, probability: prob, tier: addForm.tier, gachaMachineId: id }
+                : {
+                    rewardType: addForm.rewardType,
                     rewardName: String(addForm.rewardName).trim(),
                     probability: prob,
                     rewardAmount: Number(addForm.rewardAmount) || null,
                     tier: addForm.tier,
                     rewardImageUrl: addForm.rewardImageUrl || null,
                     gachaMachineId: id,
-                }),
+                };
+            const res = await fetch("/api/admin/gacha-rewards", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
             });
             const json = await res.json() as { success: boolean; message?: string };
             if (json.success) {
                 showSuccess("เพิ่มรางวัลสำเร็จ");
                 setAddForm(defaultAddForm);
+                setProductSearch("");
                 void loadRewards();
             } else { showError(json.message ?? "เพิ่มไม่สำเร็จ"); }
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setAddSaving(false); }
@@ -191,31 +219,41 @@ export default function EditGachaMachinePage() {
             rewardName: r.rewardType === "PRODUCT" ? (r.product?.name ?? "") : (r.rewardName ?? ""),
             probability: r.probability ?? 1,
             rewardAmount: r.rewardAmount ?? 0,
+            rewardType: r.rewardType ?? "POINT",
+            productId: r.productId ?? "",
             tier: r.tier,
             rewardImageUrl: r.rewardImageUrl ?? (r.product?.imageUrl ?? ""),
         });
+        setEditProductSearch("");
     };
     const closeEdit = () => setEditReward(null);
 
     const handleEditSave = async () => {
         if (!editReward) return;
-        if (!editForm.rewardName.trim()) return showError("กรุณากรอกชื่อรางวัล");
+        if (editForm.rewardType === "PRODUCT") {
+            if (!editForm.productId) return showError("กรุณาเลือกสินค้า");
+        } else {
+            if (!editForm.rewardName.trim()) return showError("กรุณากรอกชื่อรางวัล");
+        }
         if (editForm.probability <= 0 || editForm.probability > 100) return showError("โอกาสได้รับต้องอยู่ระหว่าง 0.01-100");
-        // Compute total excluding the reward being edited
         const otherTotal = rewards.filter(r => r.id !== editReward.id).reduce((sum, r) => sum + Number(r.probability ?? 0), 0);
         if (otherTotal + editForm.probability > 100) return showError(`โอกาสรวมทั้งหมดต้องไม่เกิน 100% (รางวัลอื่นใช้ไป ${Math.round(otherTotal * 100) / 100}% เหลือ ${Math.max(0, Math.round((100 - otherTotal) * 100) / 100)}%)`);
         setEditSaving(true);
+        const body = editForm.rewardType === "PRODUCT"
+            ? { rewardType: "PRODUCT", productId: editForm.productId, probability: editForm.probability, tier: editForm.tier }
+            : {
+                rewardType: editForm.rewardType,
+                rewardName: editForm.rewardName,
+                probability: editForm.probability,
+                rewardAmount: editForm.rewardAmount || null,
+                tier: editForm.tier,
+                rewardImageUrl: editForm.rewardImageUrl || null,
+            };
         try {
             const res = await fetch(`/api/admin/gacha-rewards/${editReward.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    rewardName: editForm.rewardName,
-                    probability: editForm.probability,
-                    rewardAmount: editForm.rewardAmount || null,
-                    tier: editForm.tier,
-                    rewardImageUrl: editForm.rewardImageUrl || null,
-                }),
+                body: JSON.stringify(body),
             });
             const json = await res.json() as { success: boolean };
             if (json.success) { showSuccess("บันทึกรางวัลสำเร็จ"); closeEdit(); void loadRewards(); }
@@ -223,13 +261,55 @@ export default function EditGachaMachinePage() {
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setEditSaving(false); }
     };
 
-    // ── Pagination ──
+    // ── Pagination & Sorting ──
+    const [sortField, setSortField] = useState<"name" | "probability" | "tier" | null>(null);
+    const [sortAsc, setSortAsc] = useState(true);
+
+    const handleSort = (field: "name" | "probability" | "tier") => {
+        if (sortField === field) {
+            setSortAsc(!sortAsc);
+        } else {
+            setSortField(field);
+            setSortAsc(true);
+        }
+    };
+
+    const getRewardName = (r: GachaReward) => r.rewardType === "PRODUCT" ? (r.product?.name ?? "Unknown Product") : (r.rewardName || "Unknown");
+
     const filteredRewards = rewards.filter(r => {
-        const name = r.rewardType === "PRODUCT" ? (r.product?.name ?? "") : (r.rewardName ?? "");
-        return name.toLowerCase().includes(rewardSearch.toLowerCase());
+        const name = getRewardName(r).toLowerCase();
+        return name.includes(searchQuery.toLowerCase());
     });
-    const totalRewardPages = Math.max(1, Math.ceil(filteredRewards.length / rewardPerPage));
-    const pagedRewards = filteredRewards.slice((rewardPage - 1) * rewardPerPage, rewardPage * rewardPerPage);
+
+    const sortedRewards = [...filteredRewards].sort((a, b) => {
+        if (!sortField) return 0;
+
+        let aVal: any = "";
+        let bVal: any = "";
+
+        if (sortField === "name") {
+            aVal = getRewardName(a);
+            bVal = getRewardName(b);
+        } else if (sortField === "probability") {
+            aVal = Number(a.probability);
+            bVal = Number(b.probability);
+        } else if (sortField === "tier") {
+            aVal = a.tier;
+            bVal = b.tier;
+        }
+
+        if (aVal === bVal) return 0;
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+            return sortAsc ? aVal - bVal : bVal - aVal;
+        }
+
+        const cmp = String(aVal).localeCompare(String(bVal));
+        return sortAsc ? cmp : -cmp;
+    });
+
+    const totalRewardPages = Math.max(1, Math.ceil(sortedRewards.length / rewardPerPage));
+    const paginatedRewards = sortedRewards.slice((rewardPage - 1) * rewardPerPage, rewardPage * rewardPerPage);
 
     // ── Total probability used ──
     const totalUsed = Math.round(rewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0) * 100) / 100;
@@ -312,16 +392,77 @@ export default function EditGachaMachinePage() {
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>สิทธิ์ทำรางวัล *</label>
-                            <input
-                                type="number"
-                                value={addForm.rewardAmount}
-                                onChange={e => setAddForm(f => ({ ...f, rewardAmount: e.target.value }))}
-                                placeholder="จำเป็น"
-                                min={0}
+                            <label className={labelCls}>ประเภทรางวัล *</label>
+                            <select
+                                value={addForm.rewardType}
+                                onChange={e => setAddForm(f => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: "" }))}
                                 className={inputCls}
-                            />
+                            >
+                                <option value="POINT">พอย</option>
+                                <option value="CREDIT">เครดิต</option>
+                                <option value="PRODUCT">สินค้าในเว็บ</option>
+                            </select>
                         </div>
+                        {addForm.rewardType === "PRODUCT" ? (
+                            <div className="md:col-span-1">
+                                <label className={labelCls}>เลือกสินค้า *</label>
+                                <select
+                                    value={productCategory}
+                                    onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setAddForm(f => ({ ...f, productId: "", rewardName: "" })); }}
+                                    className={inputCls + " mb-2"}
+                                >
+                                    <option value="">— เลือกหมวดหมู่ —</option>
+                                    {[...new Set(products.map(p => p.category))].sort().map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                                <div className="relative">
+                                    <input
+                                        value={productSearch}
+                                        onChange={e => setProductSearch(e.target.value)}
+                                        placeholder="ค้นหาชื่อสินค้า..."
+                                        className={inputCls}
+                                    />
+                                    {(productSearch || productCategory) && (
+                                        <div className="absolute left-0 right-0 top-full mt-1 border border-border rounded-lg bg-background shadow-xl max-h-52 overflow-y-auto z-50">
+                                            {products
+                                                .filter(p => p.stockCount > 0 && (!productCategory || p.category === productCategory) && p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                                                .slice(0, 10).map(p => (
+                                                    <button
+                                                        key={p.id}
+                                                        type="button"
+                                                        onClick={() => { setAddForm(f => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }}
+                                                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition flex items-center gap-2 border-b border-border/50 last:border-0"
+                                                    >
+                                                        {p.imageUrl && <Image src={p.imageUrl} alt={p.name} width={28} height={28} className="w-7 h-7 rounded object-cover flex-shrink-0" unoptimized />}
+                                                        <span className="truncate flex-1">{p.name}</span>
+                                                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex-shrink-0">สต็อก {p.stockCount}</span>
+                                                        <span className="text-xs text-muted-foreground flex-shrink-0">฿{Number(p.price).toLocaleString()}</span>
+                                                    </button>
+                                                ))}
+                                            {products.filter(p => p.stockCount > 0 && (!productCategory || p.category === productCategory) && p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                                                <p className="px-3 py-2 text-sm text-muted-foreground">ไม่พบสินค้าที่มีสต็อก</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {addForm.productId && (
+                                    <p className="mt-1 text-xs text-[#145de7] font-medium">✓ เลือก: {addForm.rewardName}</p>
+                                )}
+                            </div>
+                        ) : (
+                            <div>
+                                <label className={labelCls}>จำนวนที่จะได้รับ *</label>
+                                <input
+                                    type="number"
+                                    value={addForm.rewardAmount}
+                                    onChange={e => setAddForm(f => ({ ...f, rewardAmount: e.target.value }))}
+                                    placeholder="เช่น 100"
+                                    min={0}
+                                    className={inputCls}
+                                />
+                            </div>
+                        )}
                         <div>
                             <label className={labelCls}>รูปแบบรางวัล *</label>
                             <select
@@ -350,16 +491,26 @@ export default function EditGachaMachinePage() {
                             }}
                         />
                         <div className="flex items-center gap-2">
-                            {validImageUrl(String(addForm.rewardImageUrl)) && (
-                                <div className="w-10 h-10 rounded-lg border border-border overflow-hidden flex-shrink-0 bg-muted/30">
-                                    <Image src={String(addForm.rewardImageUrl)} alt="preview" width={40} height={40} className="w-full h-full object-cover" />
-                                </div>
-                            )}
-                            {!validImageUrl(String(addForm.rewardImageUrl)) && (
-                                <div className="w-10 h-10 rounded-lg border-2 border-dashed border-border bg-muted/20 flex items-center justify-center flex-shrink-0">
-                                    <ImageIcon className="w-4 h-4 text-muted-foreground/40" />
-                                </div>
-                            )}
+                            {/* Preview / Drop box */}
+                            <div
+                                className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors
+                                    ${isAddDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}
+                                `}
+                                onDragOver={(e) => { e.preventDefault(); setIsAddDragging(true); }}
+                                onDragLeave={() => setIsAddDragging(false)}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    setIsAddDragging(false);
+                                    const file = e.dataTransfer.files?.[0];
+                                    if (file) void handleImageUpload(file, (url) => setAddForm(f => ({ ...f, rewardImageUrl: url })), setAddUploadingImage);
+                                }}
+                            >
+                                {validImageUrl(String(addForm.rewardImageUrl)) ? (
+                                    <Image src={String(addForm.rewardImageUrl)} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" />
+                                ) : (
+                                    <ImageIcon className={`w-4 h-4 ${isAddDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
+                                )}
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => addFileInputRef.current?.click()}
@@ -407,16 +558,75 @@ export default function EditGachaMachinePage() {
                                 <input type="number" value={editForm.probability} onChange={e => setEditForm(f => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} />
                             </div>
                             <div>
-                                <label className={labelCls}>สิทธิ์ทำรางวัล *</label>
-                                <input type="number" value={editForm.rewardAmount} onChange={e => setEditForm(f => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="จำเป็น" min={0} className={inputCls} />
+                                <label className={labelCls}>ประเภทรางวัล *</label>
+                                <select
+                                    value={editForm.rewardType ?? "POINT"}
+                                    onChange={e => setEditForm(f => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))}
+                                    className={inputCls}
+                                >
+                                    <option value="POINT">พอย</option>
+                                    <option value="CREDIT">เครดิต</option>
+                                    <option value="PRODUCT">สินค้าในเว็บ</option>
+                                </select>
                             </div>
+                            {editForm.rewardType === "PRODUCT" ? (
+                                <div>
+                                    <label className={labelCls}>เลือกสินค้า *</label>
+                                    <select
+                                        value={editProductCategory}
+                                        onChange={e => { setEditProductCategory(e.target.value); setEditProductSearch(""); setEditForm(f => ({ ...f, productId: "", rewardName: "" })); }}
+                                        className={inputCls + " mb-2"}
+                                    >
+                                        <option value="">— เลือกหมวดหมู่ —</option>
+                                        {[...new Set(products.map(p => p.category))].sort().map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                    <div className="relative">
+                                        <input
+                                            value={editProductSearch}
+                                            onChange={e => setEditProductSearch(e.target.value)}
+                                            placeholder="ค้นหาชื่อสินค้า..."
+                                            className={inputCls}
+                                        />
+                                        {(editProductSearch || editProductCategory) && (
+                                            <div className="absolute left-0 right-0 top-full mt-1 border border-border rounded-lg bg-background shadow-xl max-h-52 overflow-y-auto z-50">
+                                                {products
+                                                    .filter(p => p.stockCount > 0 && (!editProductCategory || p.category === editProductCategory) && p.name.toLowerCase().includes(editProductSearch.toLowerCase()))
+                                                    .slice(0, 10).map(p => (
+                                                        <button key={p.id} type="button"
+                                                            onClick={() => { setEditForm(f => ({ ...f, productId: p.id, rewardName: p.name })); setEditProductSearch(""); setEditProductCategory(""); }}
+                                                            className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition flex items-center gap-2 border-b border-border/50 last:border-0"
+                                                        >
+                                                            {p.imageUrl && <Image src={p.imageUrl} alt={p.name} width={28} height={28} className="w-7 h-7 rounded object-cover flex-shrink-0" unoptimized />}
+                                                            <span className="truncate flex-1">{p.name}</span>
+                                                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex-shrink-0">สต็อก {p.stockCount}</span>
+                                                            <span className="text-xs text-muted-foreground flex-shrink-0">฿{Number(p.price).toLocaleString()}</span>
+                                                        </button>
+                                                    ))}
+                                                {products.filter(p => p.stockCount > 0 && (!editProductCategory || p.category === editProductCategory) && p.name.toLowerCase().includes(editProductSearch.toLowerCase())).length === 0 && (
+                                                    <p className="px-3 py-2 text-sm text-muted-foreground">ไม่พบสินค้าที่มีสต็อก</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {editForm.productId && (
+                                        <p className="mt-1 text-xs text-[#145de7] font-medium">✓ เลือก: {editForm.rewardName}</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className={labelCls}>จำนวนที่จะได้รับ *</label>
+                                    <input type="number" value={editForm.rewardAmount} onChange={e => setEditForm(f => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} />
+                                </div>
+                            )}
                             <div>
                                 <label className={labelCls}>รูปแบบรางวัล *</label>
                                 <select value={editForm.tier} onChange={e => setEditForm(f => ({ ...f, tier: e.target.value }))} className={inputCls}>
                                     {TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                 </select>
                             </div>
-                            <div className="md:col-span-2">
+                            <div className="md:col-span-2 mt-4">
                                 <label className={labelCls}>รูปภาพรางวัล</label>
                                 <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
                                 <input
@@ -431,15 +641,26 @@ export default function EditGachaMachinePage() {
                                     }}
                                 />
                                 <div className="flex items-center gap-2">
-                                    {validImageUrl(editForm.rewardImageUrl) ? (
-                                        <div className="w-10 h-10 rounded-lg border border-border overflow-hidden flex-shrink-0 bg-muted/30">
-                                            <Image src={editForm.rewardImageUrl} alt="preview" width={40} height={40} className="w-full h-full object-cover" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-10 h-10 rounded-lg border-2 border-dashed border-border bg-muted/20 flex items-center justify-center flex-shrink-0">
-                                            <ImageIcon className="w-4 h-4 text-muted-foreground/40" />
-                                        </div>
-                                    )}
+                                    {/* Preview / Drop box */}
+                                    <div
+                                        className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors
+                                                ${isEditDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}
+                                            `}
+                                        onDragOver={(e) => { e.preventDefault(); setIsEditDragging(true); }}
+                                        onDragLeave={() => setIsEditDragging(false)}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            setIsEditDragging(false);
+                                            const file = e.dataTransfer.files?.[0];
+                                            if (file) void handleImageUpload(file, (url) => setEditForm(f => ({ ...f, rewardImageUrl: url })), setEditUploadingImage);
+                                        }}
+                                    >
+                                        {validImageUrl(editForm.rewardImageUrl) ? (
+                                            <Image src={editForm.rewardImageUrl} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" />
+                                        ) : (
+                                            <ImageIcon className={`w-4 h-4 ${isEditDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
+                                        )}
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => editFileInputRef.current?.click()}
@@ -480,7 +701,7 @@ export default function EditGachaMachinePage() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>ค้นหา</span>
-                        <input value={rewardSearch} onChange={e => { setRewardSearch(e.target.value); setRewardPage(1); }} placeholder="" className="border border-border rounded px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7] w-40" />
+                        <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setRewardPage(1); }} placeholder="" className="border border-border rounded px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7] w-40" />
                     </div>
                 </div>
 
@@ -489,17 +710,36 @@ export default function EditGachaMachinePage() {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-border bg-muted/40">
-                                {["ลำดับ", "รูปภาพ", "ชื่อ", "โอกาส (%)", "รูปแบบ", "แก้ไข", "ลบ"].map(h => (
-                                    <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
-                                ))}
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลำดับ</th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">รูปภาพ</th>
+                                <th
+                                    className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                    onClick={() => handleSort("name")}
+                                >
+                                    <div className="flex items-center gap-1">ชื่อ {sortField === "name" && (sortAsc ? "↑" : "↓")}</div>
+                                </th>
+                                <th
+                                    className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                    onClick={() => handleSort("probability")}
+                                >
+                                    <div className="flex items-center gap-1">โอกาส (%) {sortField === "probability" && (sortAsc ? "↑" : "↓")}</div>
+                                </th>
+                                <th
+                                    className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                    onClick={() => handleSort("tier")}
+                                >
+                                    <div className="flex items-center gap-1">รูปแบบ {sortField === "tier" && (sortAsc ? "↑" : "↓")}</div>
+                                </th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">แก้ไข</th>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลบ</th>
                             </tr>
                         </thead>
                         <tbody>
                             {rewardsLoading ? (
                                 <tr><td colSpan={7} className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto" /></td></tr>
-                            ) : pagedRewards.length === 0 ? (
+                            ) : paginatedRewards.length === 0 ? (
                                 <tr><td colSpan={7} className="text-center py-10 text-muted-foreground text-sm">ไม่พบรายการ</td></tr>
-                            ) : pagedRewards.map((r, i) => {
+                            ) : paginatedRewards.map((r, i) => {
                                 const imgUrl = r.rewardType === "PRODUCT" ? r.product?.imageUrl : r.rewardImageUrl;
                                 const name = r.rewardType === "PRODUCT" ? (r.product?.name ?? "—") : (r.rewardName ?? "—");
                                 const isBeingEdited = editReward?.id === r.id;
@@ -507,7 +747,7 @@ export default function EditGachaMachinePage() {
                                     <tr key={r.id} className={`border-b border-border/40 transition-colors ${isBeingEdited ? "bg-violet-50/60 dark:bg-violet-950/20" : "hover:bg-muted/30"}`}>
                                         <td className="px-3 py-2.5 text-muted-foreground">{(rewardPage - 1) * rewardPerPage + i + 1}</td>
                                         <td className="px-3 py-2.5">
-                                            {validImageUrl(imgUrl) ? (
+                                            {validImageUrl(imgUrl!) ? (
                                                 <Image src={imgUrl!} alt={name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" />
                                             ) : (
                                                 <div className="w-9 h-9 rounded-lg bg-[#eff6ff] flex items-center justify-center">
@@ -523,12 +763,18 @@ export default function EditGachaMachinePage() {
                                             </span>
                                         </td>
                                         <td className="px-3 py-2.5">
-                                            <button onClick={() => isBeingEdited ? closeEdit() : openEdit(r)} className={`w-8 h-8 rounded-lg text-white flex items-center justify-center transition ${isBeingEdited ? "bg-violet-400 hover:bg-violet-500" : "bg-violet-500 hover:bg-violet-600"}`}>
+                                            <button
+                                                onClick={() => openEdit(r)}
+                                                className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-400 flex items-center justify-center transition"
+                                            >
                                                 <Pencil className="w-3.5 h-3.5" />
                                             </button>
                                         </td>
                                         <td className="px-3 py-2.5">
-                                            <button onClick={() => void handleDeleteReward(r.id)} disabled={deletingId === r.id} className="w-8 h-8 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition disabled:opacity-50">
+                                            <button
+                                                onClick={() => void handleDeleteReward(r.id)}
+                                                className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 flex items-center justify-center transition"
+                                            >
                                                 {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                                             </button>
                                         </td>
@@ -541,7 +787,7 @@ export default function EditGachaMachinePage() {
 
                 {/* Pagination footer */}
                 <div className="px-4 py-3 border-t border-border flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                    <span>แสดง {filteredRewards.length === 0 ? 0 : (rewardPage - 1) * rewardPerPage + 1} ถึง {Math.min(rewardPage * rewardPerPage, filteredRewards.length)} จาก {filteredRewards.length} รายการ</span>
+                    <span>แสดง {sortedRewards.length === 0 ? 0 : (rewardPage - 1) * rewardPerPage + 1} ถึง {Math.min(rewardPage * rewardPerPage, sortedRewards.length)} จาก {sortedRewards.length} รายการ</span>
                     <div className="flex gap-1">
                         <button onClick={() => setRewardPage(p => Math.max(1, p - 1))} disabled={rewardPage === 1} className="px-3 py-1.5 rounded border border-border text-xs hover:bg-muted transition disabled:opacity-40">ก่อนหน้า</button>
                         {Array.from({ length: totalRewardPages }, (_, i) => i + 1).slice(Math.max(0, rewardPage - 3), rewardPage + 2).map(p => (

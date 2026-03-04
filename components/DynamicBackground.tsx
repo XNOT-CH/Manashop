@@ -1,53 +1,29 @@
-"use client";
+import Image from "next/image";
+import { db } from "@/lib/db";
 
-import { useEffect, useState } from "react";
+// Server Component — ไม่ต้องการ 'use client' เพราะ query DB ตรงๆ บน server
+export async function DynamicBackground() {
+    const settings = await db.siteSettings.findFirst({
+        select: { backgroundImage: true },
+    });
 
-export function DynamicBackground() {
-    const [backgroundImage, setBackgroundImage] = useState<string>("");
-    const [isLoaded, setIsLoaded] = useState(false);
-
-    useEffect(() => {
-        // Check sessionStorage first for cached value
-        const cached = sessionStorage.getItem("backgroundImage");
-        if (cached) {
-            setBackgroundImage(cached);
-            setIsLoaded(true);
-            return;
-        }
-
-        const fetchBackground = async () => {
-            try {
-                const res = await fetch("/api/admin/settings");
-                const data = await res.json();
-                if (data.success && data.data?.backgroundImage) {
-                    setBackgroundImage(data.data.backgroundImage);
-                    sessionStorage.setItem("backgroundImage", data.data.backgroundImage);
-                }
-            } catch (error) {
-                console.error("Failed to fetch background:", error);
-            } finally {
-                setIsLoaded(true);
-            }
-        };
-
-        fetchBackground();
-    }, []);
-
-    if (!backgroundImage || !isLoaded) return null;
+    if (!settings?.backgroundImage) return null;
 
     return (
-        <div
-            className="fixed inset-0 -z-10 pointer-events-none"
-            style={{
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-                backgroundAttachment: "fixed",
-            }}
-        >
-            {/* Light overlay without blur for better performance */}
+        <div className="fixed inset-0 -z-10 pointer-events-none">
+            {/* Next.js Image: auto WebP conversion + proper sizing */}
+            <Image
+                src={settings.backgroundImage}
+                alt=""
+                fill
+                sizes="100vw"
+                quality={70}
+                className="object-cover object-center"
+                aria-hidden="true"
+            />
+            {/* Light overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/70 to-white/50" />
         </div>
     );
 }
+
