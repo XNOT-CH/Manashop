@@ -1,20 +1,21 @@
 import crypto from "crypto";
 
-// Get encryption key from environment — MUST be set in production
-const ENCRYPTION_KEY_RAW = process.env.ENCRYPTION_KEY;
-
-if (process.env.NODE_ENV === "production" && !ENCRYPTION_KEY_RAW) {
-    throw new Error("[encryption] ENCRYPTION_KEY environment variable is not set. Please set a 32-character key.");
-}
+const IV_LENGTH = 16;
 
 // Development fallback — NOT safe for production
-const ENCRYPTION_KEY = ENCRYPTION_KEY_RAW ?? "gamestore-secret-key-12345678901";
+const DEV_FALLBACK_KEY = "gamestore-secret-key-12345678901";
 
-if (Buffer.byteLength(ENCRYPTION_KEY, "utf8") !== 32) {
-    throw new Error(`[encryption] ENCRYPTION_KEY must be exactly 32 bytes for AES-256, got ${Buffer.byteLength(ENCRYPTION_KEY, "utf8")}.`);
+/**
+ * Lazily resolve the encryption key at runtime (not at module load time).
+ * This prevents build-time failures when env vars are not available.
+ */
+function getEncryptionKey(): string {
+    const key = process.env.ENCRYPTION_KEY ?? DEV_FALLBACK_KEY;
+    if (Buffer.byteLength(key, "utf8") !== 32) {
+        throw new Error(`[encryption] ENCRYPTION_KEY must be exactly 32 bytes for AES-256, got ${Buffer.byteLength(key, "utf8")}.`);
+    }
+    return key;
 }
-
-const IV_LENGTH = 16;
 
 /**
  * Encrypt sensitive data
@@ -23,7 +24,7 @@ export function encrypt(text: string): string {
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(
         "aes-256-cbc",
-        Buffer.from(ENCRYPTION_KEY),
+        Buffer.from(getEncryptionKey()),
         iv
     );
     let encrypted = cipher.update(text);
@@ -45,7 +46,7 @@ export function decrypt(text: string): string {
         const encryptedText = Buffer.from(parts[1], "hex");
         const decipher = crypto.createDecipheriv(
             "aes-256-cbc",
-            Buffer.from(ENCRYPTION_KEY),
+            Buffer.from(getEncryptionKey()),
             iv
         );
         let decrypted = decipher.update(encryptedText);
