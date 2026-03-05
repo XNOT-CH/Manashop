@@ -37,5 +37,6 @@ export const gachaSettingsSchema = z.object({
     costType: z.enum(["FREE", "CREDIT", "POINT"]).default("FREE"),
     costAmount: z.coerce.number().min(0).default(0),
     dailySpinLimit: z.coerce.number().int().min(0).default(0),
+    tierMode: z.enum(["PRICE", "MANUAL"]).default("PRICE"),
 });
 export type GachaSettingsInput = z.infer<typeof gachaSettingsSchema>;
