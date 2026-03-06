@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
@@ -49,6 +50,8 @@ export async function POST(request: Request) {
                 id: newId, productId: body.productId, tier: body.tier, isActive: body.isActive,
                 rewardType: "PRODUCT", gachaMachineId: body.gachaMachineId ?? null,
                 probability: String(body.probability),
+                createdAt: mysqlNow(),
+                updatedAt: mysqlNow(),
             });
         } else {
             if (!body.rewardAmount || body.rewardAmount <= 0) return NextResponse.json({ success: false, message: "กรุณากรอกจำนวนรางวัล" }, { status: 400 });
@@ -58,6 +61,8 @@ export async function POST(request: Request) {
                 rewardAmount: String(body.rewardAmount), rewardImageUrl: body.rewardImageUrl || null,
                 tier: body.tier, isActive: body.isActive, gachaMachineId: body.gachaMachineId ?? null,
                 probability: String(body.probability),
+                createdAt: mysqlNow(),
+                updatedAt: mysqlNow(),
             });
         }
         const created = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, newId) });

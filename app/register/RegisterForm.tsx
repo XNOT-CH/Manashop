@@ -68,6 +68,7 @@ export function RegisterForm({ logoUrl }: RegisterFormProps) {
                 body: JSON.stringify({
                     username: formData.username,
                     password: formData.password,
+                    confirmPassword: formData.confirmPassword,
                 }),
             });
 

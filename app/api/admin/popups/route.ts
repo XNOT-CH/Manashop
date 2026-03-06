@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, announcementPopups } from "@/lib/db";
 import { eq, asc, desc } from "drizzle-orm";
@@ -35,6 +36,8 @@ export async function POST(request: Request) {
         await db.insert(announcementPopups).values({
             id: newId, title: title || null, imageUrl, linkUrl: linkUrl || null,
             sortOrder, isActive, dismissOption,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const popup = await db.query.announcementPopups.findFirst({ where: eq(announcementPopups.id, newId) });
         await invalidatePopupCaches();

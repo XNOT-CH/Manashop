@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { db, sessions, users } from "@/lib/db";
@@ -28,6 +29,7 @@ export async function createSession(userId: string, rememberMe: boolean = false)
         lastActivity: new Date().toISOString().slice(0, 19).replace("T", " "),
         userAgent: "",
         ipAddress: "",
+        createdAt: mysqlNow(),
     });
 
     const cookieStore = await cookies();

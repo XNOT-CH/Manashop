@@ -1,32 +1,31 @@
-import { cookies } from "next/headers";
-import { db, users } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { validateCsrfToken, getCsrfTokenFromRequest } from "@/lib/csrf";
+import { auth } from "@/auth";
+import { getCsrfTokenFromRequest, validateCsrfToken } from "@/lib/csrf";
 
-interface AdminCheckResult {
+interface AuthCheckResult {
     success: boolean;
     error?: string;
     userId?: string;
 }
 
-export async function isAdmin(): Promise<AdminCheckResult> {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+/**
+ * Check if the current request is from an authenticated admin.
+ * Uses NextAuth JWT session — no extra DB query needed.
+ */
+export async function isAdmin(): Promise<AuthCheckResult> {
+    const session = await auth();
 
-    if (!userId) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
+    if (!session?.user) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
 
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: { id: true, role: true },
-    });
+    const role = (session.user as { role?: string }).role;
+    if (role !== "ADMIN") return { success: false, error: "ไม่มีสิทธิ์เข้าถึง" };
 
-    if (!user) return { success: false, error: "ไม่พบผู้ใช้งาน" };
-    if (user.role !== "ADMIN") return { success: false, error: "ไม่มีสิทธิ์เข้าถึง" };
-
-    return { success: true, userId: user.id };
+    return { success: true, userId: session.user.id };
 }
 
-export async function isAdminWithCsrf(request: Request): Promise<AdminCheckResult> {
+/**
+ * Check admin + validate CSRF token.
+ */
+export async function isAdminWithCsrf(request: Request): Promise<AuthCheckResult> {
     const adminCheck = await isAdmin();
     if (!adminCheck.success) return adminCheck;
 
@@ -39,23 +38,21 @@ export async function isAdminWithCsrf(request: Request): Promise<AdminCheckResul
     return { success: true, userId: adminCheck.userId };
 }
 
-export async function isAuthenticated(): Promise<AdminCheckResult> {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+/**
+ * Check if the current request is from any authenticated user.
+ */
+export async function isAuthenticated(): Promise<AuthCheckResult> {
+    const session = await auth();
 
-    if (!userId) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
+    if (!session?.user) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
 
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: { id: true, role: true },
-    });
-
-    if (!user) return { success: false, error: "ไม่พบผู้ใช้งาน" };
-
-    return { success: true, userId: user.id };
+    return { success: true, userId: session.user.id };
 }
 
-export async function isAuthenticatedWithCsrf(request: Request): Promise<AdminCheckResult> {
+/**
+ * Check authenticated + validate CSRF token.
+ */
+export async function isAuthenticatedWithCsrf(request: Request): Promise<AuthCheckResult> {
     const authCheck = await isAuthenticated();
     if (!authCheck.success) return authCheck;
 

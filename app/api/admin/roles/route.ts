@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, roles } from "@/lib/db";
 import { eq, asc } from "drizzle-orm";
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
             id: newId, name, code: roleCode, description: description || null,
             permissions: permissions.length > 0 ? JSON.stringify(permissions) : null,
             sortOrder: 0, isSystem: false,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const role = await db.query.roles.findFirst({ where: eq(roles.id, newId) });
 

@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { db, auditLogs, users } from "@/lib/db";
 import { eq, lt, and, gte, lte } from "drizzle-orm";
 import { getClientIp } from "@/lib/rateLimit";
@@ -97,6 +98,7 @@ export async function createAuditLog(params: AuditLogParams): Promise<void> {
             ipAddress: params.ipAddress || null,
             userAgent: params.userAgent || null,
             status: params.status || "SUCCESS",
+            createdAt: mysqlNow(),
         });
     } catch (error) {
         console.error("Failed to create audit log:", error);

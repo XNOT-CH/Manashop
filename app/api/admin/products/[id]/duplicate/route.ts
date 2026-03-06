@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, users, products } from "@/lib/db";
+import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             id: newId, name: `${original.name} (สำเนา)`, description: original.description,
             price: original.price, discountPrice: null, imageUrl: original.imageUrl,
             category: original.category, secretData: "", isSold: false, isFeatured: false, sortOrder: 0,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const duplicate = await db.query.products.findFirst({ where: eq(products.id, newId) });
         return NextResponse.json({ success: true, product: duplicate });

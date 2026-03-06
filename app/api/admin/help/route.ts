@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, helpArticles } from "@/lib/db";
 import { eq, asc } from "drizzle-orm";
@@ -33,6 +34,8 @@ export async function POST(request: NextRequest) {
             category: category || "general",
             sortOrder,
             isActive,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const article = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, newId) });
         await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_CREATE, resource: "HelpArticle", resourceId: newId, resourceName: title, details: { resourceName: title, category: category || "general" } });

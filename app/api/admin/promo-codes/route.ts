@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, promoCodes } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
             expiresAt: body.expiresAt ? toMySQLDatetime(new Date(body.expiresAt)) : null,
             startsAt: toMySQLDatetime(new Date()),
             isActive: body.isActive,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const promoCode = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, newId) });
         return NextResponse.json({ success: true, message: "Promo code created successfully", data: promoCode });

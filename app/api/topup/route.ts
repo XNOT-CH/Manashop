@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db, users, topups } from "@/lib/db";
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
             senderBank: slipResult.data?.sender?.bank?.name || null,
             receiverName: slipResult.data?.receiver?.account?.name?.th || null,
             receiverBank: slipResult.data?.receiver?.bank?.name || null,
+            createdAt: mysqlNow(),
         });
 
         await db.update(users).set({

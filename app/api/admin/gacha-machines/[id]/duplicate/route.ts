@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { db, gachaMachines, gachaRewards } from "@/lib/db";
+import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +32,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             isActive: false,
             isEnabled: original.isEnabled,
             sortOrder: (original.sortOrder ?? 0) + 1,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
 
         if (original.rewards && original.rewards.length > 0) {
@@ -45,6 +48,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 rewardImageUrl: r.rewardImageUrl,
                 gachaMachineId: newId,
                 productId: null,
+                createdAt: mysqlNow(),
+                updatedAt: mysqlNow(),
             }));
             await db.insert(gachaRewards).values(newRewards);
         }

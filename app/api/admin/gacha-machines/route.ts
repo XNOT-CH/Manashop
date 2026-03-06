@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { db, gachaMachines, gachaRewards } from "@/lib/db";
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
         dailySpinLimit: body.dailySpinLimit,
         tierMode: body.tierMode,
         sortOrder: body.sortOrder,
+        createdAt: mysqlNow(),
+        updatedAt: mysqlNow(),
     });
     const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, newId) });
     return NextResponse.json({ success: true, data: machine });

@@ -6,11 +6,23 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
 import * as path from "path";
-import * as dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" });
+// Load .env.local manually — no external dependency needed
+try {
+    const envFile = fs.readFileSync(path.join(process.cwd(), ".env.local"), "utf-8");
+    for (const line of envFile.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) continue;
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx === -1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        const val = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, "");
+        if (key && !(key in process.env)) process.env[key] = val;
+    }
+} catch { /* .env.local not found — rely on system env vars */ }
 
 const execAsync = promisify(exec);
+
 
 function parseDbUrl(url: string) {
     const u = new URL(url);

@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
 import { asc, max } from "drizzle-orm";
@@ -10,7 +11,7 @@ export async function GET() {
         let settings = await db.query.footerWidgetSettings.findFirst();
         if (!settings) {
             const newId = crypto.randomUUID();
-            await db.insert(footerWidgetSettings).values({ id: newId, isActive: true, title: "เมนูลัด" });
+            await db.insert(footerWidgetSettings).values({ id: newId, isActive: true, title: "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
             settings = await db.query.footerWidgetSettings.findFirst();
         }
         const links = await db.query.footerLinks.findMany({ orderBy: (t, { asc }) => asc(t.sortOrder) });
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
         const [{ maxSort }] = await db.select({ maxSort: max(footerLinks.sortOrder) }).from(footerLinks);
         const nextSortOrder = (maxSort ?? -1) + 1;
         const newId = crypto.randomUUID();
-        await db.insert(footerLinks).values({ id: newId, label, href, openInNewTab: openInNewTab ?? false, sortOrder: nextSortOrder });
+        await db.insert(footerLinks).values({ id: newId, label, href, openInNewTab: openInNewTab ?? false, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
         return NextResponse.json(link, { status: 201 });
     } catch (error) {

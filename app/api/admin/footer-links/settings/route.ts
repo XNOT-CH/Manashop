@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -7,7 +8,7 @@ export async function GET() {
         let settings = await db.query.footerWidgetSettings.findFirst();
         if (!settings) {
             const newId = crypto.randomUUID();
-            await db.insert(footerWidgetSettings).values({ id: newId, isActive: true, title: "เมนูลัด" });
+            await db.insert(footerWidgetSettings).values({ id: newId, isActive: true, title: "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
             settings = await db.query.footerWidgetSettings.findFirst();
         }
         return NextResponse.json(settings);
@@ -23,7 +24,7 @@ export async function PUT(request: NextRequest) {
         let settings = await db.query.footerWidgetSettings.findFirst();
         if (!settings) {
             const newId = crypto.randomUUID();
-            await db.insert(footerWidgetSettings).values({ id: newId, isActive: isActive ?? true, title: title ?? "เมนูลัด" });
+            await db.insert(footerWidgetSettings).values({ id: newId, isActive: isActive ?? true, title: title ?? "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
         } else {
             const set: Record<string, unknown> = {};
             if (isActive !== undefined) set.isActive = isActive;

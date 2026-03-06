@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, currencySettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -5,7 +6,7 @@ import { isAdmin } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { currencySettingsSchema } from "@/lib/validations/content";
 
-const DEFAULT_SETTINGS = { id: "default", name: "พอยท์", symbol: "💎", code: "POINT", description: null, isActive: true };
+const DEFAULT_SETTINGS = { id: "default", name: "พอยท์", symbol: "💎", code: "POINT", description: null, isActive: true, updatedAt: "" };
 
 export async function GET() {
     const authCheck = await isAdmin();
@@ -13,7 +14,7 @@ export async function GET() {
     try {
         let settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
         if (!settings) {
-            await db.insert(currencySettings).values(DEFAULT_SETTINGS);
+            await db.insert(currencySettings).values({ ...DEFAULT_SETTINGS, updatedAt: mysqlNow() });
             settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
         }
         return NextResponse.json(settings);
@@ -34,7 +35,7 @@ export async function PUT(request: NextRequest) {
         if (existing) {
             await db.update(currencySettings).set({ name, symbol, description: description || null, isActive }).where(eq(currencySettings.id, "default"));
         } else {
-            await db.insert(currencySettings).values({ id: "default", name, symbol, code: "POINT", description: description || null, isActive });
+            await db.insert(currencySettings).values({ id: "default", name, symbol, code: "POINT", description: description || null, isActive, updatedAt: mysqlNow() });
         }
         const settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
         return NextResponse.json(settings);

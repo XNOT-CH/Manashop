@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { asc, max, count } from "drizzle-orm";
@@ -16,7 +17,7 @@ export async function GET() {
     try {
         const [{ count: navCount }] = await db.select({ count: count() }).from(navItems);
         if (Number(navCount) === 0) {
-            await db.insert(navItems).values(DEFAULT_NAV_ITEMS.map(item => ({ id: crypto.randomUUID(), ...item })));
+            await db.insert(navItems).values(DEFAULT_NAV_ITEMS.map(item => ({ id: crypto.randomUUID(), ...item, createdAt: mysqlNow(), updatedAt: mysqlNow() })));
         }
         const items = await db.query.navItems.findMany({ orderBy: (t, { asc }) => asc(t.sortOrder) });
         return NextResponse.json(items);
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
         const [{ maxSort }] = await db.select({ maxSort: max(navItems.sortOrder) }).from(navItems);
         const nextSortOrder = body.sortOrder ?? (maxSort ?? -1) + 1;
         const newId = crypto.randomUUID();
-        await db.insert(navItems).values({ id: newId, label: body.label, href: body.href, icon: body.icon || null, sortOrder: nextSortOrder });
+        await db.insert(navItems).values({ id: newId, label: body.label, href: body.href, icon: body.icon || null, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
         const item = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
         return NextResponse.json(item, { status: 201 });
     } catch (error) {

@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, newsArticles } from "@/lib/db";
 import { eq, asc, desc } from "drizzle-orm";
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
             id: newId, title, description,
             imageUrl: imageUrl || null, link: link || null,
             sortOrder, isActive,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const news = await db.query.newsArticles.findFirst({ where: eq(newsArticles.id, newId) });
         await invalidateNewsCaches();

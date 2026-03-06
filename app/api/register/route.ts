@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -9,15 +10,16 @@ import { registerSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
     try {
-        // Check rate limit first
-        const clientIp = getClientIp(request);
-        const rateLimit = checkRegisterRateLimit(clientIp);
-
-        if (rateLimit.blocked) {
-            return NextResponse.json(
-                { success: false, message: rateLimit.message },
-                { status: 429 }
-            );
+        // Check rate limit first (skip in dev mode for easier testing)
+        if (process.env.NODE_ENV === "production") {
+            const clientIp = getClientIp(request);
+            const rateLimit = checkRegisterRateLimit(clientIp);
+            if (rateLimit.blocked) {
+                return NextResponse.json(
+                    { success: false, message: rateLimit.message },
+                    { status: 429 }
+                );
+            }
         }
 
         // Validate inputs with Zod
@@ -48,6 +50,8 @@ export async function POST(request: NextRequest) {
             password: hashedPassword,
             role: "USER",
             creditBalance: "100", // Welcome bonus
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
         const user = { id: newId, username };
 

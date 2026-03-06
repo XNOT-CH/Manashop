@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, siteSettings } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
@@ -25,6 +26,8 @@ export async function GET() {
                 bannerImage3: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=2000&h=500&fit=crop",
                 bannerTitle3: "Instant Delivery 24/7",
                 bannerSubtitle3: "ระบบอัตโนมัติ ได้ของทันทีไม่ต้องรอ",
+                createdAt: mysqlNow(),
+                updatedAt: mysqlNow(),
             });
             settings = await db.query.siteSettings.findFirst();
         }
@@ -54,7 +57,7 @@ export async function PUT(request: Request) {
                 (await import("drizzle-orm")).eq(siteSettings.id, existing.id)
             );
         } else {
-            await db.insert(siteSettings).values({ id: crypto.randomUUID(), ...body } as any);
+            await db.insert(siteSettings).values({ id: crypto.randomUUID(), ...body, createdAt: mysqlNow(), updatedAt: mysqlNow() } as any);
         }
 
         const updated = await db.query.siteSettings.findFirst();

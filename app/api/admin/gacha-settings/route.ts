@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, gachaSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -11,7 +12,7 @@ export async function GET() {
     try {
         let settings = await db.query.gachaSettings.findFirst();
         if (!settings) {
-            await db.insert(gachaSettings).values({ id: "default", isEnabled: true, costType: "CREDIT", costAmount: "0", dailySpinLimit: 999, tierMode: "PRICE" });
+            await db.insert(gachaSettings).values({ id: "default", isEnabled: true, costType: "CREDIT", costAmount: "0", dailySpinLimit: 999, tierMode: "PRICE", updatedAt: mysqlNow() });
             settings = await db.query.gachaSettings.findFirst();
         }
         return NextResponse.json({ success: true, data: settings });
@@ -39,7 +40,7 @@ export async function PUT(request: Request) {
         if (existing) {
             await db.update(gachaSettings).set(updateData).where(eq(gachaSettings.id, existing.id));
         } else {
-            await db.insert(gachaSettings).values({ id: "default", ...updateData });
+            await db.insert(gachaSettings).values({ id: "default", ...updateData, updatedAt: mysqlNow() });
         }
         const updated = await db.query.gachaSettings.findFirst();
         return NextResponse.json({ success: true, message: "บันทึกการตั้งค่ากาชาสำเร็จ", data: updated });

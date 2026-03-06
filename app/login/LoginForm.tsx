@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,23 +25,16 @@ export function LoginForm({ logoUrl }: LoginFormProps) {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/api/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+            const result = await signIn("credentials", {
+                username: formData.username,
+                password: formData.password,
+                redirect: false,
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                await fetch("/api/session", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId: data.user.id, rememberMe }),
-                });
-                window.location.href = "/";
+            if (result?.error) {
+                showError(result.error);
             } else {
-                showError(data.message);
+                window.location.href = "/";
             }
         } catch {
             showError("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่");

@@ -1,3 +1,4 @@
+import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
@@ -47,6 +48,8 @@ export async function POST(request: NextRequest) {
             secretData: secretData ? encrypt(secretData) : "",
             stockSeparator: stockSeparator || "newline",
             isSold: false,
+            createdAt: mysqlNow(),
+            updatedAt: mysqlNow(),
         });
 
         await auditFromRequest(request, {
