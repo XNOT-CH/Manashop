@@ -17,7 +17,7 @@ const pool = globalForDb.pool ?? mysql.createPool({
 
 if (process.env.NODE_ENV !== "production") globalForDb.pool = pool;
 
-export const db = drizzle(pool, { schema, mode: "default" });
+export const db = drizzle(pool, { schema, mode: "planetscale" });
 
 // Re-export schema for convenience
 export * from "./schema";
