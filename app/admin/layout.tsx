@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -10,9 +11,9 @@ export default async function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // Get user ID from cookies
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    // Get user ID from NextAuth session
+    const session = await auth();
+    const userId = session?.user?.id;
 
     // If no user is logged in, redirect to login
     if (!userId) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, users, products, orders } from "@/lib/db";
 import { eq, sql } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/encryption";
@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "Quantity must be a positive integer" }, { status: 400 });
         }
 
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
 
         if (!userId) {
             return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, users, products, orders } from "@/lib/db";
 import { eq, inArray, sql } from "drizzle-orm";
 
@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ" }, { status: 400 });
         }
 
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
         const user = await db.query.users.findFirst({ where: eq(users.id, userId) });

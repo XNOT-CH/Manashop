@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, users, products } from "@/lib/db";
+import { db, products } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/auth";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
-        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { role: true } });
-        if (!user || user.role !== "ADMIN") return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+        const authCheck = await isAdmin();
+        if (!authCheck.success) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
         const { id } = await params;
         const original = await db.query.products.findFirst({ where: eq(products.id, id) });
         if (!original) return NextResponse.json({ error: "Product not found" }, { status: 404 });

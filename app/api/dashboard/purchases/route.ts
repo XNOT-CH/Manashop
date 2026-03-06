@@ -1,6 +1,7 @@
+
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { db, orders } from "@/lib/db";
+import { auth } from "@/auth";
+import { db, users, orders } from "@/lib/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
 
@@ -10,8 +11,8 @@ const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", "
 
 export async function GET(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
         const dateParam = request.nextUrl.searchParams.get("date");

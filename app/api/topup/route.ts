@@ -1,6 +1,6 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, users, topups } from "@/lib/db";
 import { eq, sql } from "drizzle-orm";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
         const { proofImage } = await request.json();
         if (!proofImage) return NextResponse.json({ success: false, message: "กรุณาอัปโหลดสลิปการโอนเงิน" }, { status: 400 });
 
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
         const user = await db.query.users.findFirst({ where: eq(users.id, userId) });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, topups } from "@/lib/db";
 import { and, gte, lte } from "drizzle-orm";
 
@@ -7,12 +7,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
 
         if (!userId) {
             return NextResponse.json(
-                { success: false, message: "กรุณาเข้าสู่ระบบก่อน" },
+                { success: false, message: "Unauthorized" },
                 { status: 401 }
             );
         }
