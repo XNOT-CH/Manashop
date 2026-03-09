@@ -2,15 +2,23 @@ import crypto from "crypto";
 
 const IV_LENGTH = 16;
 
-// Development fallback — NOT safe for production
+// Development fallback — NOT safe for production (32 bytes exactly)
 const DEV_FALLBACK_KEY = "gamestore-secret-key-12345678901";
 
 /**
  * Lazily resolve the encryption key at runtime (not at module load time).
  * This prevents build-time failures when env vars are not available.
+ * In production, ENCRYPTION_KEY MUST be set or the app will crash on startup.
  */
 function getEncryptionKey(): string {
-    const key = process.env.ENCRYPTION_KEY ?? DEV_FALLBACK_KEY;
+    const key = process.env.ENCRYPTION_KEY;
+    if (!key) {
+        if (process.env.NODE_ENV === "production") {
+            throw new Error("[encryption] ENCRYPTION_KEY environment variable is required in production.");
+        }
+        // Dev only: use well-known fallback (never expose real data with this key)
+        return DEV_FALLBACK_KEY;
+    }
     if (Buffer.byteLength(key, "utf8") !== 32) {
         throw new Error(`[encryption] ENCRYPTION_KEY must be exactly 32 bytes for AES-256, got ${Buffer.byteLength(key, "utf8")}.`);
     }

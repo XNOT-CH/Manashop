@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
+import { Prompt } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -10,8 +10,9 @@ import { CartProvider } from "@/components/providers/CartContext";
 import { FloatingChatButton } from "@/components/FloatingChatButton";
 import { SweetAlertProvider } from "@/components/SweetAlertProvider";
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
+import { GlobalLoading } from "@/components/GlobalLoading";
 
-const notoSansThai = Noto_Sans_Thai({
+const prompt = Prompt({
   subsets: ["thai", "latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-noto-sans",
@@ -32,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th" className={notoSansThai.variable} suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="th" className={prompt.variable} suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
         <ThemeProvider>
           <SweetAlertProvider>
@@ -42,6 +43,9 @@ export default function RootLayout({
 
               {/* Dynamic Favicon from Settings */}
               <DynamicFavicon />
+
+              {/* Global Navigation Loading Screen */}
+              <GlobalLoading />
 
               {/* Navbar */}
               <Navbar />

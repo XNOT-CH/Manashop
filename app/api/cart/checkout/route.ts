@@ -11,15 +11,30 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ" }, { status: 400 });
         }
 
+        // ✅ Limit cap: prevent oversized requests that could overload the DB
+        if (productIds.length > 50) {
+            return NextResponse.json({ success: false, message: "ไม่สามารถซื้อสินค้ามากกว่า 50 รายการในครั้งเดียว" }, { status: 400 });
+        }
+
         const session = await auth();
         const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
-        const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { id: true, creditBalance: true, pointBalance: true },
+        });
         if (!user) return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่" }, { status: 404 });
 
         const result = await db.transaction(async (tx) => {
-            const productList = await tx.select().from(products).where(inArray(products.id, productIds));
+            const productList = await tx.select({
+                id: products.id,
+                name: products.name,
+                price: products.price,
+                discountPrice: products.discountPrice,
+                currency: products.currency,
+                isSold: products.isSold,
+            }).from(products).where(inArray(products.id, productIds));
 
             if (productList.length !== productIds.length) throw new Error("บางสินค้าไม่พบในระบบ");
 
@@ -46,21 +61,47 @@ export async function POST(request: NextRequest) {
             if (totalPoints > 0 && userPointBalance < totalPoints)
                 throw new Error(`Point ไม่เพียงพอ (ต้องการ 💎${totalPoints.toLocaleString()} แต่มี 💎${userPointBalance.toLocaleString()})`);
 
-            const orderResults = [];
-            for (const product of productList) {
-                const productPrice = product.discountPrice ?? product.price;
-                const newOrderId = crypto.randomUUID();
-                await tx.insert(orders).values({ id: newOrderId, userId: user.id, totalPrice: productPrice, status: "COMPLETED" });
-                await tx.update(products).set({ isSold: true, orderId: newOrderId }).where(eq(products.id, product.id));
-                orderResults.push({ orderId: newOrderId, productName: product.name, price: Number(productPrice), currency: product.currency || "THB" });
-            }
+            // ✅ สร้าง order records ทั้งหมดพร้อมกัน (batch) — ลด N×2 queries เหลือ 2 queries
+            const orderValues = productList.map((product) => ({
+                id: crypto.randomUUID(),
+                userId: user.id,
+                totalPrice: String(product.discountPrice ?? product.price),
+                status: "COMPLETED" as const,
+            }));
 
+            // map productId → orderId เพื่อ update products ด้วย
+            const productOrderMap = new Map(productList.map((p, i) => [p.id, orderValues[i].id]));
+
+            // Batch insert: orders ทั้งหมดใน 1 query
+            await tx.insert(orders).values(orderValues);
+
+            // Batch update: products ทั้งหมดด้วย CASE WHEN (1 query)
+            const caseExpr = sql.join(
+                productList.map((p) => sql`WHEN ${products.id} = ${p.id} THEN ${productOrderMap.get(p.id)!}`),
+                sql` `
+            );
+            await tx
+                .update(products)
+                .set({
+                    isSold: true,
+                    orderId: sql`CASE ${caseExpr} END`,
+                })
+                .where(inArray(products.id, productIds));
+
+            // Batch update balances (เหมือนเดิม — ทำได้สูงสุด 2 queries)
             if (totalTHB > 0) {
                 await tx.update(users).set({ creditBalance: sql`${users.creditBalance} - ${totalTHB}` }).where(eq(users.id, user.id));
             }
             if (totalPoints > 0) {
                 await tx.update(users).set({ pointBalance: sql`${users.pointBalance} - ${totalPoints}` }).where(eq(users.id, user.id));
             }
+
+            const orderResults = productList.map((product, i) => ({
+                orderId: orderValues[i].id,
+                productName: product.name,
+                price: Number(product.discountPrice ?? product.price),
+                currency: product.currency || "THB",
+            }));
 
             return { orders: orderResults, totalTHB, totalPoints };
         });

@@ -24,7 +24,7 @@ export function ProductGallery({ mainImage }: ProductGalleryProps) {
             {/* Main Image with Zoom Dialog */}
             <Dialog>
                 <DialogTrigger asChild>
-                    <div className="group relative aspect-video cursor-zoom-in overflow-hidden rounded-2xl bg-zinc-100">
+                    <div className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-zinc-100">
                         <Image
                             src={images[selectedImage]}
                             alt="Product"
@@ -43,7 +43,7 @@ export function ProductGallery({ mainImage }: ProductGalleryProps) {
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none">
                     <DialogTitle className="sr-only">Product Image View</DialogTitle>
-                    <div className="relative aspect-video w-full overflow-hidden rounded-xl">
+                    <div className="relative aspect-square w-full overflow-hidden rounded-xl">
                         <Image
                             src={images[selectedImage]}
                             alt="Product Full View"
@@ -61,16 +61,16 @@ export function ProductGallery({ mainImage }: ProductGalleryProps) {
                     <button
                         key={index}
                         onClick={() => setSelectedImage(index)}
-                        className={`relative aspect-video w-20 overflow-hidden rounded-lg transition-all ${selectedImage === index
-                            ? "ring-2 ring-indigo-600 ring-offset-2"
-                            : "opacity-60 hover:opacity-100"
+                        className={`relative aspect-square w-16 overflow-hidden rounded-lg transition-all border-2 ${selectedImage === index
+                            ? "border-blue-500"
+                            : "border-transparent opacity-60 hover:opacity-100"
                             }`}
                     >
                         <Image
                             src={image}
                             alt={`View ${index + 1}`}
                             fill
-                            sizes="80px"
+                            sizes="64px"
                             className="object-cover"
                         />
                     </button>

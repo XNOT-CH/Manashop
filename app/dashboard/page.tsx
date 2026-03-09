@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
@@ -8,8 +8,8 @@ import { DashboardClient } from "@/components/DashboardClient";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
 
     if (!userId) {
         redirect("/login");

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -44,7 +45,7 @@ export default async function Footer() {
                     <div className="lg:col-span-1">
                         <Link href="/" className="inline-flex items-center gap-3 mb-4 group">
                             {siteSettings?.logoUrl ? (
-                                <img src={siteSettings.logoUrl} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/50" />
+                                <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/50" />
                             ) : (
                                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
                                     <Gamepad2 className="h-6 w-6 text-primary-foreground" />

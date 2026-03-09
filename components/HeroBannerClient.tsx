@@ -80,7 +80,7 @@ export function HeroBannerClient({ banners }: HeroBannerClientProps) {
             onMouseLeave={() => setIsHovered(false)}
         >
             {/* Embla Carousel Container */}
-            <div className="overflow-hidden" ref={emblaRef}>
+            <div className="overflow-hidden rounded-2xl shadow-sm" ref={emblaRef}>
                 <div className="flex">
                     {banners.map((banner) => (
                         <div
@@ -100,18 +100,26 @@ export function HeroBannerClient({ banners }: HeroBannerClientProps) {
                                             "https://placehold.co/2000x500/1e293b/f1f5f9?text=Banner";
                                     }}
                                 />
-                                {/* Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+                                {/* Gradient Overlay - only when there's text */}
+                                {(banner.title || banner.subtitle) && (
+                                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+                                )}
 
                                 {/* Text Content */}
-                                <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 lg:px-16">
-                                    <h2 className="text-xl sm:text-3xl lg:text-5xl font-bold text-white mb-2 sm:mb-3">
-                                        {banner.title}
-                                    </h2>
-                                    <p className="text-sm sm:text-lg lg:text-xl text-white/90 max-w-lg font-medium">
-                                        {banner.subtitle}
-                                    </p>
-                                </div>
+                                {(banner.title || banner.subtitle) && (
+                                    <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 lg:px-16">
+                                        {banner.title && (
+                                            <h2 className="text-xl sm:text-3xl lg:text-5xl font-bold text-white mb-2 sm:mb-3">
+                                                {banner.title}
+                                            </h2>
+                                        )}
+                                        {banner.subtitle && (
+                                            <p className="text-sm sm:text-lg lg:text-xl text-white/90 max-w-lg font-medium">
+                                                {banner.subtitle}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

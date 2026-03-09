@@ -1,10 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { cookies } from "next/headers";
-import { db, users, navItems } from "@/lib/db";
+import { auth } from "@/auth";
+import { db, users, navItems, products } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
+import { ShopDropdown } from "@/components/ShopDropdown";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     Sheet,
@@ -39,11 +40,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavbarCartButton } from "@/components/NavbarCartButton";
 
 export default async function Navbar() {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
 
     // Parallel fetch for better performance
-    const [user, siteSettings, dbNavItems] = await Promise.all([
+    const [user, siteSettings, dbNavItems, allProducts] = await Promise.all([
         userId ? db.query.users.findFirst({
             where: eq(users.id, userId),
             columns: { username: true, creditBalance: true },
@@ -53,7 +54,14 @@ export default async function Navbar() {
             where: eq(navItems.isActive, true),
             orderBy: (t, { asc }) => asc(t.sortOrder),
         }),
+        db.query.products.findMany({
+            columns: { category: true },
+            where: (t, { eq }) => eq(t.isSold, false),
+        }),
     ]);
+
+    // Get unique categories from available products
+    const shopCategories = [...new Set(allProducts.map((p) => p.category))].filter(Boolean).sort();
 
     // Icon mapping for dynamic nav items
     const iconMap: Record<string, typeof Home> = {
@@ -123,6 +131,15 @@ export default async function Navbar() {
                 <nav className="hidden md:flex items-center gap-0.5">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
+                        // Replace /shop link with ShopDropdown
+                        if (link.href === "/shop") {
+                            return (
+                                <ShopDropdown
+                                    key={link.href}
+                                    categories={shopCategories}
+                                />
+                            );
+                        }
                         return (
                             <Link
                                 key={link.href}

@@ -1,6 +1,9 @@
 /**
  * Permission-based Access Control System
  * Supports roles with default permissions and custom per-user permissions
+ *
+ * NOTE: `permissions` is stored as MySQL JSON column (string[]).
+ * Drizzle ORM returns it already parsed — do NOT JSON.parse() it again.
  */
 
 // Available permissions in the system
@@ -71,6 +74,18 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 };
 
 /**
+ * Normalise the permissions value coming from either:
+ * - MySQL json column → already a string[] (new behaviour)
+ * - Legacy text column / serialised string → JSON string (backward compat)
+ */
+function normalisePermissions(raw: string[] | string | null | undefined): string[] {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    // Legacy: stored as JSON string
+    try { return JSON.parse(raw) as string[]; } catch { return []; }
+}
+
+/**
  * Check if a role has a specific permission
  */
 export function roleHasPermission(role: string, permission: Permission): boolean {
@@ -81,20 +96,13 @@ export function roleHasPermission(role: string, permission: Permission): boolean
 /**
  * Get all permissions for a user (role permissions + custom permissions)
  */
-export function getUserPermissions(role: string, customPermissions?: string | null): Permission[] {
+export function getUserPermissions(
+    role: string,
+    customPermissions?: string[] | string | null
+): Permission[] {
     const rolePerms = ROLE_PERMISSIONS[role] || [];
-
-    if (!customPermissions) {
-        return rolePerms;
-    }
-
-    try {
-        const custom = JSON.parse(customPermissions) as string[];
-        // Combine and deduplicate
-        return [...new Set([...rolePerms, ...custom])] as Permission[];
-    } catch {
-        return rolePerms;
-    }
+    const custom = normalisePermissions(customPermissions);
+    return [...new Set([...rolePerms, ...custom])] as Permission[];
 }
 
 /**
@@ -103,7 +111,7 @@ export function getUserPermissions(role: string, customPermissions?: string | nu
 export function hasPermission(
     role: string,
     permission: Permission,
-    customPermissions?: string | null
+    customPermissions?: string[] | string | null
 ): boolean {
     // Admin always has all permissions
     if (role === "ADMIN") return true;
@@ -118,7 +126,7 @@ export function hasPermission(
 export function hasAllPermissions(
     role: string,
     permissions: Permission[],
-    customPermissions?: string | null
+    customPermissions?: string[] | string | null
 ): boolean {
     return permissions.every(p => hasPermission(role, p, customPermissions));
 }
@@ -129,35 +137,32 @@ export function hasAllPermissions(
 export function hasAnyPermission(
     role: string,
     permissions: Permission[],
-    customPermissions?: string | null
+    customPermissions?: string[] | string | null
 ): boolean {
     return permissions.some(p => hasPermission(role, p, customPermissions));
 }
 
 /**
- * Add custom permission to a user's permission JSON
+ * Add custom permission — returns a new string[] ready to save to the json column.
  */
 export function addCustomPermission(
-    currentPermissions: string | null,
+    currentPermissions: string[] | string | null,
     newPermission: Permission
-): string {
-    const permissions = currentPermissions ? JSON.parse(currentPermissions) : [];
-    if (!permissions.includes(newPermission)) {
-        permissions.push(newPermission);
+): string[] {
+    const perms = normalisePermissions(currentPermissions);
+    if (!perms.includes(newPermission)) {
+        perms.push(newPermission);
     }
-    return JSON.stringify(permissions);
+    return perms;
 }
 
 /**
- * Remove custom permission from a user's permission JSON
+ * Remove custom permission — returns a new string[] ready to save to the json column.
  */
 export function removeCustomPermission(
-    currentPermissions: string | null,
+    currentPermissions: string[] | string | null,
     permissionToRemove: Permission
-): string {
-    if (!currentPermissions) return "[]";
-
-    const permissions = JSON.parse(currentPermissions) as string[];
-    const filtered = permissions.filter(p => p !== permissionToRemove);
-    return JSON.stringify(filtered);
+): string[] {
+    const perms = normalisePermissions(currentPermissions);
+    return perms.filter(p => p !== permissionToRemove);
 }

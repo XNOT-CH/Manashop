@@ -28,6 +28,7 @@ interface SiteSettings {
     bannerSubtitle3: string;
     logoUrl: string;
     backgroundImage: string;
+    backgroundBlur: boolean;
     showAllProducts: boolean;
 }
 
@@ -53,6 +54,7 @@ export default function AdminSettingsPage() {
         bannerSubtitle3: "",
         logoUrl: "",
         backgroundImage: "",
+        backgroundBlur: true,
         showAllProducts: true,
     });
 
@@ -81,6 +83,7 @@ export default function AdminSettingsPage() {
                     bannerSubtitle3: data.data.bannerSubtitle3 || "",
                     logoUrl: data.data.logoUrl || "",
                     backgroundImage: data.data.backgroundImage || "",
+                    backgroundBlur: data.data.backgroundBlur ?? true,
                     showAllProducts: data.data.showAllProducts ?? true,
                 });
             }
@@ -349,80 +352,83 @@ export default function AdminSettingsPage() {
                                     รูปพื้นหลัง
                                 </Label>
 
-                                <div className="grid gap-4 lg:grid-cols-2">
-                                    <div className="space-y-3">
-                                        {/* File Upload */}
-                                        <div className="flex gap-2">
-                                            <input
-                                                ref={bgInputRef}
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif"
-                                                className="hidden"
-                                                onChange={handleBgUpload}
-                                            />
+                                {/* Preview full-width */}
+                                {settings.backgroundImage ? (
+                                    <div className="relative w-full aspect-video rounded-xl overflow-hidden border bg-muted">
+                                        <img
+                                            src={settings.backgroundImage}
+                                            alt="Background Preview"
+                                            className={`w-full h-full object-cover transition-all duration-300 ${settings.backgroundBlur ? "blur-sm scale-105" : ""}`}
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = "https://placehold.co/800x400/f1f5f9/64748b?text=Invalid+URL";
+                                            }}
+                                        />
+                                        <div className={`absolute inset-0 transition-all duration-300 ${settings.backgroundBlur ? "bg-white/40" : "bg-white/10"}`} />
+                                        <span className="absolute bottom-2 right-2 text-xs bg-black/50 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                            {settings.backgroundBlur ? "🌫️ เบลอ" : "🖼️ สีชัด"}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="w-full aspect-video rounded-xl border bg-muted flex items-center justify-center">
+                                        <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
+                                    </div>
+                                )}
+
+                                {/* Controls row */}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <input
+                                        ref={bgInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        className="hidden"
+                                        onChange={handleBgUpload}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={() => bgInputRef.current?.click()}
+                                        disabled={isUploadingBg}
+                                    >
+                                        {isUploadingBg ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                        {isUploadingBg ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                    </Button>
+
+                                    <div className="flex-1 flex gap-2 min-w-0">
+                                        <Input
+                                            value={settings.backgroundImage}
+                                            onChange={(e) => updateSetting("backgroundImage", e.target.value)}
+                                            placeholder="วาง URL รูปพื้นหลัง..."
+                                            className="flex-1 min-w-0"
+                                        />
+                                        {settings.backgroundImage && (
                                             <Button
                                                 type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="gap-2"
-                                                onClick={() => bgInputRef.current?.click()}
-                                                disabled={isUploadingBg}
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => updateSetting("backgroundImage", "")}
+                                                className="text-red-500 hover:text-red-600 shrink-0"
                                             >
-                                                {isUploadingBg ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Upload className="h-4 w-4" />
-                                                )}
-                                                {isUploadingBg ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
+                                                <X className="h-4 w-4" />
                                             </Button>
-                                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                                        </div>
-
-                                        {/* URL Input */}
-                                        <div className="flex gap-2">
-                                            <Input
-                                                value={settings.backgroundImage}
-                                                onChange={(e) => updateSetting("backgroundImage", e.target.value)}
-                                                placeholder="วาง URL รูปพื้นหลัง..."
-                                                className="flex-1"
-                                            />
-                                            {settings.backgroundImage && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => updateSetting("backgroundImage", "")}
-                                                    className="text-red-500 hover:text-red-600"
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-
-                                        <p className="text-xs text-muted-foreground">
-                                            รูปภาพจะแสดงเป็นพื้นหลังของเว็บไซต์ทั้งหมด (แนะนำ: 1920x1080 พิกเซล)
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        {settings.backgroundImage ? (
-                                            <div className="relative aspect-video rounded-lg overflow-hidden bg-muted border">
-                                                <img
-                                                    src={settings.backgroundImage}
-                                                    alt="Background Preview"
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = "https://placehold.co/800x400/f1f5f9/64748b?text=Invalid+URL";
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="rounded-lg border bg-muted h-full flex items-center justify-center p-4">
-                                                <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
-                                            </div>
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Blur toggle + hint */}
+                                <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3 bg-gray-50 dark:bg-zinc-800">
+                                    <div>
+                                        <p className="text-sm font-medium">เบลอพื้นหลัง</p>
+                                        <p className="text-xs text-muted-foreground">ทำให้รูปเบลอเพื่อให้อ่านเนื้อหาได้ง่ายขึ้น</p>
+                                    </div>
+                                    <Switch
+                                        checked={settings.backgroundBlur}
+                                        onCheckedChange={(checked) => updateSetting("backgroundBlur", checked)}
+                                    />
+                                </div>
+
+                                <p className="text-xs text-muted-foreground">แนะนำ: 1920×1080 พิกเซล</p>
                             </div>
                         </div>
                     </div>

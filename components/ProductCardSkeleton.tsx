@@ -3,22 +3,25 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 export function ProductCardSkeleton({ index = 0 }: { index?: number }) {
     return (
-        <Card className={`overflow-hidden rounded-2xl glow-border animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
+        <Card className={`overflow-hidden rounded-3xl bg-white dark:bg-card border border-black/5 dark:border-white/10 shadow-sm animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
             {/* Image Skeleton */}
-            <div className="relative aspect-[4/3]">
-                <div className="h-full w-full animate-shimmer rounded-t-2xl" />
+            <div className="relative aspect-[4/3] bg-muted">
+                <div className="h-full w-full animate-shimmer" />
+                {/* Badge Skeleton */}
+                <div className="absolute left-4 top-4 h-6 w-16 animate-skeleton bg-black/10 dark:bg-white/10 rounded-full" />
             </div>
 
             {/* Content Skeleton */}
-            <CardContent className="p-3 space-y-2">
-                <div className="h-5 w-3/4 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-lg" />
-                <div className="h-6 w-1/3 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-lg" />
+            <CardContent className="p-5 pb-4 flex flex-col items-center">
+                <div className="h-5 w-3/4 animate-skeleton bg-black/10 dark:bg-white/10 rounded-lg mb-2" />
+                <div className="h-7 w-1/3 animate-skeleton bg-black/10 dark:bg-white/10 rounded-lg" />
             </CardContent>
 
             {/* Footer Skeleton */}
-            <CardFooter className="flex gap-2 p-3 pt-0">
-                <div className="h-8 flex-1 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-xl" />
-                <div className="h-8 flex-1 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-xl" />
+            <CardFooter className="flex justify-between gap-3 p-5 pt-0">
+                <div className="h-11 flex-1 animate-skeleton bg-black/10 dark:bg-white/10 rounded-xl" />
+                <div className="h-11 w-11 shrink-0 animate-skeleton bg-black/10 dark:bg-white/10 rounded-xl" />
+                <div className="h-11 w-11 shrink-0 animate-skeleton bg-black/10 dark:bg-white/10 rounded-xl" />
             </CardFooter>
         </Card>
     );

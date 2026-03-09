@@ -61,7 +61,7 @@ export const showConfirm = async (
         cancelButtonText: cancelText,
         reverseButtons: true,
         customClass: {
-            popup: "rounded-2xl",
+            popup: "rounded-3xl !p-6 sm:!p-8",
             actions: "flex flex-col sm:flex-row gap-2 w-full",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
             cancelButton: "w-full sm:w-auto rounded-xl px-6 py-2",
@@ -86,7 +86,7 @@ export const showDeleteConfirm = async (
         cancelButtonText: "ยกเลิก",
         reverseButtons: true,
         customClass: {
-            popup: "rounded-2xl",
+            popup: "rounded-3xl !p-6 sm:!p-8",
             actions: "flex flex-col sm:flex-row gap-2 w-full",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
             cancelButton: "w-full sm:w-auto rounded-xl px-6 py-2",
@@ -105,7 +105,7 @@ export const showSuccessAlert = (title: string, text?: string) => {
         confirmButtonColor: "#3b82f6",
         confirmButtonText: "ตกลง",
         customClass: {
-            popup: "rounded-2xl",
+            popup: "rounded-3xl !p-6 sm:!p-8",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
         },
     });
@@ -120,21 +120,42 @@ export const showPurchaseConfirm = async (params: {
     confirmButtonColor?: string;
 }): Promise<boolean> => {
     const result = await Swal.fire({
-        title: "ยืนยันการซื้อ?",
-        html: `คุณต้องการซื้อ ${params.productName ? `<strong>${params.productName}</strong> ` : ""}ในราคา <strong>${params.priceText}</strong> ใช่หรือไม่?${params.extraHtml ? `<br>${params.extraHtml}` : ""}`,
-        icon: "question",
-        width: "min(92vw, 36rem)",
+        title: "ยืนยันการสั่งซื้อ",
+        html: `
+            <div class="text-center space-y-6">
+                <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+                        <path d="M3 6h18"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                </div>
+
+                <div class="max-w-sm mx-auto bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <p class="text-sm text-gray-500 mb-1">รายการซื้อ</p>
+                    ${params.productName ? `<p class="font-bold text-gray-900 text-base">${params.productName}</p>` : ""}
+                    <div class="font-semibold text-blue-500 text-xl mt-2">
+                        ${params.priceText}
+                    </div>
+                    ${params.extraHtml ? `<div class="mt-3 text-sm text-gray-500 border-t border-gray-200 pt-3">${params.extraHtml}</div>` : ""}
+                </div>
+            </div>
+        `,
+        showConfirmButton: true,
         showCancelButton: true,
-        confirmButtonColor: params.confirmButtonColor || "#3b82f6",
-        cancelButtonColor: "#6b7280",
-        confirmButtonText: params.confirmText || "ซื้อเลย",
+        confirmButtonColor: params.confirmButtonColor || "#3b82f6", // blue-500
+        cancelButtonColor: "#e5e7eb", // gray-200
+        confirmButtonText: params.confirmText || "ยืนยันการสั่งซื้อ",
         cancelButtonText: params.cancelText || "ยกเลิก",
         reverseButtons: true,
         customClass: {
-            popup: "rounded-2xl",
-            actions: "flex flex-row gap-2 w-full",
-            confirmButton: "flex-1 rounded-xl px-6 py-2",
-            cancelButton: "flex-1 rounded-xl px-6 py-2",
+            icon: "hidden",
+            title: "hidden",
+            htmlContainer: "!my-0",
+            popup: "rounded-3xl !px-6 sm:!px-8 !py-8",
+            actions: "grid grid-cols-2 gap-4 w-full mt-4",
+            confirmButton: "!rounded-xl !py-2.5 !px-6 font-semibold text-white shadow-md hover:bg-blue-600 transition-all",
+            cancelButton: "!rounded-xl !py-2.5 !px-6 font-semibold !text-gray-600 hover:bg-gray-300 transition-all",
         },
     });
 
@@ -161,9 +182,11 @@ export const showPurchaseSuccessModal = (params: {
         confirmButtonColor: "#3b82f6",
         confirmButtonText: params.confirmText || "ตกลง",
         customClass: {
-            popup: "rounded-2xl",
+            popup: "rounded-3xl !p-6 sm:!p-8",
+            title: "!text-3xl !font-bold",
+            htmlContainer: "!text-lg",
             actions: "w-full",
-            confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
+            confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2 !text-base",
         },
     });
 };
@@ -178,7 +201,7 @@ export const showPurchaseSuccess = (title: string, text?: string) => {
         confirmButtonColor: "#22c55e",
         confirmButtonText: "ตกลง",
         customClass: {
-            popup: "rounded-2xl",
+            popup: "rounded-3xl !p-6 sm:!p-8",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
         },
     });
@@ -194,7 +217,7 @@ export const showErrorAlert = (title: string, text?: string) => {
         confirmButtonColor: "#3b82f6",
         confirmButtonText: "ตกลง",
         customClass: {
-            popup: "rounded-2xl",
+            popup: "rounded-3xl !p-6 sm:!p-8",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
         },
     });

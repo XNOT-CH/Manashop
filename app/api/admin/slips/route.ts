@@ -21,8 +21,11 @@ export async function PATCH(request: NextRequest) {
         if (topup.status !== "PENDING") return NextResponse.json({ success: false, message: "Request already processed" }, { status: 400 });
 
         if (action === "APPROVE") {
-            await db.update(topups).set({ status: "APPROVED" }).where(eq(topups.id, id));
-            await db.update(users).set({ creditBalance: sql`creditBalance + ${Number(topup.amount)}` }).where(eq(users.id, topup.userId));
+            // ✅ Atomic transaction: mark approved AND credit balance together
+            await db.transaction(async (tx) => {
+                await tx.update(topups).set({ status: "APPROVED" }).where(eq(topups.id, id));
+                await tx.update(users).set({ creditBalance: sql`creditBalance + ${Number(topup.amount)}` }).where(eq(users.id, topup.userId));
+            });
             return NextResponse.json({
                 success: true,
                 message: `Approved! Added ฿${Number(topup.amount).toLocaleString()} to ${topup.user.username}'s balance`,

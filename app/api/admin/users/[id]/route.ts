@@ -74,13 +74,17 @@ export async function PATCH(
             details: { resourceName: existingUser.username, changes },
         });
 
-        const updated = await db.query.users.findFirst({ where: eq(users.id, id) });
+        // ✅ ใช้ข้อมูลที่มีอยู่แล้ว — ไม่ต้อง query ซ้ำ
         return NextResponse.json({
             success: true,
             user: {
-                id: updated!.id, username: updated!.username,
-                creditBalance: String(updated!.creditBalance), totalTopup: String(updated!.totalTopup),
-                pointBalance: updated!.pointBalance, lifetimePoints: updated!.lifetimePoints, role: updated!.role,
+                id: existingUser.id,
+                username: existingUser.username,
+                creditBalance: String(updateData.creditBalance ?? existingUser.creditBalance),
+                totalTopup: String(updateData.totalTopup ?? existingUser.totalTopup),
+                pointBalance: (updateData.pointBalance ?? existingUser.pointBalance) as number,
+                lifetimePoints: (updateData.lifetimePoints ?? existingUser.lifetimePoints) as number,
+                role: (updateData.role ?? existingUser.role) as string,
             },
         });
     } catch (error) {

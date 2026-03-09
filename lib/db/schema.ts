@@ -9,6 +9,7 @@ import {
     index,
     unique,
     primaryKey,
+    json,
 } from "drizzle-orm/mysql-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -30,7 +31,7 @@ export const users = mysqlTable("User", {
     password: varchar("password", { length: 255 }).notNull(),
     image: text("image"),
     role: varchar("role", { length: 50 }).default("USER").notNull(),
-    permissions: text("permissions"),
+    permissions: json("permissions").$type<string[]>(),
     phone: varchar("phone", { length: 20 }),
     phoneVerified: boolean("phoneVerified").default(false).notNull(),
     emailVerified: boolean("emailVerified").default(false).notNull(),
@@ -58,7 +59,9 @@ export const users = mysqlTable("User", {
     lifetimePoints: int("lifetimePoints").default(0).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_user_email").on(t.email),
+]);
 
 export const usersRelations = relations(users, ({ many }) => ({
     orders: many(orders),
@@ -75,13 +78,16 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const sessions = mysqlTable("Session", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     token: varchar("token", { length: 255 }).unique().notNull(),
-    userId: varchar("userId", { length: 36 }).notNull(),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
     expiresAt: datetime("expiresAt", { mode: "string" }).notNull(),
     lastActivity: datetime("lastActivity", { mode: "string" }).default(sql`now()`).notNull(),
     userAgent: text("userAgent"),
     ipAddress: varchar("ipAddress", { length: 45 }),
     createdAt: now(),
-});
+}, (t) => [
+    index("idx_session_userId").on(t.userId),
+    index("idx_session_expiresAt").on(t.expiresAt),
+]);
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
     user: one(users, { fields: [sessions.userId], references: [users.id] }),
@@ -95,7 +101,7 @@ export const apiKeys = mysqlTable("ApiKey", {
     name: varchar("name", { length: 255 }).notNull(),
     key: varchar("key", { length: 64 }).unique().notNull(),
     keyPrefix: varchar("keyPrefix", { length: 8 }).notNull(),
-    userId: varchar("userId", { length: 36 }).notNull(),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
     permissions: text("permissions"),
     expiresAt: datetime("expiresAt", { mode: "string" }),
     lastUsedAt: datetime("lastUsedAt", { mode: "string" }),
@@ -112,7 +118,7 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
 // ─────────────────────────────────────────────
 export const auditLogs = mysqlTable("AuditLog", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId: varchar("userId", { length: 36 }),
+    userId: varchar("userId", { length: 36 }).references(() => users.id, { onDelete: "set null" }),
     action: varchar("action", { length: 100 }).notNull(),
     resource: varchar("resource", { length: 100 }),
     resourceId: varchar("resourceId", { length: 36 }),
@@ -125,6 +131,7 @@ export const auditLogs = mysqlTable("AuditLog", {
     index("idx_auditlog_userId").on(t.userId),
     index("idx_auditlog_action").on(t.action),
     index("idx_auditlog_createdAt").on(t.createdAt),
+    index("idx_auditlog_resource_createdAt").on(t.resource, t.createdAt),
 ]);
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
@@ -148,10 +155,14 @@ export const products = mysqlTable("Product", {
     isSold: boolean("isSold").default(false).notNull(),
     isFeatured: boolean("isFeatured").default(false).notNull(),
     sortOrder: int("sortOrder").default(0).notNull(),
-    orderId: varchar("orderId", { length: 36 }).unique(),
+    orderId: varchar("orderId", { length: 36 }).unique().references(() => orders.id, { onDelete: "set null" }),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_product_isSold_category").on(t.isSold, t.category),
+    index("idx_product_isFeatured_isSold").on(t.isFeatured, t.isSold),
+    index("idx_product_sortOrder").on(t.sortOrder),
+]);
 
 export const productsRelations = relations(products, ({ one, many }) => ({
     order: one(orders, { fields: [products.orderId], references: [orders.id] }),
@@ -164,12 +175,16 @@ export const productsRelations = relations(products, ({ one, many }) => ({
 // ─────────────────────────────────────────────
 export const orders = mysqlTable("Order", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId: varchar("userId", { length: 36 }).notNull(),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "restrict" }),
     givenData: text("givenData"),
     totalPrice: decimal("totalPrice", { precision: 10, scale: 2 }).notNull(),
     status: varchar("status", { length: 20 }).default("COMPLETED").notNull(),
     purchasedAt: datetime("purchasedAt", { mode: "string" }).default(sql`now()`).notNull(),
-});
+}, (t) => [
+    index("idx_order_userId_purchasedAt").on(t.userId, t.purchasedAt),
+    index("idx_order_status").on(t.status),
+    index("idx_order_purchasedAt").on(t.purchasedAt),
+]);
 
 export const ordersRelations = relations(orders, ({ one }) => ({
     user: one(users, { fields: [orders.userId], references: [users.id] }),
@@ -181,7 +196,7 @@ export const ordersRelations = relations(orders, ({ one }) => ({
 // ─────────────────────────────────────────────
 export const topups = mysqlTable("Topup", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId: varchar("userId", { length: 36 }).notNull(),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "restrict" }),
     amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
     proofImage: text("proofImage"),
     status: varchar("status", { length: 20 }).default("PENDING").notNull(),
@@ -192,7 +207,10 @@ export const topups = mysqlTable("Topup", {
     receiverName: varchar("receiverName", { length: 255 }),
     receiverBank: varchar("receiverBank", { length: 100 }),
     createdAt: now(),
-});
+}, (t) => [
+    index("idx_topup_userId_createdAt").on(t.userId, t.createdAt),
+    index("idx_topup_status_createdAt").on(t.status, t.createdAt),
+]);
 
 export const topupsRelations = relations(topups, ({ one }) => ({
     user: one(users, { fields: [topups.userId], references: [users.id] }),
@@ -203,8 +221,8 @@ export const topupsRelations = relations(topups, ({ one }) => ({
 // ─────────────────────────────────────────────
 export const siteSettings = mysqlTable("SiteSettings", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    heroTitle: varchar("heroTitle", { length: 255 }).notNull(),
-    heroDescription: text("heroDescription").notNull(),
+    heroTitle: varchar("heroTitle", { length: 255 }),
+    heroDescription: text("heroDescription"),
     announcement: text("announcement"),
     bannerImage1: text("bannerImage1"),
     bannerTitle1: varchar("bannerTitle1", { length: 255 }),
@@ -217,6 +235,7 @@ export const siteSettings = mysqlTable("SiteSettings", {
     bannerSubtitle3: varchar("bannerSubtitle3", { length: 255 }),
     logoUrl: text("logoUrl"),
     backgroundImage: text("backgroundImage"),
+    backgroundBlur: boolean("backgroundBlur").default(true).notNull(),
     showAllProducts: boolean("showAllProducts").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
@@ -268,7 +287,9 @@ export const promoCodes = mysqlTable("PromoCode", {
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_promocode_isActive_expiresAt").on(t.isActive, t.expiresAt),
+]);
 
 // ─────────────────────────────────────────────
 // FooterWidgetSettings
@@ -346,7 +367,7 @@ export const roles = mysqlTable("Role", {
     code: varchar("code", { length: 50 }).unique().notNull(),
     iconUrl: text("iconUrl"),
     description: varchar("description", { length: 500 }),
-    permissions: text("permissions"),
+    permissions: json("permissions").$type<string[]>(),
     sortOrder: int("sortOrder").default(0).notNull(),
     isSystem: boolean("isSystem").default(false).notNull(),
     createdAt: now(),
@@ -378,7 +399,7 @@ export const gachaMachines = mysqlTable("GachaMachine", {
     description: text("description"),
     imageUrl: text("imageUrl"),
     gameType: varchar("gameType", { length: 20 }).default("SPIN_X").notNull(),
-    categoryId: varchar("categoryId", { length: 36 }),
+    categoryId: varchar("categoryId", { length: 36 }).references(() => gachaCategories.id, { onDelete: "set null" }),
     costType: varchar("costType", { length: 20 }).default("FREE").notNull(),
     costAmount: decimal("costAmount", { precision: 10, scale: 2 }).default("0").notNull(),
     dailySpinLimit: int("dailySpinLimit").default(0).notNull(),
@@ -415,14 +436,14 @@ export const gachaSettings = mysqlTable("GachaSettings", {
 export const gachaRewards = mysqlTable("GachaReward", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     rewardType: varchar("rewardType", { length: 20 }).default("PRODUCT").notNull(),
-    productId: varchar("productId", { length: 36 }).unique(),
+    productId: varchar("productId", { length: 36 }).unique().references(() => products.id, { onDelete: "set null" }),
     rewardName: varchar("rewardName", { length: 255 }),
     rewardAmount: decimal("rewardAmount", { precision: 10, scale: 2 }),
     rewardImageUrl: text("rewardImageUrl"),
     tier: varchar("tier", { length: 20 }).default("common").notNull(),
     probability: decimal("probability", { precision: 6, scale: 2 }).default("1").notNull(),
     isActive: boolean("isActive").default(true).notNull(),
-    gachaMachineId: varchar("gachaMachineId", { length: 36 }),
+    gachaMachineId: varchar("gachaMachineId", { length: 36 }).references(() => gachaMachines.id, { onDelete: "set null" }),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [index("idx_gacha_reward_machineId").on(t.gachaMachineId)]);
@@ -437,19 +458,19 @@ export const gachaRewardsRelations = relations(gachaRewards, ({ one }) => ({
 // ─────────────────────────────────────────────
 export const gachaRollLogs = mysqlTable("GachaRollLog", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId: varchar("userId", { length: 36 }).notNull(),
-    productId: varchar("productId", { length: 36 }),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "restrict" }),
+    productId: varchar("productId", { length: 36 }).references(() => products.id, { onDelete: "set null" }),
     rewardName: varchar("rewardName", { length: 255 }),
     rewardImageUrl: text("rewardImageUrl"),
     tier: varchar("tier", { length: 20 }).notNull(),
     selectorLabel: varchar("selectorLabel", { length: 10 }),
     costType: varchar("costType", { length: 20 }).notNull(),
     costAmount: decimal("costAmount", { precision: 10, scale: 2 }).default("0").notNull(),
-    gachaMachineId: varchar("gachaMachineId", { length: 36 }),
+    gachaMachineId: varchar("gachaMachineId", { length: 36 }).references(() => gachaMachines.id, { onDelete: "set null" }),
     createdAt: now(),
 }, (t) => [
     index("idx_gacha_roll_userId_createdAt").on(t.userId, t.createdAt),
-    index("idx_gacha_roll_machineId").on(t.gachaMachineId),
+    index("idx_gacha_roll_machineId_createdAt").on(t.gachaMachineId, t.createdAt),
 ]);
 
 export const gachaRollLogsRelations = relations(gachaRollLogs, ({ one }) => ({

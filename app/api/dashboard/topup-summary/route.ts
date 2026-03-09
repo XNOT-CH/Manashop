@@ -31,6 +31,9 @@ export async function GET(request: NextRequest) {
         const session = await auth();
         const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
+        if ((session?.user as { role?: string })?.role !== "ADMIN") {
+            return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
+        }
 
         // Parse date range params (supports single "date" or "startDate"+"endDate")
         const startParam = request.nextUrl.searchParams.get("startDate");

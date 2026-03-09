@@ -37,21 +37,25 @@ export async function POST(request: NextRequest) {
 
         const newId = crypto.randomUUID();
         const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
-        await db.insert(promoCodes).values({
+        const now = mysqlNow();
+        const insertValues = {
             id: newId,
             code: body.code.toUpperCase(),
             discountType: body.discountType,
             discountValue: String(body.discountValue),
             minPurchase: body.minOrderAmount > 0 ? String(body.minOrderAmount) : null,
+            maxDiscount: null as string | null,
             usageLimit: body.maxUses > 0 ? body.maxUses : null,
+            usedCount: 0,
             expiresAt: body.expiresAt ? toMySQLDatetime(new Date(body.expiresAt)) : null,
             startsAt: toMySQLDatetime(new Date()),
             isActive: body.isActive,
-            createdAt: mysqlNow(),
-            updatedAt: mysqlNow(),
-        });
-        const promoCode = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, newId) });
-        return NextResponse.json({ success: true, message: "Promo code created successfully", data: promoCode });
+            createdAt: now,
+            updatedAt: now,
+        };
+        // ✅ ไม่ต้อง query ซ้ำ — คืนข้อมูลที่ insert โดยตรง
+        await db.insert(promoCodes).values(insertValues);
+        return NextResponse.json({ success: true, message: "Promo code created successfully", data: insertValues });
     } catch (error) {
         console.error("Create promo code error:", error);
         return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Failed to create promo code" }, { status: 500 });

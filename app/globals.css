@@ -226,6 +226,13 @@
 
    ======================================== */
 
+/* SweetAlert2 Global Overrides */
+.swal2-popup {
+  border-radius: 1.5rem !important;
+  /* rounded-3xl equivalent */
+  padding: 2rem !important;
+}
+
 .dark {
 
   /* Background - Deep navy */

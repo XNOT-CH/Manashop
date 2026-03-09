@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         const newId = crypto.randomUUID();
         await db.insert(roles).values({
             id: newId, name, code: roleCode, description: description || null,
-            permissions: permissions.length > 0 ? JSON.stringify(permissions) : null,
+            permissions: permissions.length > 0 ? permissions : null,
             sortOrder: 0, isSystem: false,
             createdAt: mysqlNow(),
             updatedAt: mysqlNow(),

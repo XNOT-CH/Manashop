@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
@@ -11,9 +12,9 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // Get logged-in user from cookie
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    // Get logged-in user from NextAuth session
+    const session = await auth();
+    const userId = session?.user?.id;
 
     let user = null;
     if (userId) {

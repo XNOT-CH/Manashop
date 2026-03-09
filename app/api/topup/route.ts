@@ -46,7 +46,11 @@ export async function POST(request: NextRequest) {
         const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
-        const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+        // ✅ Select only needed columns – avoid fetching password hash
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { id: true, creditBalance: true, totalTopup: true },
+        });
         if (!user) return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน" }, { status: 404 });
 
         let slipResult: SlipVerificationResult;
@@ -78,21 +82,25 @@ export async function POST(request: NextRequest) {
         if (existingTopup) return NextResponse.json({ success: false, message: "สลิปนี้เคยใช้เติมเงินแล้ว" }, { status: 400 });
 
         const topupId = crypto.randomUUID();
-        await db.insert(topups).values({
-            id: topupId, userId: user.id, amount: String(amount),
-            proofImage: proofImage.substring(0, 500), status: "APPROVED",
-            transactionRef: slipResult.data?.transRef,
-            senderName: slipResult.data?.sender?.account?.name?.th || null,
-            senderBank: slipResult.data?.sender?.bank?.name || null,
-            receiverName: slipResult.data?.receiver?.account?.name?.th || null,
-            receiverBank: slipResult.data?.receiver?.bank?.name || null,
-            createdAt: mysqlNow(),
-        });
 
-        await db.update(users).set({
-            creditBalance: sql`creditBalance + ${amount}`,
-            totalTopup: sql`totalTopup + ${amount}`,
-        }).where(eq(users.id, user.id));
+        // ✅ Atomic transaction: insert topup AND update balance together
+        await db.transaction(async (tx) => {
+            await tx.insert(topups).values({
+                id: topupId, userId: user.id, amount: String(amount),
+                proofImage: proofImage.substring(0, 500), status: "APPROVED",
+                transactionRef: slipResult.data?.transRef,
+                senderName: slipResult.data?.sender?.account?.name?.th || null,
+                senderBank: slipResult.data?.sender?.bank?.name || null,
+                receiverName: slipResult.data?.receiver?.account?.name?.th || null,
+                receiverBank: slipResult.data?.receiver?.bank?.name || null,
+                createdAt: mysqlNow(),
+            });
+
+            await tx.update(users).set({
+                creditBalance: sql`creditBalance + ${amount}`,
+                totalTopup: sql`totalTopup + ${amount}`,
+            }).where(eq(users.id, user.id));
+        });
 
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.TOPUP_REQUEST, resource: "TopupRequest", resourceId: topupId,

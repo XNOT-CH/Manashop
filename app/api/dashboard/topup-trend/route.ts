@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             );
         }
+        if ((session?.user as { role?: string })?.role !== "ADMIN") {
+            return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
+        }
 
         // Parse date range params
         const startParam = request.nextUrl.searchParams.get("startDate");

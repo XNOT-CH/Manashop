@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
         const session = await auth();
         const userId = session?.user?.id;
         if (!userId) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+        if ((session?.user as { role?: string })?.role !== "ADMIN") {
+            return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
+        }
 
         const now = new Date();
 

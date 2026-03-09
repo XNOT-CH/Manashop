@@ -31,6 +31,7 @@ import {
     ChevronDown,
     Layers,
     Sliders,
+    FileSpreadsheet,
 } from "lucide-react";
 
 // ── Navigation structure ───────────────────────────────────────────────────
@@ -56,6 +57,7 @@ const navigation: NavEntry[] = [
     },
     { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
     { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
+    { href: "/admin/export", label: "ส่งออกข้อมูล", icon: FileSpreadsheet },
     { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
     { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings },
 ];

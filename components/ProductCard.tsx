@@ -32,7 +32,6 @@ export function ProductCard({
 }: ProductCardProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
     // Trigger animation after mount
@@ -79,127 +78,104 @@ export function ProductCard({
     };
 
     return (
-        <>
-            <Card
-                className={`
-                    group overflow-hidden bg-card rounded-2xl 
-                    border border-border shadow-md shadow-primary/10
-                    transition-all duration-300 ease-out
-                    hover:shadow-xl hover:shadow-primary/20
-                    hover:-translate-y-1 hover:border-primary/30
-                    touch-feedback
-                    ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-                `}
-                style={{
-                    transitionDelay: `${index * 50}ms`,
-                }}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                <Link href={`/product/${id}`} className="block">
-                    {/* Image Container with Overlay */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                        <Image
-                            src={image || "/placeholder.jpg"}
-                            alt={title}
-                            fill
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                            className={`
-                                object-cover transition-transform duration-500 ease-out
-                                ${isHovered ? 'scale-110' : 'scale-100'}
-                            `}
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = "https://placehold.co/600x400/f1f5f9/64748b?text=No+Image";
-                            }}
-                        />
-
-                        {/* Hover Overlay with Button */}
-                        <div className={`
-                            absolute inset-0 bg-gray-900/50 backdrop-blur-[2px]
-                            flex items-center justify-center
-                            transition-all duration-300 ease-out
-                            ${isHovered && !isSold ? 'opacity-100' : 'opacity-0'}
-                        `}>
-                            <span className="flex items-center gap-2 px-5 py-2.5 bg-white/95 dark:bg-gray-800/95 rounded-full text-sm font-semibold text-primary shadow-xl border-2 border-primary/30 hover:border-primary transition-all">
-                                ดูรายละเอียด
-                                <ArrowRight className="h-4 w-4" />
-                            </span>
-                        </div>
-
-                        {/* Sold Overlay */}
-                        {isSold && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-card/90 backdrop-blur-sm">
-                                <Badge variant="destructive" className="text-sm px-4 py-1.5 rounded-full shadow-lg">
-                                    ขายแล้ว
-                                </Badge>
-                            </div>
-                        )}
-
-                        {/* Category Badge */}
-                        <Badge
-                            className={`
-                                absolute left-3 top-3 text-xs bg-primary text-white border-0 rounded-full
-                                transition-transform duration-300
-                                ${isHovered ? 'scale-110' : 'scale-100'}
-                            `}
-                        >
-                            {category}
-                        </Badge>
+        <div
+            className={`
+                group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300
+                ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+            `}
+            style={{
+                transitionDelay: `${index * 50}ms`,
+            }}
+        >
+            <div className="relative aspect-square overflow-hidden bg-muted">
+                <div className="absolute top-3 left-3 z-10">
+                    <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full">
+                        {category}
+                    </span>
+                </div>
+                {isSold && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+                        <span className="px-4 py-2 bg-red-500 text-white font-bold rounded-full transform -rotate-12">
+                            ขายแล้ว
+                        </span>
                     </div>
-
-                    {/* Content */}
-                    <CardContent className="p-3">
-                        <h3 className="line-clamp-1 font-medium text-card-foreground transition-colors duration-200 group-hover:text-primary">
-                            {title}
-                        </h3>
-                        <p className="mt-1 text-lg font-bold text-primary">
-                            ฿{price.toLocaleString()}
-                        </p>
-                    </CardContent>
-                </Link>
-
-                {/* Footer */}
-                <CardFooter className="flex gap-2 p-3 pt-0">
-                    <Button
-                        className="flex-1 gap-2 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-primary/25"
-                        size="sm"
-                        disabled={isSold || isLoading}
-                        onClick={handleBuy}
-                    >
-                        {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <ShoppingCart className="h-4 w-4" />
-                        )}
-                        {isSold ? "ขายแล้ว" : "ซื้อ"}
-                    </Button>
-                    {!isSold && (
-                        <AddToCartButton
-                            product={{
-                                id,
-                                name: title,
-                                price,
-                                imageUrl: image,
-                                category,
-                                quantity: 1,
+                )}
+                {/* Hover Overlay */}
+                {!isSold && (
+                    <Link href={`/product/${id}`} className="absolute inset-0 z-10 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        <span
+                            style={{
+                                border: "1.5px solid rgba(96, 165, 250, 0.85)",
+                                color: "rgba(186, 230, 253, 1)",
+                                backgroundColor: "rgba(29, 78, 216, 0.12)",
                             }}
-                            disabled={isSold}
-                            className="flex-1"
-                        />
+                            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
+                        >
+                            ดูรายละเอียด
+                        </span>
+                    </Link>
+                )}
+                <Image
+                    src={image || "/placeholder.jpg"}
+                    alt={title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="object-cover group-hover:grayscale-[50%] group-hover:blur-[1px] transition-all duration-300 ease-out"
+                    onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "https://placehold.co/600x400/f1f5f9/64748b?text=No+Image";
+                    }}
+                />
+            </div>
+            <div className="p-4 text-center">
+                <h3 className="font-semibold text-foreground truncate mb-1 text-center">{title}</h3>
+                <p className="text-lg font-bold text-primary text-center">฿{price.toLocaleString()}</p>
+                <div className="flex justify-center gap-2 mt-3">
+                    {isSold ? (
+                        <Button variant="outline" className="flex-1" disabled>
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            ขายแล้ว
+                        </Button>
+                    ) : (
+                        <>
+                            <Button
+                                className="flex-1"
+                                onClick={handleBuy}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        ซื้อ
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                        ซื้อ
+                                    </>
+                                )}
+                            </Button>
+                            <AddToCartButton
+                                product={{
+                                    id,
+                                    name: title,
+                                    price,
+                                    imageUrl: image,
+                                    category,
+                                    quantity: 1,
+                                }}
+                                showText={false}
+                                size="icon"
+                            />
+                        </>
                     )}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 rounded-xl border-border text-muted-foreground hover:bg-accent transition-all duration-200"
-                        asChild
-                    >
-                        <Link href={`/product/${id}`}>
+                    <Link href={`/product/${id}`}>
+                        <Button variant="outline" size="icon">
                             <Eye className="h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardFooter>
-            </Card >
-        </>
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        </div>
     );
 }

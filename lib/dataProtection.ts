@@ -12,6 +12,23 @@ const SENSITIVE_FIELDS = [
     "hashedKey",
 ];
 
+/**
+ * Throw error if an object contains secretData (to prevent internal leakage)
+ */
+export function assertNoSecretDataLeak(obj: Record<string, unknown>, context: string = "API Response"): void {
+    if ("secretData" in obj && obj.secretData) {
+        throw new Error(`SECURITY ALERT: Attempted to leak secretData in ${context}. Please use stripSecretData().`);
+    }
+}
+
+/**
+ * Strips secretData from any object (useful for returning products to frontend)
+ */
+export function stripSecretData<T extends Record<string, unknown>>(obj: T): Omit<T, "secretData"> {
+    const { secretData, ...safeObj } = obj;
+    return safeObj;
+}
+
 // Fields that should be masked (show partial)
 const MASKED_FIELDS = [
     "email",

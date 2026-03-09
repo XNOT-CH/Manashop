@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Loader2, Plus, Check, MessageCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ShoppingCart, Loader2, Plus, Check, Search, Tag } from "lucide-react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
@@ -27,18 +28,76 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
     const [quantity, setQuantity] = useState(1);
     const [isBuying, setIsBuying] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
+    const [promoCode, setPromoCode] = useState("");
+    const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+    const [appliedPromo, setAppliedPromo] = useState<{
+        code: string;
+        discountType: string;
+        discountValue: number;
+        maxDiscount: number | null;
+    } | null>(null);
     const inCart = isInCart(product.id);
 
-    const totalPrice = product.price * quantity;
+    const basePrice = (product.discountPrice ?? product.price) * quantity;
+
+    // Calculate final price after promo
+    const calcFinalPrice = (total: number) => {
+        if (!appliedPromo) return total;
+        let discount = 0;
+        if (appliedPromo.discountType === "PERCENTAGE") {
+            discount = (total * appliedPromo.discountValue) / 100;
+            if (appliedPromo.maxDiscount !== null && discount > appliedPromo.maxDiscount) {
+                discount = appliedPromo.maxDiscount;
+            }
+        } else {
+            discount = appliedPromo.discountValue;
+        }
+        return Math.max(0, Math.round((total - discount) * 100) / 100);
+    };
+
+    const finalPrice = calcFinalPrice(basePrice);
+
+    const handleCheckPromo = async () => {
+        if (!promoCode.trim() || isCheckingPromo) return;
+        setIsCheckingPromo(true);
+        try {
+            const res = await fetch(`/api/promo-codes/validate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: promoCode, totalPrice: basePrice }),
+            });
+            const data = await res.json();
+            if (data.valid) {
+                setAppliedPromo({
+                    code: promoCode.trim().toUpperCase(),
+                    discountType: data.discountType,
+                    discountValue: data.discount,
+                    maxDiscount: data.maxDiscount,
+                });
+                showWarning(data.message);
+            } else {
+                setAppliedPromo(null);
+                showWarning(data.message || "โค้ดส่วนลดไม่ถูกต้อง");
+            }
+        } catch {
+            showWarning("ไม่สามารถตรวจสอบโค้ดได้ กรุณาลองใหม่");
+        } finally {
+            setIsCheckingPromo(false);
+        }
+    };
 
     // Buy Now handler
     const handlePurchase = async () => {
         if (disabled || isBuying) return;
 
+        const discountLine = appliedPromo
+            ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> (ราคาเดิม ฿${basePrice.toLocaleString()})</small>`
+            : `<small>จำนวน: <strong>${quantity}</strong> ชิ้น</small>`;
+
         const confirmed = await showPurchaseConfirm({
             productName: product.name,
-            priceText: `฿${totalPrice.toLocaleString()}`,
-            extraHtml: `<small>จำนวน: <strong>${quantity}</strong> ชิ้น</small>`,
+            priceText: `฿${finalPrice.toLocaleString()}`,
+            extraHtml: discountLine,
         });
 
         if (!confirmed) return;
@@ -49,7 +108,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: product.id, quantity }),
+                body: JSON.stringify({ productId: product.id, quantity, promoCode: appliedPromo?.code || undefined }),
             });
 
             const data = await response.json();
@@ -71,6 +130,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             setIsBuying(false);
         }
     };
+
 
     // Add to Cart handler
     const handleAddToCart = async () => {
@@ -95,7 +155,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
     const isProcessing = isBuying || isAdding || cartLoading;
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {/* 1. Quantity Selector */}
             {!disabled && (
                 <div className="flex justify-center">
@@ -111,12 +171,50 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 </div>
             )}
 
-            {/* 2. Buy Now */}
+            {/* 2. Promo Code */}
+            <div>
+                <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
+                <div className="flex gap-2">
+                    <Input
+                        placeholder="กรอกส่วนลดของท่าน"
+                        value={promoCode}
+                        onChange={(e) => {
+                            setPromoCode(e.target.value);
+                            setAppliedPromo(null); // reset if user changes code
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
+                        className={`flex-1 rounded-full bg-white border-gray-300 focus-visible:ring-blue-500 ${appliedPromo ? "border-green-400" : ""}`}
+                        disabled={isProcessing}
+                    />
+                    <Button
+                        variant="outline"
+                        className="rounded-full gap-1.5 px-4 shrink-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                        onClick={handleCheckPromo}
+                        disabled={isCheckingPromo || !promoCode.trim()}
+                    >
+                        {isCheckingPromo ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Search className="h-4 w-4" />
+                        )}
+                        ตรวจสอบ
+                    </Button>
+                </div>
+                {appliedPromo && (
+                    <div className="flex items-center gap-1.5 mt-1.5 text-green-600 text-sm font-medium">
+                        <Tag className="h-3.5 w-3.5" />
+                        ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ ฿{finalPrice.toLocaleString()}
+                    </div>
+                )}
+            </div>
+
+
+            {/* 3. Buy Now */}
             <Button
                 size="lg"
                 className={`w-full gap-2 text-base rounded-full font-semibold ${disabled
-                        ? "bg-rose-100 text-rose-400 hover:bg-rose-100 cursor-not-allowed border border-rose-200"
-                        : "bg-violet-600 hover:bg-violet-700 text-white"
+                    ? "bg-rose-100 text-rose-400 hover:bg-rose-100 cursor-not-allowed border border-rose-200"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                     }`}
                 disabled={disabled || isBuying}
                 onClick={handlePurchase}
@@ -129,16 +227,16 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 ) : (
                     <>
                         <ShoppingCart className="h-5 w-5" />
-                        {disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${totalPrice.toLocaleString()}`}
+                        {disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${finalPrice.toLocaleString()}`}
                     </>
                 )}
             </Button>
 
-            {/* 3. Add to Cart */}
+            {/* 4. Add to Cart */}
             <Button
                 variant="outline"
                 size="lg"
-                className="w-full gap-2 text-base rounded-full border-border hover:bg-muted"
+                className="w-full gap-2 text-base rounded-full border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                 disabled={disabled || isAdding || cartLoading}
                 onClick={handleAddToCart}
             >
@@ -158,16 +256,6 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                         เพิ่มลงตะกร้า
                     </>
                 )}
-            </Button>
-
-            {/* 4. Contact Us */}
-            <Button
-                variant="outline"
-                size="lg"
-                className="w-full gap-2 text-base rounded-full border-border hover:bg-muted"
-            >
-                <MessageCircle className="h-4 w-4" />
-                ติดต่อเรา
             </Button>
         </div>
     );

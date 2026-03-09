@@ -4,25 +4,30 @@ import { db } from "@/lib/db";
 // Server Component — ไม่ต้องการ 'use client' เพราะ query DB ตรงๆ บน server
 export async function DynamicBackground() {
     const settings = await db.query.siteSettings.findFirst({
-        columns: { backgroundImage: true },
+        columns: { backgroundImage: true, backgroundBlur: true },
     });
 
     if (!settings?.backgroundImage) return null;
 
+    const isBlur = settings.backgroundBlur ?? true;
+
     return (
         <div className="fixed inset-0 -z-10 pointer-events-none">
-            {/* Next.js Image: auto WebP conversion + proper sizing */}
+            {/* Background Image */}
             <Image
                 src={settings.backgroundImage}
                 alt=""
                 fill
                 sizes="100vw"
                 quality={70}
-                className="object-cover object-center"
+                className={`object-cover object-center ${isBlur ? "blur-sm scale-105" : ""}`}
                 aria-hidden="true"
             />
-            {/* Light overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/70 to-white/50" />
+            {/* Overlay: heavier when blurred, lighter when clear */}
+            <div className={`absolute inset-0 ${isBlur
+                ? "bg-gradient-to-b from-white/75 to-white/60"
+                : "bg-gradient-to-b from-white/30 to-white/20"
+                }`} />
         </div>
     );
 }

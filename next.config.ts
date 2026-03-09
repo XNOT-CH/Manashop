@@ -111,7 +111,9 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Access-Control-Allow-Origin",
-            value: process.env.ALLOWED_ORIGIN || "*",
+            // WARNING: Do NOT use "*" with credentials=true — browsers will block the request.
+            // Set ALLOWED_ORIGIN to your production domain (e.g. https://yourdomain.com)
+            value: process.env.ALLOWED_ORIGIN || process.env.AUTH_URL || "http://localhost:3000",
           },
           {
             key: "Access-Control-Allow-Methods",

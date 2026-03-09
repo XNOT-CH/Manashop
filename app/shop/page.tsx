@@ -8,7 +8,11 @@ import { ShoppingBag, Package, TrendingUp } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopPage() {
+export default async function ShopPage({
+    searchParams,
+}: {
+    searchParams: { category?: string };
+}) {
     const products = await db.query.products.findMany({
         orderBy: (t, { desc }) => desc(t.createdAt),
     });
@@ -50,7 +54,7 @@ export default async function ShopPage() {
             <Separator className="mb-8" />
 
             {/* Category Tabs */}
-            <Tabs defaultValue="all" className="w-full">
+            <Tabs defaultValue={searchParams.category || "all"} className="w-full">
                 <TabsList className="mb-6 flex-wrap h-auto gap-2 bg-transparent p-0">
                     <TabsTrigger
                         value="all"

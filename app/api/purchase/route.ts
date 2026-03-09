@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db, users, products, orders } from "@/lib/db";
+import { db, users, products, orders, promoCodes } from "@/lib/db";
 import { eq, sql } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
@@ -8,7 +8,7 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
     try {
-        const { productId, quantity } = await request.json();
+        const { productId, quantity, promoCode } = await request.json();
 
         if (!productId) {
             return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
@@ -32,10 +32,34 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่" }, { status: 404 });
         }
 
+        // Validate promo code if provided
+        let promoData: { id: string; discountType: string; discountValue: number; maxDiscount: number | null } | null = null;
+        if (promoCode && typeof promoCode === "string") {
+            const promo = await db.query.promoCodes.findFirst({
+                where: eq(promoCodes.code, promoCode.trim().toUpperCase()),
+            });
+
+            if (promo && promo.isActive) {
+                const now = new Date();
+                const startsAt = new Date(promo.startsAt);
+                const expiresAt = promo.expiresAt ? new Date(promo.expiresAt) : null;
+                const withinLimit = promo.usageLimit === null || promo.usedCount < promo.usageLimit;
+
+                if (now >= startsAt && (expiresAt === null || now <= expiresAt) && withinLimit) {
+                    promoData = {
+                        id: promo.id,
+                        discountType: promo.discountType,
+                        discountValue: Number(promo.discountValue),
+                        maxDiscount: promo.maxDiscount ? Number(promo.maxDiscount) : null,
+                    };
+                }
+            }
+        }
+
         // Drizzle mysql2 doesn't have built-in transaction method like Prisma,
         // so we use the underlying pool connection for a manual transaction
         const conn = await (db as any).$client.getConnection();
-        let result: { order: { id: string }; product: { name: string; price: string; discountPrice: string | null } };
+        let result: { order: { id: string }; product: { name: string; price: string; discountPrice: string | null }; finalPrice: number };
 
         try {
             await conn.beginTransaction();
@@ -51,7 +75,23 @@ export async function POST(request: NextRequest) {
 
             const unitPrice = prod.discountPrice ? Number(prod.discountPrice) : Number(prod.price);
             const userBalance = Number(user.creditBalance);
-            const totalPrice = unitPrice * qty;
+            let totalPrice = unitPrice * qty;
+
+            // Apply promo code discount
+            if (promoData) {
+                let discountAmount = 0;
+                if (promoData.discountType === "PERCENTAGE") {
+                    discountAmount = (totalPrice * promoData.discountValue) / 100;
+                    if (promoData.maxDiscount !== null && discountAmount > promoData.maxDiscount) {
+                        discountAmount = promoData.maxDiscount;
+                    }
+                } else {
+                    // FIXED amount
+                    discountAmount = promoData.discountValue;
+                }
+                totalPrice = Math.max(0, totalPrice - discountAmount);
+                totalPrice = Math.round(totalPrice * 100) / 100; // round to 2 decimal places
+            }
 
             if (userBalance < totalPrice) {
                 throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${totalPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`);
@@ -87,8 +127,16 @@ export async function POST(request: NextRequest) {
                 [isLastStock ? encrypt(givenJoined) : encrypt(remainingData), isLastStock ? 1 : 0, orderId, productId]
             );
 
+            // Increment promo code usage count
+            if (promoData) {
+                await conn.execute(
+                    "UPDATE PromoCode SET usedCount = usedCount + 1 WHERE id = ?",
+                    [promoData.id]
+                );
+            }
+
             await conn.commit();
-            result = { order: { id: orderId }, product: prod };
+            result = { order: { id: orderId }, product: prod, finalPrice: totalPrice };
         } catch (txError) {
             await conn.rollback();
             throw txError;
@@ -106,9 +154,10 @@ export async function POST(request: NextRequest) {
                 resourceName: result.product.name,
                 productId,
                 orderId: result.order.id,
+                promoCode: promoData ? promoCode.trim().toUpperCase() : undefined,
                 unitPrice: result.product.discountPrice ? Number(result.product.discountPrice) : Number(result.product.price),
                 quantity: qty,
-                totalPrice: (result.product.discountPrice ? Number(result.product.discountPrice) : Number(result.product.price)) * qty,
+                totalPrice: result.finalPrice,
             },
         });
 
@@ -126,3 +175,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+

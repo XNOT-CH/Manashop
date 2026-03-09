@@ -191,8 +191,15 @@ export function SaleProducts() {
                                 )}
                                 {/* Hover Overlay */}
                                 {!product.isSold && (
-                                    <Link href={`/product/${product.id}`} className="absolute inset-0 z-10 bg-gray-900/50 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                        <span className="flex items-center gap-2 px-5 py-2.5 bg-white/95 dark:bg-gray-800/95 rounded-full text-sm font-semibold text-primary shadow-xl border-2 border-primary/30">
+                                    <Link href={`/product/${product.id}`} className="absolute inset-0 z-10 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                                        <span
+                                            style={{
+                                                border: "1.5px solid rgba(96, 165, 250, 0.85)",
+                                                color: "rgba(186, 230, 253, 1)",
+                                                backgroundColor: "rgba(29, 78, 216, 0.12)",
+                                            }}
+                                            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
+                                        >
                                             ดูรายละเอียด
                                         </span>
                                     </Link>
@@ -202,16 +209,16 @@ export function SaleProducts() {
                                     alt={product.name}
                                     fill
                                     sizes="208px"
-                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    className="object-cover group-hover:grayscale-[30%] group-hover:blur-[1px] transition-all duration-300 ease-out"
                                 />
                             </div>
-                            <div className="p-4">
-                                <h3 className="font-semibold text-foreground truncate mb-1">{product.name}</h3>
-                                <div className="flex items-center gap-2">
+                            <div className="p-4 text-center">
+                                <h3 className="font-semibold text-foreground truncate mb-1 text-center">{product.name}</h3>
+                                <div className="flex items-center justify-center gap-2">
                                     <p className="text-lg font-bold text-red-500">฿{Number(product.discountPrice).toLocaleString()}</p>
                                     <p className="text-sm text-muted-foreground line-through">฿{Number(product.price).toLocaleString()}</p>
                                 </div>
-                                <div className="flex gap-2 mt-3">
+                                <div className="flex justify-center gap-2 mt-3">
                                     {product.isSold ? (
                                         <Button variant="outline" className="flex-1" disabled>
                                             <ShoppingCart className="h-4 w-4 mr-2" />
