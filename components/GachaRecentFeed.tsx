@@ -82,6 +82,8 @@ export function GachaRecentFeed({ refreshKey }: { refreshKey: number }) {
             </div>
 
             <div
+                role="region"
+                aria-label="Recent Winners Feed"
                 className="relative w-full overflow-hidden bg-white dark:bg-zinc-900/50"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}

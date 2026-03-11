@@ -75,6 +75,8 @@ export function HeroBannerClient({ banners }: HeroBannerClientProps) {
 
     return (
         <div
+            role="region"
+            aria-label="Featured Banners Carosuel"
             className="relative w-full group"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
