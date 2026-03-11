@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         const { name, description, permissions } = result.data;
 
         // Derive code from name
-        const roleCode = name.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
+        const roleCode = name.toUpperCase().replaceAll(/\s+/g, "_").replaceAll(/[^A-Z0-9_]/g, "");
         const existing = await db.query.roles.findFirst({ where: eq(roles.code, roleCode) });
         if (existing) return NextResponse.json({ error: "Role code already exists" }, { status: 400 });
 

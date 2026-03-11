@@ -11,7 +11,7 @@ import { showError } from "@/lib/swal";
 import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 interface LoginFormProps {
-    logoUrl: string | null;
+    readonly logoUrl: string | null;
 }
 
 export function LoginForm({ logoUrl }: LoginFormProps) {
@@ -34,7 +34,7 @@ export function LoginForm({ logoUrl }: LoginFormProps) {
             if (result?.error) {
                 showError(result.error);
             } else {
-                window.location.href = "/";
+                globalThis.location.href = "/";
             }
         } catch {
             showError("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่");

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ShoppingBag, ChevronDown, Tag } from "lucide-react";
 
 interface ShopDropdownProps {
-    categories: string[];
+    readonly categories: readonly string[];
 }
 
 export function ShopDropdown({ categories }: ShopDropdownProps) {
