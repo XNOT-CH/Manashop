@@ -81,8 +81,7 @@ export function GachaRecentFeed({ refreshKey }: { refreshKey: number }) {
                 ผู้โชคดีล่าสุดที่ผ่านมา
             </div>
 
-            <div
-                role="region"
+            <section
                 aria-label="Recent Winners Feed"
                 className="relative w-full overflow-hidden bg-white dark:bg-zinc-900/50"
                 onMouseEnter={() => setIsHovered(true)}
@@ -126,7 +125,7 @@ export function GachaRecentFeed({ refreshKey }: { refreshKey: number }) {
                         ))}
                     </AnimatePresence>
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
