@@ -232,7 +232,7 @@ export default function GachaMachinesAdminPage() {
 
                 {/* ── ประเภทมินิเกม ── */}
                 <div className="mb-5">
-                    <label className={labelCls}>ประเภทมินิเกม *</label>
+                    <span className={labelCls}>ประเภทมินิเกม *</span>
                     <div className="grid grid-cols-2 gap-3">
                         {GAME_TYPES.map(gt => (
                             <button
@@ -267,8 +267,9 @@ export default function GachaMachinesAdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* แถว 1: ชื่อตู้กาชา + หมวดหมู่ */}
                     <div>
-                        <label className={labelCls}>ชื่อตู้กาชา *</label>
+                        <label htmlFor="addMachineName" className={labelCls}>ชื่อตู้กาชา *</label>
                         <input
+                            id="addMachineName"
                             value={machineForm.name}
                             onChange={e => setMachineForm(f => ({ ...f, name: e.target.value }))}
                             placeholder="จำเป็น"
@@ -278,8 +279,9 @@ export default function GachaMachinesAdminPage() {
 
                     {/* แถว 2: ประเภทราคา + ราคาต่อครั้ง */}
                     <div>
-                        <label className={labelCls}>ประเภทราคา</label>
+                        <label htmlFor="addCostType" className={labelCls}>ประเภทราคา</label>
                         <select
+                            id="addCostType"
                             value={machineForm.costType}
                             onChange={e => setMachineForm(f => ({ ...f, costType: e.target.value, costAmount: 0 }))}
                             className={inputCls}
@@ -290,10 +292,11 @@ export default function GachaMachinesAdminPage() {
                         </select>
                     </div>
                     <div>
-                        <label className={`${labelCls} ${machineForm.costType === "FREE" ? "opacity-40" : ""}`}>
+                        <label htmlFor="addCostAmount" className={`${labelCls} ${machineForm.costType === "FREE" ? "opacity-40" : ""}`}>
                             ราคาต่อครั้ง {machineForm.costType === "FREE" && <span className="font-normal text-muted-foreground">(ไม่ใช้เมื่อเลือก ฟรี)</span>}
                         </label>
                         <input
+                            id="addCostAmount"
                             type="number"
                             value={machineForm.costType === "FREE" ? "" : machineForm.costAmount}
                             onChange={e => setMachineForm(f => ({ ...f, costAmount: Number(e.target.value) }))}
@@ -308,7 +311,7 @@ export default function GachaMachinesAdminPage() {
 
                 {/* ── รูปภาพ ── */}
                 <div className="mt-4">
-                    <label className={labelCls}>รูปภาพตู้กาชา</label>
+                    <label htmlFor="addMachineImageFile" className={labelCls}>รูปภาพตู้กาชา</label>
                     <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
 
                     {/* Preview + upload zone */}
@@ -339,6 +342,7 @@ export default function GachaMachinesAdminPage() {
                         <div className="flex-1 space-y-2">
                             {/* Hidden file input */}
                             <input
+                                id="addMachineImageFile"
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp,image/gif"
