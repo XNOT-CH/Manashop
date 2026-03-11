@@ -182,71 +182,77 @@ export default function AnnouncementPopup() {
                         </motion.button>
 
                         {/* Image Container */}
-                        <div
-                            className={`relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 ${currentPopup.linkUrl ? "cursor-pointer" : ""}`}
-                            onClick={currentPopup.linkUrl ? handleImageClick : undefined}
-                            role={currentPopup.linkUrl ? "button" : undefined}
-                            tabIndex={currentPopup.linkUrl ? 0 : undefined}
-                            onKeyDown={currentPopup.linkUrl ? (e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    handleImageClick();
-                                }
-                            } : undefined}
-                        >
-                            <Image
-                                src={currentPopup.imageUrl}
-                                alt={currentPopup.title || "ประชาสัมพันธ์"}
-                                fill
-                                sizes="(max-width: 768px) 90vw, 500px"
-                                className="object-cover"
-                                priority
-                            />
+                        {currentPopup.linkUrl ? (
+                            <button
+                                type="button"
+                                className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 cursor-pointer"
+                                onClick={handleImageClick}
+                            >
+                                <Image
+                                    src={currentPopup.imageUrl}
+                                    alt={currentPopup.title || "ประชาสัมพันธ์"}
+                                    fill
+                                    sizes="(max-width: 768px) 90vw, 500px"
+                                    className="object-cover"
+                                    priority
+                                />
 
-                            {/* Carousel Navigation */}
-                            {hasMultiple && (
-                                <>
-                                    <motion.button
-                                        onClick={goToPrevious}
-                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
-                                        aria-label="รูปก่อนหน้า"
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                    >
-                                        <ChevronLeft className="w-6 h-6" />
-                                    </motion.button>
-                                    <motion.button
-                                        onClick={goToNext}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
-                                        aria-label="รูปถัดไป"
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                    >
-                                        <ChevronRight className="w-6 h-6" />
-                                    </motion.button>
+                                {/* Carousel Navigation */}
+                                {hasMultiple && (
+                                    <>
+                                        <motion.button
+                                            onClick={goToPrevious}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                                            aria-label="รูปก่อนหน้า"
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </motion.button>
+                                        <motion.button
+                                            onClick={goToNext}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                                            aria-label="รูปถัดไป"
+                                            whileHover={{ scale: 1.1 }}
+                                            whileTap={{ scale: 0.9 }}
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </motion.button>
 
-                                    {/* Dot Indicators */}
-                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-                                        {popups.map((_, index) => (
-                                            <motion.button
-                                                key={index}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setCurrentIndex(index);
-                                                }}
-                                                className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
-                                                    ? "bg-white"
-                                                    : "bg-white/50 hover:bg-white/75"
-                                                    }`}
-                                                aria-label={`ไปที่รูปที่ ${index + 1}`}
-                                                animate={{ scale: index === currentIndex ? 1.2 : 1 }}
-                                                whileHover={{ scale: 1.3 }}
-                                            />
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                        {/* Dot Indicators */}
+                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                                            {popups.map((_, index) => (
+                                                <motion.button
+                                                    key={index}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCurrentIndex(index);
+                                                    }}
+                                                    className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
+                                                        ? "bg-white"
+                                                        : "bg-white/50 hover:bg-white/75"
+                                                        }`}
+                                                    aria-label={`ไปที่รูปที่ ${index + 1}`}
+                                                    animate={{ scale: index === currentIndex ? 1.2 : 1 }}
+                                                    whileHover={{ scale: 1.3 }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </button>
+                        ) : (
+                            <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800">
+                                <Image
+                                    src={currentPopup.imageUrl}
+                                    alt={currentPopup.title || "ประชาสัมพันธ์"}
+                                    fill
+                                    sizes="(max-width: 768px) 90vw, 500px"
+                                    className="object-cover"
+                                    priority
+                                />
+                            </div>
+                        )}
                     </motion.div>
                 </motion.div>
             )}

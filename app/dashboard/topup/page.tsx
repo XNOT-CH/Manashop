@@ -247,20 +247,13 @@ export default function TopupPage() {
                             />
 
                             {!slipPreview ? (
-                                <div
+                                <button
+                                    type="button"
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     onClick={() => fileInputRef.current?.click()}
-                                    role="button"
-                                    tabIndex={0}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            fileInputRef.current?.click();
-                                        }
-                                    }}
-                                    className={`
+                                    className={`w-full
                                             border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
                                             transition-all duration-200
                                             ${isDragging
@@ -285,7 +278,7 @@ export default function TopupPage() {
                                     >
                                         อัปโหลดไฟล์
                                     </Button>
-                                </div>
+                                </button>
                             ) : (
                                 <div className="relative rounded-xl border border-border p-2">
                                     <button

@@ -144,22 +144,15 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Detail Modal ───────────────────────────────────────
 function DetailModal({ record, onClose }: { record: TopupRecord; onClose: () => void }) {
     return (
-        <div
+        <button
+            type="button"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             onClick={onClose}
-            role="button"
-            tabIndex={-1}
-            onKeyDown={(e) => {
-                if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-                    onClose();
-                }
-            }}
+            aria-label="ปิด modal"
         >
             <div
                 className="relative max-w-xl w-full bg-card rounded-2xl shadow-2xl overflow-hidden animate-page-enter"
                 onClick={(e) => e.stopPropagation()}
-                role="presentation"
-                onKeyDown={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="relative px-6 py-5 bg-gradient-to-r from-sky-500 to-blue-500">
@@ -243,7 +236,7 @@ function DetailModal({ record, onClose }: { record: TopupRecord; onClose: () => 
                     </button>
                 </div>
             </div>
-        </div>
+        </button>
     );
 }
 
@@ -723,8 +716,8 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: DailyTop
                                     onClick={() => toggleDay(day)}
                                     title={DAY_FULL_LABELS[day]}
                                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${selectedDays.has(day)
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "bg-muted text-muted-foreground hover:bg-muted/80"
                                         }`}
                                 >
                                     {selectedDays.has(day) && <Check className="h-3 w-3" />}
