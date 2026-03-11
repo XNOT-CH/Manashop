@@ -9,6 +9,7 @@ const Table = React.forwardRef<
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto" data-slot="table-container">
+    {/* NOSONAR - Generic UI component that receives headers via children */}
     <table
       ref={ref}
       data-slot="table"
