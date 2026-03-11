@@ -11,9 +11,9 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
       className="relative w-full overflow-x-auto"
     >
       <table
+        // NOSONAR - Generic UI component wrapper that receives headers via children
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
-        role="table"
         aria-label="Data Table"
         {...props}
       />

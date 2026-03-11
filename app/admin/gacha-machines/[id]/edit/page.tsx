@@ -370,8 +370,9 @@ export default function EditGachaMachinePage() {
                 <div className="px-6 py-5 border-b border-border bg-muted/20">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className={labelCls}>ชื่อรางวัล *</label>
+                            <label htmlFor="addRewardName" className={labelCls}>ชื่อรางวัล *</label>
                             <input
+                                id="addRewardName"
                                 value={addForm.rewardName}
                                 onChange={e => setAddForm(f => ({ ...f, rewardName: e.target.value }))}
                                 placeholder="จำเป็น"
@@ -379,8 +380,9 @@ export default function EditGachaMachinePage() {
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>โอกาสได้รับ (%) *</label>
+                            <label htmlFor="addProbability" className={labelCls}>โอกาสได้รับ (%) *</label>
                             <input
+                                id="addProbability"
                                 type="number"
                                 value={addForm.probability}
                                 onChange={e => setAddForm(f => ({ ...f, probability: e.target.value }))}
@@ -392,8 +394,9 @@ export default function EditGachaMachinePage() {
                             />
                         </div>
                         <div>
-                            <label className={labelCls}>ประเภทรางวัล *</label>
+                            <label htmlFor="addRewardType" className={labelCls}>ประเภทรางวัล *</label>
                             <select
+                                id="addRewardType"
                                 value={addForm.rewardType}
                                 onChange={e => setAddForm(f => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: "" }))}
                                 className={inputCls}
@@ -405,8 +408,9 @@ export default function EditGachaMachinePage() {
                         </div>
                         {addForm.rewardType === "PRODUCT" ? (
                             <div className="md:col-span-1">
-                                <label className={labelCls}>เลือกสินค้า *</label>
+                                <label htmlFor="addProductCategory" className={labelCls}>เลือกสินค้า *</label>
                                 <select
+                                    id="addProductCategory"
                                     value={productCategory}
                                     onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setAddForm(f => ({ ...f, productId: "", rewardName: "" })); }}
                                     className={inputCls + " mb-2"}
@@ -452,8 +456,9 @@ export default function EditGachaMachinePage() {
                             </div>
                         ) : (
                             <div>
-                                <label className={labelCls}>จำนวนที่จะได้รับ *</label>
+                                <label htmlFor="addRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label>
                                 <input
+                                    id="addRewardAmount"
                                     type="number"
                                     value={addForm.rewardAmount}
                                     onChange={e => setAddForm(f => ({ ...f, rewardAmount: e.target.value }))}
@@ -464,8 +469,9 @@ export default function EditGachaMachinePage() {
                             </div>
                         )}
                         <div>
-                            <label className={labelCls}>รูปแบบรางวัล *</label>
+                            <label htmlFor="addRewardTier" className={labelCls}>รูปแบบรางวัล *</label>
                             <select
+                                id="addRewardTier"
                                 value={addForm.tier}
                                 onChange={e => setAddForm(f => ({ ...f, tier: e.target.value }))}
                                 className={inputCls}
@@ -492,8 +498,10 @@ export default function EditGachaMachinePage() {
                         />
                         <div className="flex items-center gap-2">
                             {/* Preview / Drop box */}
-                            <div
-                                className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors
+                            <button
+                                type="button"
+                                onClick={() => addFileInputRef.current?.click()}
+                                className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer
                                     ${isAddDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}
                                 `}
                                 onDragOver={(e) => { e.preventDefault(); setIsAddDragging(true); }}
@@ -508,9 +516,9 @@ export default function EditGachaMachinePage() {
                                 {validImageUrl(String(addForm.rewardImageUrl)) ? (
                                     <Image src={String(addForm.rewardImageUrl)} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" />
                                 ) : (
-                                    <ImageIcon className={`w-4 h-4 ${isAddDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
+                                    <ImageIcon className={`w-5 h-5 ${isAddDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
                                 )}
-                            </div>
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => addFileInputRef.current?.click()}
@@ -521,6 +529,7 @@ export default function EditGachaMachinePage() {
                                 {addUploadingImage ? "กำลังอัปโหลด..." : "อัปโหลด"}
                             </button>
                             <input
+                                id="addRewardImageUrl"
                                 value={String(addForm.rewardImageUrl)}
                                 onChange={e => setAddForm(f => ({ ...f, rewardImageUrl: e.target.value }))}
                                 placeholder="หรือวาง URL รูปภาพ"
@@ -552,14 +561,15 @@ export default function EditGachaMachinePage() {
                             <button onClick={closeEdit} className="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground"><X className="w-4 h-4" /></button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label className={labelCls}>ชื่อรางวัล *</label><input value={editForm.rewardName} onChange={e => setEditForm(f => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} /></div>
+                            <div><label htmlFor="editRewardName" className={labelCls}>ชื่อรางวัล *</label><input id="editRewardName" value={editForm.rewardName} onChange={e => setEditForm(f => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} /></div>
                             <div>
-                                <label className={labelCls}>โอกาสได้รับ (%) *</label>
-                                <input type="number" value={editForm.probability} onChange={e => setEditForm(f => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} />
+                                <label htmlFor="editProbability" className={labelCls}>โอกาสได้รับ (%) *</label>
+                                <input id="editProbability" type="number" value={editForm.probability} onChange={e => setEditForm(f => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} />
                             </div>
                             <div>
-                                <label className={labelCls}>ประเภทรางวัล *</label>
+                                <label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label>
                                 <select
+                                    id="editRewardType"
                                     value={editForm.rewardType ?? "POINT"}
                                     onChange={e => setEditForm(f => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))}
                                     className={inputCls}
@@ -571,8 +581,9 @@ export default function EditGachaMachinePage() {
                             </div>
                             {editForm.rewardType === "PRODUCT" ? (
                                 <div>
-                                    <label className={labelCls}>เลือกสินค้า *</label>
+                                    <label htmlFor="editProductCategory" className={labelCls}>เลือกสินค้า *</label>
                                     <select
+                                        id="editProductCategory"
                                         value={editProductCategory}
                                         onChange={e => { setEditProductCategory(e.target.value); setEditProductSearch(""); setEditForm(f => ({ ...f, productId: "", rewardName: "" })); }}
                                         className={inputCls + " mb-2"}
@@ -584,6 +595,7 @@ export default function EditGachaMachinePage() {
                                     </select>
                                     <div className="relative">
                                         <input
+                                            id="editProductSearch"
                                             value={editProductSearch}
                                             onChange={e => setEditProductSearch(e.target.value)}
                                             placeholder="ค้นหาชื่อสินค้า..."
@@ -616,20 +628,21 @@ export default function EditGachaMachinePage() {
                                 </div>
                             ) : (
                                 <div>
-                                    <label className={labelCls}>จำนวนที่จะได้รับ *</label>
-                                    <input type="number" value={editForm.rewardAmount} onChange={e => setEditForm(f => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} />
+                                    <label htmlFor="editRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label>
+                                    <input id="editRewardAmount" type="number" value={editForm.rewardAmount} onChange={e => setEditForm(f => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} />
                                 </div>
                             )}
                             <div>
-                                <label className={labelCls}>รูปแบบรางวัล *</label>
-                                <select value={editForm.tier} onChange={e => setEditForm(f => ({ ...f, tier: e.target.value }))} className={inputCls}>
+                                <label htmlFor="editRewardTier" className={labelCls}>รูปแบบรางวัล *</label>
+                                <select id="editRewardTier" value={editForm.tier} onChange={e => setEditForm(f => ({ ...f, tier: e.target.value }))} className={inputCls}>
                                     {TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                                 </select>
                             </div>
                             <div className="md:col-span-2 mt-4">
-                                <label className={labelCls}>รูปภาพรางวัล</label>
+                                <label htmlFor="editRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
                                 <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
                                 <input
+                                    id="editRewardImageFile"
                                     ref={editFileInputRef}
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp,image/gif"
@@ -642,8 +655,10 @@ export default function EditGachaMachinePage() {
                                 />
                                 <div className="flex items-center gap-2">
                                     {/* Preview / Drop box */}
-                                    <div
-                                        className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors
+                                    <button
+                                        type="button"
+                                        onClick={() => editFileInputRef.current?.click()}
+                                        className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer
                                                 ${isEditDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}
                                             `}
                                         onDragOver={(e) => { e.preventDefault(); setIsEditDragging(true); }}
@@ -658,9 +673,9 @@ export default function EditGachaMachinePage() {
                                         {validImageUrl(editForm.rewardImageUrl) ? (
                                             <Image src={editForm.rewardImageUrl} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" />
                                         ) : (
-                                            <ImageIcon className={`w-4 h-4 ${isEditDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
+                                            <ImageIcon className={`w-5 h-5 ${isEditDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
                                         )}
-                                    </div>
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => editFileInputRef.current?.click()}

@@ -39,10 +39,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const updateData: Record<string, unknown> = {};
         if (code !== undefined) updateData.code = code.toUpperCase();
         if (discountType !== undefined) updateData.discountType = discountType;
-        if (discountValue !== undefined) updateData.discountValue = String(parseFloat(discountValue));
-        if (minPurchase !== undefined) updateData.minPurchase = minPurchase ? String(parseFloat(minPurchase)) : null;
-        if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount ? String(parseFloat(maxDiscount)) : null;
-        if (usageLimit !== undefined) updateData.usageLimit = usageLimit ? parseInt(usageLimit) : null;
+        if (discountValue !== undefined) updateData.discountValue = String(Number.parseFloat(discountValue));
+        if (minPurchase !== undefined) updateData.minPurchase = minPurchase ? String(Number.parseFloat(minPurchase)) : null;
+        if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount ? String(Number.parseFloat(maxDiscount)) : null;
+        if (usageLimit !== undefined) updateData.usageLimit = usageLimit ? Number.parseInt(usageLimit) : null;
         if (startsAt !== undefined) updateData.startsAt = toMySQLDatetime(new Date(startsAt));
         if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? toMySQLDatetime(new Date(expiresAt)) : null;
         if (isActive !== undefined) updateData.isActive = isActive;

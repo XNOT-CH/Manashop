@@ -200,7 +200,7 @@ export default function AdminPopupsPage() {
                     title: (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim() || null,
                     imageUrl,
                     linkUrl: (document.getElementById("swal-linkUrl") as HTMLInputElement)?.value?.trim() || null,
-                    sortOrder: parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0,
+                    sortOrder: Number.parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0,
                     isActive: (document.getElementById("swal-isActive") as HTMLSelectElement)?.value === "true",
                     dismissOption: (document.getElementById("swal-dismissOption") as HTMLSelectElement)?.value || "show_always",
                 };

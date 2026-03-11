@@ -189,7 +189,7 @@ export default function AdminNewsPage() {
                 const description = (document.getElementById("swal-description") as HTMLTextAreaElement)?.value?.trim();
                 const imageUrl = (document.getElementById("swal-imageUrl") as HTMLInputElement)?.value?.trim();
                 const link = (document.getElementById("swal-link") as HTMLInputElement)?.value?.trim();
-                const sortOrder = parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0;
+                const sortOrder = Number.parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0;
                 const isActive = (document.getElementById("swal-isActive") as HTMLSelectElement)?.value === "true";
 
                 if (!title || !description) {

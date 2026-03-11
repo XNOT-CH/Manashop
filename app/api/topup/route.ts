@@ -25,7 +25,7 @@ async function verifySlipWithEasySlip(base64Image: string): Promise<SlipVerifica
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.codePointAt(i) || 0;
 
     const formData = new FormData();
     formData.append("file", new Blob([bytes], { type: "image/jpeg" }), "slip.jpg");

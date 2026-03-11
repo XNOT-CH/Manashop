@@ -144,7 +144,7 @@ export function RegisterForm({ logoUrl }: RegisterFormProps) {
                                 maxLength={6}
                                 pattern="[0-9]*"
                                 value={formData.pin}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, pin: e.target.value.replace(/\D/g, "") }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, pin: e.target.value.replaceAll(/\D/g, "") }))}
                             />
                         </div>
 

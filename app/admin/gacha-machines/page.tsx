@@ -314,8 +314,10 @@ export default function GachaMachinesAdminPage() {
                     {/* Preview + upload zone */}
                     <div className="flex items-start gap-3">
                         {/* Preview / Drop box */}
-                        <div
-                            className={`w-20 h-20 rounded-xl border-2 border-dashed flex-shrink-0 overflow-hidden flex items-center justify-center transition-colors
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`w-20 h-20 rounded-xl border-2 border-dashed flex-shrink-0 overflow-hidden flex items-center justify-center transition-colors cursor-pointer
                                 ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/30"}
                             `}
                             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -332,7 +334,7 @@ export default function GachaMachinesAdminPage() {
                             ) : (
                                 <ImageIcon className={`w-7 h-7 ${isDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />
                             )}
-                        </div>
+                        </button>
 
                         <div className="flex-1 space-y-2">
                             {/* Hidden file input */}
