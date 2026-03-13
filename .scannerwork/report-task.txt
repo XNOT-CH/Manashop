@@ -2,5 +2,5 @@ projectKey=my-game-store
 serverUrl=http://localhost:9000
 serverVersion=26.3.0.120487
 dashboardUrl=http://localhost:9000/dashboard?id=my-game-store
-ceTaskId=f62b8459-398c-4e08-84d8-6c9c18b404b7
-ceTaskUrl=http://localhost:9000/api/ce/task?id=f62b8459-398c-4e08-84d8-6c9c18b404b7
+ceTaskId=d98d5148-05cb-4338-8f45-a7363485a6d4
+ceTaskUrl=http://localhost:9000/api/ce/task?id=d98d5148-05cb-4338-8f45-a7363485a6d4
