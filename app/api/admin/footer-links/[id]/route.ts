@@ -18,10 +18,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (body.label !== undefined) updateData.label = body.label;
         if (body.href !== undefined) updateData.href = body.href;
         if (body.openInNewTab !== undefined) updateData.openInNewTab = body.openInNewTab;
-        await db.update(footerLinks).set(updateData as any).where(eq(footerLinks.id, id));
+        await db.update(footerLinks).set(updateData).where(eq(footerLinks.id, id));
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });
         return NextResponse.json(link);
     } catch (error) {
+        console.error("[FOOTER_LINK_PUT]", error);
         return NextResponse.json({ error: "Failed to update footer link" }, { status: 500 });
     }
 }
@@ -34,6 +35,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
         await db.delete(footerLinks).where(eq(footerLinks.id, id));
         return NextResponse.json({ success: true });
     } catch (error) {
+        console.error("[FOOTER_LINK_DELETE]", error);
         return NextResponse.json({ error: "Failed to delete footer link" }, { status: 500 });
     }
 }

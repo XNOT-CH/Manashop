@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ZodSchema } from "zod";
+import { z } from "zod";
 
 /**
  * validateBody — parse + validate request body ผ่าน Zod schema
@@ -9,10 +9,10 @@ import { ZodSchema } from "zod";
  *   if ("error" in result) return result.error;
  *   const data = result.data; // typed ✅
  */
-export async function validateBody<T>(
+export async function validateBody<T extends z.ZodTypeAny>(
     req: Request,
-    schema: ZodSchema<T>
-): Promise<{ data: T } | { error: NextResponse }> {
+    schema: T
+): Promise<{ data: z.infer<T> } | { error: NextResponse }> {
     let raw: unknown;
     try {
         raw = await req.json();
@@ -33,12 +33,17 @@ export async function validateBody<T>(
                 {
                     success: false,
                     message: firstMessage,
-                    errors: result.error.flatten().fieldErrors,
+                    errors: result.error.issues.reduce((acc, issue) => {
+                        const key = String(issue.path[0] || '_root');
+                        if (!acc[key]) acc[key] = [];
+                        acc[key].push(issue.message);
+                        return acc;
+                    }, {} as Record<string, string[]>),
                 },
                 { status: 400 }
             ),
         };
     }
 
-    return { data: result.data };
+    return { data: result.data as z.infer<T> };
 }

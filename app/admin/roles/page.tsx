@@ -206,17 +206,19 @@ export default function AdminRolesPage() {
                     <span className="font-bold text-foreground">รายการยศ</span>
                 </div>
 
-                {loading ? (
+                {loading && (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : roles.length === 0 ? (
+                )}
+                {!loading && roles.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
                         <Shield className="h-12 w-12 mx-auto mb-4 opacity-30" />
                         <p>ยังไม่มียศ</p>
                         <Button variant="link" className="mt-2" onClick={() => openPanel()}>เพิ่มยศแรก</Button>
                     </div>
-                ) : (
+                )}
+                {!loading && roles.length > 0 && (
                     <Table>
                         <TableHeader>
                             <TableRow>

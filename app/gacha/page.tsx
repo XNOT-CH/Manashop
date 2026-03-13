@@ -1,4 +1,4 @@
-import { db, users, gachaSettings, gachaRewards } from "@/lib/db";
+import { db, users, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { Lock } from "lucide-react";
 import { cookies } from "next/headers";
@@ -89,17 +89,17 @@ export default async function GachaPage() {
             <div className="flex flex-col items-center gap-6 px-4 sm:px-6 md:px-10 pt-4 pb-8">
 
                 {/* Body */}
-                {!settings.isEnabled ? (
+                {settings.isEnabled ? (
+                    <div className="w-full flex justify-center">
+                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} />
+                    </div>
+                ) : (
                     <div className="flex flex-col items-center gap-3 py-20 text-center">
                         <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center">
                             <Lock className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <p className="text-sm font-medium text-foreground">ระบบสุ่มตัว X ปิดอยู่ชั่วคราว</p>
                         <p className="text-xs text-muted-foreground">กรุณากลับมาใหม่ภายหลัง</p>
-                    </div>
-                ) : (
-                    <div className="w-full flex justify-center">
-                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} />
                     </div>
                 )}
             </div>

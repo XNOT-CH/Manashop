@@ -1,7 +1,6 @@
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
-export function ProductCardSkeleton({ index = 0 }: { index?: number }) {
+export function ProductCardSkeleton({ index = 0 }: Readonly<{ index?: number }>) {
     return (
         <Card className={`overflow-hidden rounded-3xl bg-white dark:bg-card border border-black/5 dark:border-white/10 shadow-sm animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
             {/* Image Skeleton */}
@@ -27,11 +26,11 @@ export function ProductCardSkeleton({ index = 0 }: { index?: number }) {
     );
 }
 
-export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
+export function ProductGridSkeleton({ count = 8 }: Readonly<{ count?: number }>) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: count }).map((_, i) => (
-                <ProductCardSkeleton key={i} index={i} />
+                <ProductCardSkeleton key={`product-grid-skeleton-${i}`} index={i} /> // NOSONAR
             ))}
         </div>
     );
@@ -76,7 +75,7 @@ export function DashboardCardSkeleton() {
     );
 }
 
-export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+export function TableSkeleton({ rows = 5 }: Readonly<{ rows?: number }>) {
     return (
         <div className="rounded-2xl glow-border overflow-hidden animate-fade-in-up">
             {/* Header */}
@@ -88,7 +87,7 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
             </div>
             {/* Rows */}
             {Array.from({ length: rows }).map((_, i) => (
-                <div key={i} className="p-4 flex gap-4 border-t border-slate-100">
+                <div key={`table-skeleton-row-${i}`} className="p-4 flex gap-4 border-t border-slate-100"> {/* NOSONAR */}
                     <div className="h-10 w-10 animate-skeleton bg-slate-100 rounded-lg" />
                     <div className="h-5 flex-1 animate-skeleton bg-slate-100 rounded" />
                     <div className="h-5 w-24 animate-skeleton bg-slate-100 rounded" />

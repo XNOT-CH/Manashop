@@ -1,4 +1,4 @@
-import { db, orders } from "@/lib/db";
+import { db } from "@/lib/db";
 
 
 export async function RecentTransactions() {
@@ -38,12 +38,14 @@ export async function RecentTransactions() {
                     </thead>
                     <tbody>
                         {orderList.map((order) => {
-                            const statusColor =
-                                order.status === "COMPLETED"
-                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
-                                    : order.status === "PENDING"
-                                        ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
-                                        : "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400";
+                            let statusColor = "";
+                            if (order.status === "COMPLETED") {
+                                statusColor = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400";
+                            } else if (order.status === "PENDING") {
+                                statusColor = "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400";
+                            } else {
+                                statusColor = "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400";
+                            }
                             return (
                                 <tr key={order.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                                     <td className="py-3 px-2"><span className="font-medium">{order.user.username}</span></td>

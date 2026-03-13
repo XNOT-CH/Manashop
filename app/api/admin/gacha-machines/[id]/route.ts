@@ -29,10 +29,10 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     const body = result.data;
 
     const set: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(body)) {
-        if (v !== undefined) set[k] = k === "costAmount" ? String(v) : v;
+    for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+        if (v !== undefined) set[k] = k === "costAmount" ? String(v as string | number) : v;
     }
-    await db.update(gachaMachines).set(set as any).where(eq(gachaMachines.id, id));
+    await db.update(gachaMachines).set(set).where(eq(gachaMachines.id, id));
     const updated = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, id) });
     return NextResponse.json({ success: true, data: updated });
 }

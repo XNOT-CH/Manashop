@@ -35,9 +35,9 @@ export function SalesDistribution() {
                             dataKey="value"
                             stroke="none"
                         >
-                            {data.map((entry, index) => (
+                            {data.map((entry) => (
                                 <Cell
-                                    key={`cell-${index}`}
+                                    key={`cell-${entry.name}`}
                                     fill={entry.color}
                                     className="transition-opacity hover:opacity-80"
                                 />

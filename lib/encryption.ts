@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 const IV_LENGTH = 16;
 
@@ -83,6 +83,7 @@ export function decrypt(text: string): string {
         return text;
     } catch (error) {
         // If decryption fails, return original text (backward compatibility)
+        console.warn("[DECRYPT_FALLBACK]", error);
         return text;
     }
 }

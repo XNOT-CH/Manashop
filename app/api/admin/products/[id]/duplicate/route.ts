@@ -22,6 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const duplicate = await db.query.products.findFirst({ where: eq(products.id, newId) });
         return NextResponse.json({ success: true, product: duplicate });
     } catch (error) {
+        console.error("[PRODUCT_DUPLICATE]", error);
         return NextResponse.json({ error: "Failed to duplicate product" }, { status: 500 });
     }
 }

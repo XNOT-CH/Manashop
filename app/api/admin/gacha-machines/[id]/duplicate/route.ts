@@ -55,7 +55,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         }
 
         return NextResponse.json({ success: true, data: { id: newId } });
-    } catch (e: any) {
-        return NextResponse.json({ success: false, message: e.message }, { status: 500 });
+    } catch (e: unknown) {
+        const errorMsg = e instanceof Error ? e.message : "อัพเดทไม่สำเร็จ";
+        return NextResponse.json({ success: false, message: errorMsg }, { status: 500 });
     }
 }

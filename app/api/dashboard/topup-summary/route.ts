@@ -25,6 +25,27 @@ function getBankColor(bank: string | null): string {
     return BANK_COLORS[key] || "#6366f1";
 }
 
+function parseDateRange(params: URLSearchParams) {
+    const startParam = params.get("startDate");
+    const endParam = params.get("endDate");
+    const dateParam = params.get("date");
+
+    if (startParam && endParam) {
+        const start = new Date(startParam);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endParam);
+        end.setHours(23, 59, 59, 999);
+        return { start, end };
+    }
+
+    const targetDate = dateParam ? new Date(dateParam) : new Date();
+    const start = new Date(targetDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(targetDate);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+}
+
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
@@ -34,59 +55,61 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
 
-        // Parse date range params (supports single "date" or "startDate"+"endDate")
-        const startParam = request.nextUrl.searchParams.get("startDate");
-        const endParam = request.nextUrl.searchParams.get("endDate");
-        const dateParam = request.nextUrl.searchParams.get("date");
-
-        let todayStart: Date;
-        let todayEnd: Date;
-
-        if (startParam && endParam) {
-            todayStart = new Date(startParam);
-            todayStart.setHours(0, 0, 0, 0);
-            todayEnd = new Date(endParam);
-            todayEnd.setHours(23, 59, 59, 999);
-        } else {
-            const targetDate = dateParam ? new Date(dateParam) : new Date();
-            todayStart = new Date(targetDate);
-            todayStart.setHours(0, 0, 0, 0);
-            todayEnd = new Date(targetDate);
-            todayEnd.setHours(23, 59, 59, 999);
-        }
+        const { start, end } = parseDateRange(request.nextUrl.searchParams);
 
         const topupList = await db.query.topups.findMany({
-            where: (t, { and, gte, lte }) => and(gte(t.createdAt, todayStart.toISOString().slice(0, 19).replace("T", " ")), lte(t.createdAt, todayEnd.toISOString().slice(0, 19).replace("T", " "))),
+            where: (t, { and, gte, lte }) => and(gte(t.createdAt, start.toISOString().slice(0, 19).replace("T", " ")), lte(t.createdAt, end.toISOString().slice(0, 19).replace("T", " "))),
             with: { user: { columns: { username: true } } },
             orderBy: (t, { desc }) => desc(t.createdAt),
         });
         // alias
         const topups_data = topupList;
 
-        // ── Status Summary ──────────────────────────────
+        // ── Single Pass Processing ──────────────────────────
         const statusSummary = {
             approved: { count: 0, amount: 0 },
             pending: { count: 0, amount: 0 },
             rejected: { count: 0, amount: 0 },
         };
+        const hourlyMap = new Map<number, number>(Array.from({ length: 24 }, (_, i) => [i, 0]));
+        const methodMap = new Map<string, { count: number; amount: number }>();
 
         for (const t of topups_data) {
             const amt = Number(t.amount);
-            switch (t.status) {
-                case "APPROVED":
-                    statusSummary.approved.count++;
-                    statusSummary.approved.amount += amt;
-                    break;
-                case "PENDING":
-                    statusSummary.pending.count++;
-                    statusSummary.pending.amount += amt;
-                    break;
-                case "REJECTED":
-                    statusSummary.rejected.count++;
-                    statusSummary.rejected.amount += amt;
-                    break;
+            
+            if (t.status === "APPROVED") {
+                statusSummary.approved.count++;
+                statusSummary.approved.amount += amt;
+                
+                const hour = new Date(t.createdAt).getHours();
+                hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + amt);
+                
+                const bank = t.senderBank || "ไม่ระบุ";
+                const existing = methodMap.get(bank) || { count: 0, amount: 0 };
+                existing.count++;
+                existing.amount += amt;
+                methodMap.set(bank, existing);
+            } else if (t.status === "PENDING") {
+                statusSummary.pending.count++;
+                statusSummary.pending.amount += amt;
+            } else if (t.status === "REJECTED") {
+                statusSummary.rejected.count++;
+                statusSummary.rejected.amount += amt;
             }
         }
+        const hourlyData = Array.from(hourlyMap.entries()).map(([hour, amount]) => ({
+            hour: `${hour.toString().padStart(2, "0")}:00`,
+            amount,
+        }));
+
+        const paymentMethods = Array.from(methodMap.entries()).map(
+            ([name, data]) => ({
+                name,
+                count: data.count,
+                amount: data.amount,
+                color: getBankColor(name),
+            })
+        );
 
         // ── Total KPI ────────────────────────────────────
         const totalAmount = statusSummary.approved.amount;
@@ -99,41 +122,8 @@ export async function GET(request: NextRequest) {
                 ? Math.round(totalAmount / statusSummary.approved.count)
                 : 0;
 
-        // ── Hourly Breakdown (APPROVED only) ────────────
-        const hourlyMap = new Map<number, number>();
-        for (let h = 0; h < 24; h++) {
-            hourlyMap.set(h, 0);
-        }
-        for (const t of topups_data) {
-            if (t.status === "APPROVED") {
-                const hour = new Date(t.createdAt).getHours();
-                hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + Number(t.amount));
-            }
-        }
-        const hourlyData = Array.from(hourlyMap.entries()).map(([hour, amount]) => ({
-            hour: `${hour.toString().padStart(2, "0")}:00`,
-            amount,
-        }));
-
-        // ── Payment Method Distribution (APPROVED only) ─
-        const methodMap = new Map<string, { count: number; amount: number }>();
-        for (const t of topups_data) {
-            if (t.status === "APPROVED") {
-                const bank = t.senderBank || "ไม่ระบุ";
-                const existing = methodMap.get(bank) || { count: 0, amount: 0 };
-                existing.count++;
-                existing.amount += Number(t.amount);
-                methodMap.set(bank, existing);
-            }
-        }
-        const paymentMethods = Array.from(methodMap.entries()).map(
-            ([name, data]) => ({
-                name,
-                count: data.count,
-                amount: data.amount,
-                color: getBankColor(name),
-            })
-        );
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
 
         return NextResponse.json({
             success: true,
@@ -151,7 +141,7 @@ export async function GET(request: NextRequest) {
                     id: t.id,
                     username: t.user.username,
                     amount: Number(t.amount),
-                    time: typeof t.createdAt === "string" ? t.createdAt : new Date(t.createdAt as any).toISOString(),
+                    time: typeof t.createdAt === "string" ? t.createdAt : new Date(t.createdAt as string | number | Date).toISOString(),
                     status: t.status,
                     senderBank: t.senderBank,
                     proofImage: t.proofImage,

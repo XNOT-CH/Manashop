@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { ZodSchema, ZodError } from "zod";
+import { z } from "zod";
 
 // ── Shared API Response Types ────────────────────────────
 
@@ -41,7 +41,7 @@ export function apiError(message: string, status = 400, errors?: Record<string, 
 // ── Zod Validation Helper ────────────────────────────────
 
 /** Format Zod errors into field → messages[] map */
-function formatZodErrors(error: ZodError): Record<string, string[]> {
+function formatZodErrors(error: z.ZodError): Record<string, string[]> {
     const result: Record<string, string[]> = {};
     for (const issue of error.issues) {
         const path = issue.path.join(".") || "_root";
@@ -60,10 +60,10 @@ function formatZodErrors(error: ZodError): Record<string, string[]> {
  * if ("error" in parsed) return parsed.error;
  * const { username, password } = parsed.data;
  */
-export async function parseBody<T>(
+export async function parseBody<T extends z.ZodTypeAny>(
     req: Request,
-    schema: ZodSchema<T>
-): Promise<{ data: T } | { error: ReturnType<typeof NextResponse.json> }> {
+    schema: T
+): Promise<{ data: z.infer<T> } | { error: ReturnType<typeof NextResponse.json> }> {
     let body: unknown;
     try {
         body = await req.json();
@@ -82,5 +82,5 @@ export async function parseBody<T>(
         };
     }
 
-    return { data: result.data };
+    return { data: result.data as z.infer<T> };
 }

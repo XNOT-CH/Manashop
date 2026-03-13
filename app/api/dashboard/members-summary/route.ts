@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
-import { gte } from "drizzle-orm";
-import { count } from "drizzle-orm";
+import { gte, count } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +82,7 @@ export async function GET(request: NextRequest) {
                 recentMembers: recentMembers.map((m) => ({
                     ...m,
                     creditBalance: Number(m.creditBalance),
-                    createdAt: typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt as any).toISOString(),
+                    createdAt: typeof m.createdAt === "string" ? m.createdAt : new Date(m.createdAt as string | number | Date).toISOString(),
                 })),
             },
         });

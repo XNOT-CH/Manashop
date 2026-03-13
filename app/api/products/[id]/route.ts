@@ -5,6 +5,16 @@ import { isAdmin } from "@/lib/auth";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
+function validateDiscountPrice(discountPrice: string | number | null | undefined, priceNumber: number) {
+    if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
+        const dp = Number(discountPrice);
+        if (Number.isNaN(dp) || dp < 0) return { error: "Discount price must be a positive number" };
+        if (dp >= priceNumber) return { error: "Discount price must be less than original price" };
+        return { value: dp };
+    }
+    return { value: null };
+}
+
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -18,6 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ success: true, data: { ...product, secretData: decrypt(product.secretData || "") } });
     } catch (error) {
+        console.error("[PRODUCT_GET]", error);
         return NextResponse.json({ success: false, message: "Failed to fetch product" }, { status: 500 });
     }
 }
@@ -34,22 +45,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const existingProduct = await db.query.products.findFirst({ where: eq(products.id, id) });
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
-        let discountPriceNumber: number | null = null;
         const priceNumber = Number.parseFloat(price);
-        if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-            discountPriceNumber = Number.parseFloat(discountPrice);
-            if (Number.isNaN(discountPriceNumber) || discountPriceNumber < 0) {
-                return NextResponse.json({ success: false, message: "Discount price must be a positive number" }, { status: 400 });
-            }
-            if (discountPriceNumber >= priceNumber) {
-                return NextResponse.json({ success: false, message: "Discount price must be less than original price" }, { status: 400 });
-            }
-        }
+        const dpValidation = validateDiscountPrice(discountPrice, priceNumber);
+        if (dpValidation.error) return NextResponse.json({ success: false, message: dpValidation.error }, { status: 400 });
+        const discountPriceNumber = dpValidation.value;
 
         await db.update(products).set({
             name: title,
             price: String(priceNumber),
-            discountPrice: discountPriceNumber !== null ? String(discountPriceNumber) : null,
+            discountPrice: discountPriceNumber === null ? null : String(discountPriceNumber),
             imageUrl: image || null,
             category,
             currency: currency || "THB",
@@ -70,6 +74,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ success: true, message: "Product updated successfully", data: { id, ...body } });
     } catch (error) {
+        console.error("[PRODUCT_PUT]", error);
         return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Failed to update product" }, { status: 500 });
     }
 }

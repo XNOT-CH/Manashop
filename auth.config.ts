@@ -10,7 +10,7 @@ export const authConfig: NextAuthConfig = {
     },
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
-            const isLoggedIn = !!auth?.user;
+            const isLoggedIn = Boolean(auth?.user);
             const pathname = nextUrl.pathname;
 
             // Paths that require authentication

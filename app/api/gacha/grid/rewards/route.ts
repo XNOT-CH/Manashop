@@ -19,16 +19,27 @@ export async function GET(req: Request) {
     });
 
 
-    const mapped = rewards.map((r) => ({
-        id: r.id,
-        tier: r.tier,
-        rewardType: r.rewardType,
-        rewardName: r.rewardType === "PRODUCT"
-            ? (r.product?.name ?? "รางวัล")
-            : (r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์")),
-        rewardAmount: r.rewardAmount ? Number(r.rewardAmount) : null,
-        imageUrl: r.rewardType === "PRODUCT" ? (r.product?.imageUrl ?? null) : (r.rewardImageUrl ?? null),
-    }));
+    const mapped = rewards.map((r) => {
+        let rewardName = "รางวัล";
+        if (r.rewardType === "PRODUCT") {
+            rewardName = r.product?.name ?? "รางวัล";
+        } else if (r.rewardName) {
+            rewardName = r.rewardName;
+        } else if (r.rewardType === "CREDIT") {
+            rewardName = "เครดิต";
+        } else if (r.rewardType === "POINT") {
+            rewardName = "พอยต์";
+        }
+
+        return {
+            id: r.id,
+            tier: r.tier,
+            rewardType: r.rewardType,
+            rewardName,
+            rewardAmount: r.rewardAmount ? Number(r.rewardAmount) : null,
+            imageUrl: r.rewardType === "PRODUCT" ? (r.product?.imageUrl ?? null) : (r.rewardImageUrl ?? null),
+        };
+    });
 
     return NextResponse.json({ success: true, data: mapped });
 }

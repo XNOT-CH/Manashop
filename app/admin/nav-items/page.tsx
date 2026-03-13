@@ -275,7 +275,7 @@ export default function NavItemsAdminPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {items
+                                {[...items]
                                     .sort((a, b) => a.sortOrder - b.sortOrder)
                                     .map((item) => (
                                         <TableRow key={item.id}>
@@ -335,7 +335,7 @@ export default function NavItemsAdminPage() {
             </Card>
 
             {/* Edit Modal */}
-            <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+            <Dialog open={Boolean(editingItem)} onOpenChange={() => setEditingItem(null)}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>แก้ไขเมนู</DialogTitle>

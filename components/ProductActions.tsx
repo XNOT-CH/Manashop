@@ -192,9 +192,10 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                         onClick={handleCheckPromo}
                         disabled={isCheckingPromo || !promoCode.trim()}
                     >
-                        {isCheckingPromo ? (
+                        {isCheckingPromo && (
                             <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
+                        )}
+                        {!isCheckingPromo && (
                             <Search className="h-4 w-4" />
                         )}
                         ตรวจสอบ
@@ -219,12 +220,13 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 disabled={disabled || isBuying}
                 onClick={handlePurchase}
             >
-                {isBuying ? (
+                {isBuying && (
                     <>
                         <Loader2 className="h-5 w-5 animate-spin" />
                         กำลังดำเนินการ...
                     </>
-                ) : (
+                )}
+                {!isBuying && (
                     <>
                         <ShoppingCart className="h-5 w-5" />
                         {disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${finalPrice.toLocaleString()}`}
@@ -240,17 +242,19 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 disabled={disabled || isAdding || cartLoading}
                 onClick={handleAddToCart}
             >
-                {isAdding ? (
+                {isAdding && (
                     <>
                         <Loader2 className="h-4 w-4 animate-spin" />
                         กำลังเพิ่ม...
                     </>
-                ) : inCart ? (
+                )}
+                {!isAdding && inCart && (
                     <>
                         <Check className="h-4 w-4" />
                         อยู่ในตะกร้าแล้ว
                     </>
-                ) : (
+                )}
+                {!isAdding && !inCart && (
                     <>
                         <Plus className="h-4 w-4" />
                         เพิ่มลงตะกร้า

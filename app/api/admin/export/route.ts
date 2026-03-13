@@ -5,11 +5,19 @@ import { desc, gte, lte, and } from "drizzle-orm";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-/** Escape a single CSV cell value */
 function escapeCell(value: unknown): string {
     if (value === null || value === undefined) return "";
-    const str = String(value);
-    // Wrap in quotes if it contains comma, newline, or double-quote
+    
+    // Safely convert Objects/Dates to strings to avoid [object Object]
+    let str = "";
+    if (value instanceof Date) {
+        str = value.toISOString();
+    } else if (typeof value === "object") {
+        str = JSON.stringify(value);
+    } else {
+        str = String(value as string | number | boolean);
+    }
+
     if (str.includes(",") || str.includes("\n") || str.includes('"')) {
         return `"${str.replaceAll('"', '""')}"`;
     }
@@ -38,29 +46,12 @@ function csvResponse(csv: string, filename: string) {
 
 // ─── main route ───────────────────────────────────────────────────────────────
 
-export async function GET(request: NextRequest) {
-    const authCheck = await isAdmin();
-    if (!authCheck.success) {
-        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
-    }
+async function exportOrders(from: string | null, to: string | null, dateTag: string) {
+    const conditions = [];
+    if (from) conditions.push(gte(orders.purchasedAt, from));
+    if (to) conditions.push(lte(orders.purchasedAt, to + " 23:59:59"));
 
-    const { searchParams } = new URL(request.url);
-    const table = searchParams.get("table") ?? "orders";
-    const from = searchParams.get("from");  // ISO date string e.g. 2024-01-01
-    const to = searchParams.get("to");    // ISO date string e.g. 2024-12-31
-
-    const now = new Date();
-    const dateTag = now.toISOString().slice(0, 10); // YYYY-MM-DD
-
-    try {
-        switch (table) {
-            // ── Orders ──────────────────────────────────────────────────────
-            case "orders": {
-                const conditions = [];
-                if (from) conditions.push(gte(orders.purchasedAt, from));
-                if (to) conditions.push(lte(orders.purchasedAt, to + " 23:59:59"));
-
-                const rows = await db
+    const rows = await db
                     .select({
                         id: orders.id,
                         userId: orders.userId,
@@ -73,13 +64,12 @@ export async function GET(request: NextRequest) {
                     .orderBy(desc(orders.purchasedAt))
                     .limit(50000);
 
-                const headers = ["id", "userId", "totalPrice", "status", "purchasedAt"];
-                return csvResponse(toCsvWithBOM(rows as never, headers), `orders_${dateTag}.csv`);
-            }
+    const headers = ["id", "userId", "totalPrice", "status", "purchasedAt"];
+    return csvResponse(toCsvWithBOM(rows as never, headers), `orders_${dateTag}.csv`);
+}
 
-            // ── Users ────────────────────────────────────────────────────────
-            case "users": {
-                const rows = await db
+async function exportUsers(dateTag: string) {
+    const rows = await db
                     .select({
                         id: users.id,
                         username: users.username,
@@ -97,20 +87,19 @@ export async function GET(request: NextRequest) {
                     .orderBy(desc(users.createdAt))
                     .limit(50000);
 
-                const headers = [
-                    "id", "username", "email", "name", "role", "phone",
-                    "creditBalance", "pointBalance", "totalTopup", "lifetimePoints", "createdAt",
-                ];
-                return csvResponse(toCsvWithBOM(rows as never, headers), `users_${dateTag}.csv`);
-            }
+    const headers = [
+        "id", "username", "email", "name", "role", "phone",
+        "creditBalance", "pointBalance", "totalTopup", "lifetimePoints", "createdAt",
+    ];
+    return csvResponse(toCsvWithBOM(rows as never, headers), `users_${dateTag}.csv`);
+}
 
-            // ── Topups ───────────────────────────────────────────────────────
-            case "topups": {
-                const conditions = [];
-                if (from) conditions.push(gte(topups.createdAt, from));
-                if (to) conditions.push(lte(topups.createdAt, to + " 23:59:59"));
+async function exportTopups(from: string | null, to: string | null, dateTag: string) {
+    const conditions = [];
+    if (from) conditions.push(gte(topups.createdAt, from));
+    if (to) conditions.push(lte(topups.createdAt, to + " 23:59:59"));
 
-                const rows = await db
+    const rows = await db
                     .select({
                         id: topups.id,
                         userId: topups.userId,
@@ -128,20 +117,19 @@ export async function GET(request: NextRequest) {
                     .orderBy(desc(topups.createdAt))
                     .limit(50000);
 
-                const headers = [
-                    "id", "userId", "amount", "status", "transactionRef",
-                    "senderName", "senderBank", "receiverName", "receiverBank", "createdAt",
-                ];
-                return csvResponse(toCsvWithBOM(rows as never, headers), `topups_${dateTag}.csv`);
-            }
+    const headers = [
+        "id", "userId", "amount", "status", "transactionRef",
+        "senderName", "senderBank", "receiverName", "receiverBank", "createdAt",
+    ];
+    return csvResponse(toCsvWithBOM(rows as never, headers), `topups_${dateTag}.csv`);
+}
 
-            // ── Gacha Roll Log ───────────────────────────────────────────────
-            case "gacha": {
-                const conditions = [];
-                if (from) conditions.push(gte(gachaRollLogs.createdAt, from));
-                if (to) conditions.push(lte(gachaRollLogs.createdAt, to + " 23:59:59"));
+async function exportGacha(from: string | null, to: string | null, dateTag: string) {
+    const conditions = [];
+    if (from) conditions.push(gte(gachaRollLogs.createdAt, from));
+    if (to) conditions.push(lte(gachaRollLogs.createdAt, to + " 23:59:59"));
 
-                const rows = await db
+    const rows = await db
                     .select({
                         id: gachaRollLogs.id,
                         userId: gachaRollLogs.userId,
@@ -157,16 +145,15 @@ export async function GET(request: NextRequest) {
                     .orderBy(desc(gachaRollLogs.createdAt))
                     .limit(50000);
 
-                const headers = [
-                    "id", "userId", "rewardName", "tier",
-                    "costType", "costAmount", "gachaMachineId", "createdAt",
-                ];
-                return csvResponse(toCsvWithBOM(rows as never, headers), `gacha_${dateTag}.csv`);
-            }
+    const headers = [
+        "id", "userId", "rewardName", "tier",
+        "costType", "costAmount", "gachaMachineId", "createdAt",
+    ];
+    return csvResponse(toCsvWithBOM(rows as never, headers), `gacha_${dateTag}.csv`);
+}
 
-            // ── Products ─────────────────────────────────────────────────────
-            case "products": {
-                const rows = await db
+async function exportProducts(dateTag: string) {
+    const rows = await db
                     .select({
                         id: products.id,
                         name: products.name,
@@ -183,20 +170,46 @@ export async function GET(request: NextRequest) {
                     .orderBy(desc(products.createdAt))
                     .limit(50000);
 
-                const headers = [
-                    "id", "name", "category", "price", "discountPrice",
-                    "currency", "isSold", "isFeatured", "sortOrder", "createdAt",
-                ];
-                return csvResponse(toCsvWithBOM(rows as never, headers), `products_${dateTag}.csv`);
-            }
+    const headers = [
+        "id", "name", "category", "price", "discountPrice",
+        "currency", "isSold", "isFeatured", "sortOrder", "createdAt",
+    ];
+    return csvResponse(toCsvWithBOM(rows as never, headers), `products_${dateTag}.csv`);
+}
 
+export async function GET(request: NextRequest) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const table = searchParams.get("table") ?? "orders";
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+
+    const now = new Date();
+    const dateTag = now.toISOString().slice(0, 10);
+
+    try {
+        switch (table) {
+            case "orders":
+                return await exportOrders(from, to, dateTag);
+            case "users":
+                return await exportUsers(dateTag);
+            case "topups":
+                return await exportTopups(from, to, dateTag);
+            case "gacha":
+                return await exportGacha(from, to, dateTag);
+            case "products":
+                return await exportProducts(dateTag);
             default:
                 return NextResponse.json(
                     { success: false, message: `Unknown table: "${table}". Use: orders, users, topups, gacha, products` },
                     { status: 400 }
                 );
         }
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("CSV export error:", error);
         return NextResponse.json(
             { success: false, message: error instanceof Error ? error.message : "Export failed" },

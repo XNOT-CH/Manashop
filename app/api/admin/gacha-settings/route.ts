@@ -17,6 +17,7 @@ export async function GET() {
         }
         return NextResponse.json({ success: true, data: settings });
     } catch (error) {
+        console.error("[GACHA_SETTINGS_GET]", error);
         return NextResponse.json({ success: false, message: "เกิดข้อผิดพลาดในการโหลดการตั้งค่ากาชา" }, { status: 500 });
     }
 }
@@ -45,6 +46,7 @@ export async function PUT(request: Request) {
         const updated = await db.query.gachaSettings.findFirst();
         return NextResponse.json({ success: true, message: "บันทึกการตั้งค่ากาชาสำเร็จ", data: updated });
     } catch (error) {
+        console.error("[GACHA_SETTINGS_PUT]", error);
         return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}` }, { status: 500 });
     }
 }

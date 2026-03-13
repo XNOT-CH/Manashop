@@ -47,7 +47,7 @@ export const PurchaseReceiptEmail = ({
                     <Section style={receiptSection}>
                         <Text style={receiptHeading}>สรุปรายการสั่งซื้อ:</Text>
                         {items.map((item, index) => (
-                            <Row key={index} style={itemRow}>
+                            <Row key={`${item.productName}-${index}`} style={itemRow}>
                                 <Column style={itemLeft}>
                                     <Text style={itemText}>{item.productName}</Text>
                                 </Column>

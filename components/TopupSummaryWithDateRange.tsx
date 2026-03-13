@@ -13,6 +13,15 @@ export function TopupSummaryWithDateRange() {
         to: new Date(),
     });
 
+    let rangeLabel = "เลือกช่วงวันที่";
+    if (range?.from) {
+        if (range.to && range.from.toDateString() !== range.to.toDateString()) {
+            rangeLabel = `${format(range.from, "d MMM yyyy", { locale: th })} – ${format(range.to, "d MMM yyyy", { locale: th })}`;
+        } else {
+            rangeLabel = format(range.from, "d MMM yyyy", { locale: th });
+        }
+    }
+
     return (
         <div className="space-y-4">
             {/* Header + DateRangePicker */}
@@ -22,11 +31,7 @@ export function TopupSummaryWithDateRange() {
                         💰 สรุปเติมเงิน
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                        {range?.from
-                            ? range.to && range.from.toDateString() !== range.to.toDateString()
-                                ? `${format(range.from, "d MMM yyyy", { locale: th })} – ${format(range.to, "d MMM yyyy", { locale: th })}`
-                                : format(range.from, "d MMM yyyy", { locale: th })
-                            : "เลือกช่วงวันที่"}
+                        {rangeLabel}
                     </p>
                 </div>
                 <DateRangePicker

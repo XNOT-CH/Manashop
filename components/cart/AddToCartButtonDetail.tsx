@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, Check, Loader2 } from "lucide-react";
-import { useCart, CartItem } from "@/components/providers/CartContext";
+import { useCart } from "@/components/providers/CartContext";
 import { useState } from "react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 
@@ -67,17 +67,19 @@ export function ProductDetailAddToCart({ product, disabled = false, maxQuantity 
                 disabled={disabled || isAdding || cartLoading}
                 onClick={handleAddToCart}
             >
-                {isAdding ? (
+                {isAdding && (
                     <>
                         <Loader2 className="h-5 w-5 animate-spin" />
                         กำลังเพิ่ม...
                     </>
-                ) : inCart ? (
+                )}
+                {!isAdding && inCart && (
                     <>
                         <Check className="h-5 w-5" />
                         อยู่ในตะกร้าแล้ว
                     </>
-                ) : (
+                )}
+                {!isAdding && !inCart && (
                     <>
                         <Plus className="h-5 w-5" />
                         เพิ่มลงตะกร้า

@@ -650,22 +650,24 @@ export default function AdminGachaSettingsPage() {
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             const file = e.target.files?.[0];
                             if (file && editingImageRewardId) {
-                                void handleUploadEditImage(file, editingImageRewardId);
+                                handleUploadEditImage(file, editingImageRewardId);
                             }
                             e.target.value = "";
                         }}
                     />
 
                     {/* Table */}
-                    {isRewardLoading ? (
+                    {isRewardLoading && (
                         <div className="flex items-center justify-center py-10">
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
                         </div>
-                    ) : rewardRows.length === 0 ? (
+                    )}
+                    {!isRewardLoading && rewardRows.length === 0 && (
                         <div className="text-center py-10 rounded-xl border bg-muted/20">
                             <p className="text-muted-foreground">ยังไม่มีรางวัลในกาชา</p>
                         </div>
-                    ) : (
+                    )}
+                    {!isRewardLoading && rewardRows.length > 0 && (
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -684,6 +686,18 @@ export default function AdminGachaSettingsPage() {
                                             ? r.product?.imageUrl
                                             : r.rewardImageUrl;
                                     const canEditImage = r.rewardType !== "PRODUCT";
+
+                                    let rewardSubtext = "";
+                                    if (r.rewardType === "PRODUCT" && r.product) {
+                                        rewardSubtext = `฿${r.product.price.toLocaleString()} • ${r.product.category}`;
+                                    } else if (r.rewardAmount != null) {
+                                        let prefix = "";
+                                        let suffix = "";
+                                        if (r.rewardType === "CREDIT") prefix = "฿";
+                                        if (r.rewardType === "POINT") suffix = " พอยต์";
+                                        rewardSubtext = `${prefix}${r.rewardAmount.toLocaleString()}${suffix}`;
+                                    }
+
                                     return (
                                         <TableRow key={r.id}>
                                             {/* รูป */}
@@ -733,11 +747,7 @@ export default function AdminGachaSettingsPage() {
                                                             : r.rewardName || "-"}
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">
-                                                        {r.rewardType === "PRODUCT" && r.product
-                                                            ? `฿${r.product.price.toLocaleString()} • ${r.product.category}`
-                                                            : r.rewardAmount != null
-                                                                ? `${r.rewardType === "CREDIT" ? "฿" : ""}${r.rewardAmount.toLocaleString()}${r.rewardType === "POINT" ? " พอยต์" : ""}`
-                                                                : ""}
+                                                        {rewardSubtext}
                                                     </span>
                                                 </div>
                                             </TableCell>

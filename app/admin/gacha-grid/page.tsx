@@ -40,12 +40,6 @@ interface RewardRow {
     rewardImageUrl: string | null;
 }
 
-const TIER_LABEL: Record<Tier, string> = {
-    common: "🟠 ธรรมดา",
-    rare: "🟢 หายาก",
-    epic: "🔵 หายากมาก",
-    legendary: "🔴 ตำนาน",
-};
 
 export default function AdminGachaGridPage() {
     const [rewards, setRewards] = useState<RewardRow[]>([]);
@@ -318,16 +312,18 @@ export default function AdminGachaGridPage() {
                     <CardDescription>ตารางแสดงรางวัลทั้งหมดในสุ่มกงล้อ</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
+                    {isLoading && (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="h-7 w-7 animate-spin text-primary" />
                         </div>
-                    ) : rewards.length === 0 ? (
+                    )}
+                    {!isLoading && rewards.length === 0 && (
                         <div className="text-center py-12 text-muted-foreground">
                             <Grid3X3 className="h-10 w-10 mx-auto opacity-20 mb-2" />
                             <p className="text-sm">ยังไม่มีรางวัล — เพิ่มรางวัลด้านบน</p>
                         </div>
-                    ) : (
+                    )}
+                    {!isLoading && rewards.length > 0 && (
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -382,7 +378,9 @@ export default function AdminGachaGridPage() {
                                                 <span className="font-medium">{r.rewardName || "-"}</span>
                                                 {r.rewardAmount != null && (
                                                     <span className="text-xs text-muted-foreground">
-                                                        {r.rewardType === "CREDIT" ? "฿" : ""}{r.rewardAmount.toLocaleString()}{r.rewardType === "POINT" ? " พอยต์" : ""}
+                                                        {r.rewardType === "CREDIT" && "฿"}
+                                                        {r.rewardAmount.toLocaleString()}
+                                                        {r.rewardType === "POINT" && " พอยต์"}
                                                     </span>
                                                 )}
                                             </div>

@@ -229,9 +229,9 @@ export function MembersSummary() {
                                         radius={[4, 4, 0, 0]}
                                         maxBarSize={40}
                                     >
-                                        {data.dailyTrend.map((_, index) => (
+                                        {data.dailyTrend.map((trend) => (
                                             <Cell
-                                                key={`cell-${index}`}
+                                                key={`cell-${trend.date}`}
                                                 fill="var(--chart-bar-fill)"
                                                 fillOpacity={0.85}
                                             />
@@ -285,11 +285,17 @@ export function MembersSummary() {
                     <div className="h-0.5 bg-gradient-to-r from-sky-500 to-blue-500 rounded-full mb-4" />
 
                     {/* Area Chart */}
-                    {historyLoading ? (
+                    {historyLoading && (
                         <div className="flex items-center justify-center h-[250px]">
                             <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
                         </div>
-                    ) : historyData.length > 0 ? (
+                    )}
+                    {!historyLoading && historyData.length === 0 && (
+                        <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
+                            ไม่มีข้อมูล
+                        </div>
+                    )}
+                    {!historyLoading && historyData.length > 0 && (
                         <ResponsiveContainer width="100%" height={250}>
                             <AreaChart
                                 data={historyData}
@@ -367,10 +373,6 @@ export function MembersSummary() {
                                 </Area>
                             </AreaChart>
                         </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-[250px] text-sm text-muted-foreground">
-                            ไม่มีข้อมูล
-                        </div>
                     )}
                 </CardContent>
             </Card>

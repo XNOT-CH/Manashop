@@ -19,7 +19,7 @@ export function AddToCartButton({
     size = "sm",
     className = "",
     showText = true,
-}: AddToCartButtonProps) {
+}: Readonly<AddToCartButtonProps>) {
     const { addToCart, isInCart, isLoading: cartLoading } = useCart();
     const [isAdding, setIsAdding] = useState(false);
     const inCart = isInCart(product.id);
@@ -46,13 +46,9 @@ export function AddToCartButton({
             disabled={disabled || isAdding || cartLoading}
             onClick={handleAddToCart}
         >
-            {isAdding ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-            ) : inCart ? (
-                <Check className="h-4 w-4" />
-            ) : (
-                <Plus className="h-4 w-4" />
-            )}
+            {isAdding && <Loader2 className="h-4 w-4 animate-spin" />}
+            {!isAdding && inCart && <Check className="h-4 w-4" />}
+            {!isAdding && !inCart && <Plus className="h-4 w-4" />}
             {showText && (inCart ? "อยู่ในตะกร้า" : "ตะกร้า")}
         </Button>
     );

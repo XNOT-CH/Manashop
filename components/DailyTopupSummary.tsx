@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     AreaChart,
@@ -26,18 +26,17 @@ import {
     XCircle,
     Loader2,
     Banknote,
-    AlertTriangle,
-    Eye,
-    X,
-    ArrowRightLeft,
-    Calculator,
-    Search,
-    ChevronUp,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
     Filter,
     Check,
+    X,
+    ChevronUp,
+    ChevronDown,
+    ArrowRightLeft,
+    Calculator,
+    AlertTriangle,
+    Search,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
@@ -218,6 +217,7 @@ function DetailModal({ record, onClose }: Readonly<{ record: TopupRecord; onClos
                     {record.proofImage && (
                         <div>
                             <p className="text-xs font-medium text-muted-foreground mb-2">รูปสลิป</p>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={record.proofImage}
                                 alt="สลิปการโอนเงิน"
@@ -407,7 +407,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
             records = records.filter(
                 (r) =>
                     r.username.toLowerCase().includes(q) ||
-                    (r.transactionRef && r.transactionRef.toLowerCase().includes(q))
+                    r.transactionRef?.toLowerCase().includes(q)
             );
         }
 
@@ -467,7 +467,11 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
     // Toggle sort
     const handleSort = (key: string) => {
         if (sortKey === key) {
-            setSortDir((prev) => (prev === "asc" ? "desc" : prev === "desc" ? null : "asc"));
+            setSortDir((prev) => {
+                if (prev === "asc") return "desc";
+                if (prev === "desc") return null;
+                return "asc";
+            });
             if (sortDir === null) setSortKey("");
         } else {
             setSortKey(key);
@@ -476,14 +480,6 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
     };
 
     const getSortDir = (key: string): SortDir => (sortKey === key ? sortDir : null);
-
-    // Format today's date in Thai
-    const todayFormatted = new Date().toLocaleDateString("th-TH", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
 
     // Payment methods total for percentage calc
     const methodsTotal = data?.paymentMethods?.reduce((s, m) => s + m.amount, 0) || 0;
@@ -646,7 +642,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                 {/* Right: 7-day bar chart */}
                 <Card className="lg:col-span-5 border-border/50">
                     <CardContent className="p-4">
-                        {filteredWeeklyData.length > 0 && filteredWeeklyData.some((d) => d.transactions > 0) ? (
+                        {filteredWeeklyData.some((d) => d.transactions > 0) ? (
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={filteredWeeklyData} margin={{ top: 20, right: 8, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
@@ -654,8 +650,8 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                                     <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={30} />
                                     <RechartsTooltip content={<TxnTooltip />} />
                                     <Bar dataKey="transactions" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                                        {filteredWeeklyData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill="var(--chart-bar-fill)" fillOpacity={0.85} />
+                                        {filteredWeeklyData.map((d) => (
+                                            <Cell key={`cell-${d.date}`} fill="var(--chart-bar-fill)" fillOpacity={0.85} />
                                         ))}
                                         <LabelList
                                             dataKey="transactions"
@@ -738,7 +734,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                     <div className="h-0.5 bg-gradient-to-r from-sky-500 to-blue-500 rounded-full mb-4" />
 
                     {/* Area Chart — Amount Trend */}
-                    {filteredWeeklyData.length > 0 && filteredWeeklyData.some((d) => d.amount > 0) ? (
+                    {filteredWeeklyData.some((d) => d.amount > 0) ? (
                         <ResponsiveContainer width="100%" height={250}>
                             <AreaChart data={filteredWeeklyData} margin={{ top: 20, right: 12, left: 0, bottom: 0 }}>
                                 <defs>
@@ -789,7 +785,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {data?.hourlyData && data.hourlyData.some((h) => h.amount > 0) ? (
+                        {data?.hourlyData?.some((h) => h.amount > 0) ? (
                             <ResponsiveContainer width="100%" height={240}>
                                 <AreaChart
                                     data={data.hourlyData}
@@ -854,9 +850,9 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                                             dataKey="amount"
                                             stroke="none"
                                         >
-                                            {data.paymentMethods.map((entry, index) => (
+                                            {data.paymentMethods.map((entry) => (
                                                 <Cell
-                                                    key={`cell-${index}`}
+                                                    key={`cell-${entry.name}`}
                                                     fill={entry.color}
                                                     className="transition-opacity hover:opacity-80"
                                                 />

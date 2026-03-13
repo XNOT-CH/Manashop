@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { cookies } from "next/headers";
 
 const _csrfSecretRaw = process.env.CSRF_SECRET;
@@ -6,7 +6,6 @@ if (!_csrfSecretRaw && process.env.NODE_ENV === "production") {
     throw new Error("[csrf] CSRF_SECRET environment variable is required in production.");
 }
 const CSRF_SECRET = _csrfSecretRaw ?? "csrf-secret-key-32-characters!!"; // dev only fallback
-const CSRF_TOKEN_NAME = "csrf_token";
 const CSRF_COOKIE_NAME = "csrf_cookie";
 
 /**

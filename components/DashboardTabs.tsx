@@ -16,7 +16,7 @@ export function DashboardTabs({
     purchasesContent,
     membersContent,
 }: Readonly<DashboardTabsProps>) {
-    const hasMembersTab = !!membersContent;
+    const hasMembersTab = Boolean(membersContent);
 
     return (
         <Tabs defaultValue="overview" className="w-full">

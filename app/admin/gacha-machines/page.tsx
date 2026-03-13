@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, HelpCircle, Copy, GripVertical } from "lucide-react";
+import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import Image from "next/image";
 import {
@@ -23,13 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-interface GachaCategory {
-    id: string;
-    name: string;
-    sortOrder: number;
-    isActive: boolean;
-    _count: { machines: number };
-}
+
 
 interface GachaMachine {
     id: string;
@@ -49,7 +43,7 @@ interface GachaMachine {
 }
 
 function validImageUrl(url: string | null): boolean {
-    return !!url && (url.startsWith("/") || url.startsWith("http"));
+    return url !== null && (url.startsWith("/") || url.startsWith("http"));
 }
 
 const inputCls =
@@ -73,12 +67,8 @@ const GAME_TYPES = [
 ];
 
 export default function GachaMachinesAdminPage() {
-    const [categories, setCategories] = useState<GachaCategory[]>([]);
     const [machines, setMachines] = useState<GachaMachine[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const [newCatName, setNewCatName] = useState("");
-    const [savingCat, setSavingCat] = useState(false);
 
     const [machineForm, setMachineForm] = useState({
         name: "",
@@ -99,40 +89,15 @@ export default function GachaMachinesAdminPage() {
     const loadAll = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const [catRes, machRes] = await Promise.all([
-                fetch("/api/admin/gacha-categories"),
-                fetch("/api/admin/gacha-machines"),
-            ]);
-            const catJson = await catRes.json() as { success: boolean; data: GachaCategory[] };
+            const machRes = await fetch("/api/admin/gacha-machines");
             const machJson = await machRes.json() as { success: boolean; data: GachaMachine[] };
-            if (catJson.success) setCategories(catJson.data);
             if (machJson.success) setMachines(machJson.data);
         } catch { /* ignore */ }
         if (!silent) setLoading(false);
     };
 
-    useEffect(() => { void loadAll(); }, []);
+    useEffect(() => { loadAll(); }, []);
 
-    const addCategory = async () => {
-        if (!newCatName.trim()) return;
-        setSavingCat(true);
-        try {
-            const res = await fetch("/api/admin/gacha-categories", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newCatName.trim() }),
-            });
-            const json = await res.json() as { success: boolean };
-            if (json.success) { showSuccess("เพิ่มหมวดหมู่แล้ว"); setNewCatName(""); void loadAll(); }
-            else showError("เพิ่มไม่สำเร็จ");
-        } catch { showError("เกิดข้อผิดพลาด"); } finally { setSavingCat(false); }
-    };
-
-    const deleteCategory = async (id: string) => {
-        if (!await showDeleteConfirm("หมวดหมู่กาชานี้")) return;
-        await fetch(`/api/admin/gacha-categories/${id}`, { method: "DELETE" });
-        void loadAll();
-    };
 
     const handleImageUpload = async (file: File) => {
         setUploadingImage(true);
@@ -172,7 +137,7 @@ export default function GachaMachinesAdminPage() {
             if (json.success) {
                 showSuccess("เพิ่มตู้กาชาแล้ว");
                 setMachineForm({ name: "", description: "", imageUrl: "", gameType: "SPIN_X", categoryId: "", costType: "FREE", costAmount: 0, dailySpinLimit: 0, sortOrder: 0 });
-                void loadAll();
+                loadAll();
             } else showError("เพิ่มไม่สำเร็จ");
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setSavingMachine(false); }
     };
@@ -202,11 +167,11 @@ export default function GachaMachinesAdminPage() {
             const json = await res.json() as { success: boolean };
             if (!json.success) {
                 // Revert if server said no
-                void loadAll();
+                loadAll();
                 showError("ลบไม่สำเร็จ");
             }
         } catch {
-            void loadAll();
+            loadAll();
             showError("เกิดข้อผิดพลาดในการลบ");
         }
     };
@@ -329,7 +294,7 @@ export default function GachaMachinesAdminPage() {
                                 e.preventDefault();
                                 setIsDragging(false);
                                 const file = e.dataTransfer.files?.[0];
-                                if (file) void handleImageUpload(file);
+                                if (file) handleImageUpload(file);
                             }}
                         >
                             {validImageUrl(machineForm.imageUrl) ? (
@@ -349,7 +314,7 @@ export default function GachaMachinesAdminPage() {
                                 className="hidden"
                                 onChange={e => {
                                     const file = e.target.files?.[0];
-                                    if (file) void handleImageUpload(file);
+                                    if (file) handleImageUpload(file);
                                     e.target.value = "";
                                 }}
                             />
@@ -405,7 +370,7 @@ export default function GachaMachinesAdminPage() {
                 </div>
 
                 <button
-                    onClick={() => void addMachine()}
+                    onClick={() => addMachine()}
                     disabled={savingMachine}
                     className="mt-6 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1148c0] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
@@ -418,10 +383,9 @@ export default function GachaMachinesAdminPage() {
             {machines.length > 0 && (
                 <MachineTable
                     machines={machines}
-                    categories={categories}
                     onToggle={toggleMachine}
                     onDelete={deleteMachine}
-                    onRefresh={() => void loadAll(true)}
+                    onRefresh={() => loadAll(true)}
                 />
             )}
         </div>
@@ -495,16 +459,14 @@ function SortableRow({
                 </span>
             </td>
             <td className="px-3 py-2.5 text-foreground whitespace-nowrap">
-                {m.costType === "FREE" ? (
-                    <span className="text-green-600 font-medium">ฟรี</span>
-                ) : (
-                    `${Number(m.costAmount).toLocaleString()} ${m.costType === "CREDIT" ? "เครดิต" : "พอยต์"}`
-                )}
+                {m.costType === "FREE" && <span className="text-green-600 font-medium">ฟรี</span>}
+                {m.costType === "CREDIT" && `${Number(m.costAmount).toLocaleString()} เครดิต`}
+                {m.costType === "POINT" && `${Number(m.costAmount).toLocaleString()} พอยต์`}
             </td>
             <td className="px-3 py-2.5 text-muted-foreground">{m._count.rewards}</td>
             <td className="px-3 py-2.5">
                 <button
-                    onClick={() => void handleToggle(m.id, "isActive", !m.isActive)}
+                    onClick={() => handleToggle(m.id, "isActive", !m.isActive)}
                     disabled={togglingMap[m.id]}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${m.isActive ? "bg-[#145de7]" : "bg-gray-300 dark:bg-zinc-600"}`}
                     title={m.isActive ? "คลิกเพื่อซ่อน" : "คลิกเพื่อแสดง"}
@@ -516,7 +478,7 @@ function SortableRow({
             </td>
             <td className="px-3 py-2.5">
                 <button
-                    onClick={() => void handleDuplicate(m.id, m.name)}
+                    onClick={() => handleDuplicate(m.id, m.name)}
                     disabled={duplicatingId === m.id}
                     className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 flex items-center justify-center transition disabled:opacity-50"
                     title="คัดลอก"
@@ -547,19 +509,18 @@ function SortableRow({
 // ── Data table component ───────────────────────────────────────────────────
 function MachineTable({
     machines,
-    categories,
     onToggle,
     onDelete,
     onRefresh,
 }: Readonly<{
     machines: GachaMachine[];
-    categories: GachaCategory[];
-    onToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => void;
+
+    onToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => Promise<void> | void;
     onDelete: (id: string) => void;
     onRefresh: () => void;
 }>) {
     const [search, setSearch] = useState("");
-    const [filterCategory, setFilterCategory] = useState("");
+    const filterCategory = "";
     const [perPage, setPerPage] = useState(10);
     const [page, setPage] = useState(1);
     const [sortField, setSortField] = useState<"name" | "costAmount" | "isActive" | null>(null);
@@ -678,7 +639,7 @@ function MachineTable({
             </div>
 
             {/* Table */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void handleDragEnd(e)}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e)}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>

@@ -75,6 +75,7 @@ export default function AdminPromoCodesPage() {
                 setPromoCodes(data.data);
             }
         } catch (error) {
+            console.error("[PROMO_CODE_FETCH]", error);
             showError("ไม่สามารถโหลดข้อมูลได้");
         } finally {
             setIsLoading(false);
@@ -146,6 +147,7 @@ export default function AdminPromoCodesPage() {
                 showError(data.message || "เกิดข้อผิดพลาด");
             }
         } catch (error) {
+            console.error("[PROMO_CODE_SUBMIT]", error);
             showError("ไม่สามารถบันทึกได้");
         } finally {
             setIsSaving(false);
@@ -169,6 +171,7 @@ export default function AdminPromoCodesPage() {
                 showError(data.message || "ไม่สามารถลบได้");
             }
         } catch (error) {
+            console.error("[PROMO_CODE_DELETE]", error);
             showError("เกิดข้อผิดพลาด");
         }
     };
@@ -187,6 +190,7 @@ export default function AdminPromoCodesPage() {
                 fetchPromoCodes();
             }
         } catch (error) {
+            console.error("[PROMO_CODE_TOGGLE]", error);
             showError("เกิดข้อผิดพลาด");
         }
     };
@@ -361,16 +365,14 @@ export default function AdminPromoCodesPage() {
 
                             <DialogFooter>
                                 <Button type="submit" disabled={isSaving} className="w-full">
-                                    {isSaving ? (
+                                    {isSaving && (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             กำลังบันทึก...
                                         </>
-                                    ) : editingCode ? (
-                                        "บันทึกการแก้ไข"
-                                    ) : (
-                                        "สร้างโค้ด"
                                     )}
+                                    {!isSaving && editingCode && "บันทึกการแก้ไข"}
+                                    {!isSaving && !editingCode && "สร้างโค้ด"}
                                 </Button>
                             </DialogFooter>
                         </form>

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { showSuccess, showError, showWarning } from "@/lib/swal";
@@ -122,7 +122,7 @@ export default function TopupPage() {
             reader.onload = async (e) => {
                 const base64 = e.target?.result as string;
 
-                // TODO: Call slip verification API here
+                // Note: Call slip verification API here in the future.
                 // For now, send to existing topup API with base64 image
                 const response = await fetch("/api/topup", {
                     method: "POST",
@@ -146,6 +146,7 @@ export default function TopupPage() {
             };
             reader.readAsDataURL(slipFile);
         } catch (error) {
+            console.error("[TOPUP_SUBMIT]", error);
             showError("ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่");
             setIsLoading(false);
         }
@@ -246,7 +247,25 @@ export default function TopupPage() {
                                 id="slip-upload"
                             />
 
-                            {!slipPreview ? (
+                            {slipPreview ? (
+                                <div className="relative rounded-xl border border-border p-2">
+                                    <button
+                                        onClick={removeSlip}
+                                        className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors z-10"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={slipPreview}
+                                        alt="สลิปการโอนเงิน"
+                                        className="w-full max-h-64 object-contain rounded-lg"
+                                    />
+                                    <p className="text-center text-xs text-muted-foreground mt-2">
+                                        {slipFile?.name}
+                                    </p>
+                                </div>
+                            ) : (
                                 <button
                                     type="button"
                                     onDragOver={handleDragOver}
@@ -279,23 +298,6 @@ export default function TopupPage() {
                                         อัปโหลดไฟล์
                                     </Button>
                                 </button>
-                            ) : (
-                                <div className="relative rounded-xl border border-border p-2">
-                                    <button
-                                        onClick={removeSlip}
-                                        className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors z-10"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                    <img
-                                        src={slipPreview}
-                                        alt="สลิปการโอนเงิน"
-                                        className="w-full max-h-64 object-contain rounded-lg"
-                                    />
-                                    <p className="text-center text-xs text-muted-foreground mt-2">
-                                        {slipFile?.name}
-                                    </p>
-                                </div>
                             )}
 
                             {/* Warning */}

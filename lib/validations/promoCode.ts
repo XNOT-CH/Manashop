@@ -14,7 +14,7 @@ export const promoCodeSchema = z.object({
         .min(0.01, "ส่วนลดต้องมากกว่า 0"),
     minOrderAmount: z.coerce.number().min(0).default(0),
     maxUses: z.coerce.number().int().min(0).default(0), // 0 = ไม่จำกัด
-    expiresAt: z.string().datetime({ offset: true }).optional().nullable(),
+    expiresAt: z.iso.datetime({ error: "Invalid datetime" }).optional().nullable(),
     isActive: z.boolean().default(true),
 }).refine(
     (d) => d.discountType !== "PERCENTAGE" || d.discountValue <= 100,

@@ -24,7 +24,7 @@ interface DashboardSidebarProps {
     user: {
         username: string;
         email: string | null;
-        creditBalance?: number | bigint | any;
+        creditBalance?: number | bigint;
     } | null;
 }
 

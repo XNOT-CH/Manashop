@@ -24,7 +24,7 @@ export default function AnnouncementPopup() {
 
     // Check if popup should be shown based on localStorage
     const shouldShowPopup = useCallback(() => {
-        if (typeof window === "undefined") return true;
+        if (globalThis.window === undefined) return true;
 
         const dismissedUntil = localStorage.getItem(DISMISS_STORAGE_KEY);
         if (dismissedUntil) {
@@ -221,9 +221,9 @@ export default function AnnouncementPopup() {
 
                                         {/* Dot Indicators */}
                                         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-                                            {popups.map((_, index) => (
+                                            {popups.map((popup, index) => (
                                                 <motion.button
-                                                    key={index}
+                                                    key={popup.id}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setCurrentIndex(index);

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarIcon, CalendarRange, Check, X } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth, startOfYear, min } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, startOfYear } from "date-fns";
 import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 
@@ -36,17 +36,25 @@ const PRESET_DEFS: PresetDef[] = [
     },
     {
         label: "เดือนนี้",
-        build: (anchor) => ({
-            from: startOfMonth(anchor),
-            to: min([endOfMonth(anchor), new Date()]),
-        }),
+        build: (anchor) => {
+            const eom = endOfMonth(anchor);
+            const now = new Date();
+            return {
+                from: startOfMonth(anchor),
+                to: new Date(Math.min(eom.getTime(), now.getTime())),
+            };
+        },
     },
     {
         label: "ปีนี้",
-        build: (anchor) => ({
-            from: startOfYear(anchor),
-            to: min([endOfMonth(anchor), new Date()]),
-        }),
+        build: (anchor) => {
+            const eom = endOfMonth(anchor);
+            const now = new Date();
+            return {
+                from: startOfYear(anchor),
+                to: new Date(Math.min(eom.getTime(), now.getTime())),
+            };
+        },
     },
 ];
 
@@ -78,7 +86,7 @@ export function DateRangePicker({
         const now = new Date();
         const endOfDisplayed = endOfMonth(displayedMonth);
         // If displayed month is current or future month, cap at today
-        return endOfDisplayed > now ? now : endOfDisplayed;
+        return new Date(Math.min(endOfDisplayed.getTime(), now.getTime()));
     }, [displayedMonth]);
 
     // Sync draft + displayed month when popover opens

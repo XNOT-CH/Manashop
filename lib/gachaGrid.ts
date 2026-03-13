@@ -89,6 +89,24 @@ export function findTileIndex(tiles: Tile[], row: number, col: number): number {
     return tiles.findIndex((t) => t.row === row && t.col === col);
 }
 
+function assignSelectorState(tile: Tile, row: number, col: number, rowLength: number, counters: { left: number; right: number }) {
+    tile.side = getSelectorSide(row, col, rowLength);
+    if (tile.side === "left") {
+        counters.left++;
+        tile.label = `L${counters.left}`;
+    } else {
+        counters.right++;
+        tile.label = `R${counters.right}`;
+    }
+}
+
+function assignProductState(tile: Tile, type: GachaTier, pool: GachaProductLite[], tierIndex: Record<GachaTier, number>) {
+    if (pool.length > 0) {
+        tile.product = pool[tierIndex[type] % pool.length];
+        tierIndex[type]++;
+    }
+}
+
 export function buildGrid(products: GachaProductLite[]): Tile[] {
     const tiles: Tile[] = [];
     const byTier: Record<GachaTier, GachaProductLite[]> = {
@@ -104,8 +122,7 @@ export function buildGrid(products: GachaProductLite[]): Tile[] {
 
     const tierIndex: Record<GachaTier, number> = { common: 0, rare: 0, epic: 0, legendary: 0 };
 
-    let leftCount = 0;
-    let rightCount = 0;
+    const counters = { left: 0, right: 0 };
 
     for (let row = 0; row < GRID_DEFINITION.length; row++) {
         const rowDef = GRID_DEFINITION[row];
@@ -114,23 +131,11 @@ export function buildGrid(products: GachaProductLite[]): Tile[] {
             const tile: Tile = { row, col, type };
 
             if (type === "selector") {
-                tile.side = getSelectorSide(row, col, rowDef.length);
-                if (tile.side === "left") {
-                    leftCount++;
-                    tile.label = `L${leftCount}`;
-                } else {
-                    rightCount++;
-                    tile.label = `R${rightCount}`;
-                }
+                assignSelectorState(tile, row, col, rowDef.length, counters);
             }
 
             if (type === "common" || type === "rare" || type === "epic" || type === "legendary") {
-                const pool = fillPool(type);
-                if (pool.length > 0) {
-                    // Cycle through pool using modulo so every tile gets a product
-                    tile.product = pool[tierIndex[type] % pool.length];
-                    tierIndex[type]++;
-                }
+                assignProductState(tile, type, fillPool(type), tierIndex);
             }
 
             tiles.push(tile);
@@ -140,17 +145,19 @@ export function buildGrid(products: GachaProductLite[]): Tile[] {
     return tiles;
 }
 
+export function hasProductAt(tiles: Tile[], r: number, c: number): boolean {
+    const idx = findTileIndex(tiles, r, c);
+    return idx >= 0 && Boolean(tiles[idx].product);
+}
+
 export function getValidSelectors(tiles: Tile[]): string[] {
     const selectorTiles = tiles.filter((t) => t.type === "selector" && t.label);
 
     return selectorTiles
-        .map((t) => t.label!)
+        .map((t) => t.label as string)
         .filter((label) => {
             const path = SELECTOR_PATHS[label] || [];
-            return path.some(([r, c]) => {
-                const idx = findTileIndex(tiles, r, c);
-                return idx >= 0 && !!tiles[idx].product;
-            });
+            return path.some(([r, c]) => hasProductAt(tiles, r, c));
         });
 }
 
@@ -160,8 +167,9 @@ export function getPathItemProductIds(tiles: Tile[], selectorLabel: string): str
 
     for (const [r, c] of path) {
         const idx = findTileIndex(tiles, r, c);
-        if (idx >= 0 && tiles[idx].product?.id) {
-            ids.push(tiles[idx].product!.id);
+        const product = idx >= 0 ? tiles[idx].product : undefined;
+        if (product?.id) {
+            ids.push(product.id);
         }
     }
 
@@ -195,9 +203,7 @@ export function getValidLSelectors(tiles: Tile[]): string[] {
     return ["L1", "L2", "L3", "L4"].filter((lLabel) =>
         ["R1", "R2", "R3", "R4"].some((rLabel) => {
             const pos = INTERSECTION_MAP[lLabel]?.[rLabel];
-            if (!pos) return false;
-            const idx = findTileIndex(tiles, pos[0], pos[1]);
-            return idx >= 0 && !!tiles[idx].product;
+            return pos ? hasProductAt(tiles, pos[0], pos[1]) : false;
         })
     );
 }
@@ -206,8 +212,6 @@ export function getValidLSelectors(tiles: Tile[]): string[] {
 export function getValidRSelectorsFor(tiles: Tile[], lLabel: string): string[] {
     return ["R1", "R2", "R3", "R4"].filter((rLabel) => {
         const pos = INTERSECTION_MAP[lLabel]?.[rLabel];
-        if (!pos) return false;
-        const idx = findTileIndex(tiles, pos[0], pos[1]);
-        return idx >= 0 && !!tiles[idx].product;
+        return pos ? hasProductAt(tiles, pos[0], pos[1]) : false;
     });
 }

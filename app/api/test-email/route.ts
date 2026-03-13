@@ -28,9 +28,10 @@ export async function GET(request: Request) {
         }
 
         return NextResponse.json({ success: true, data });
-    } catch (error) {
+    } catch (error: unknown) {
+        console.error("[TEST_EMAIL]", error);
         return NextResponse.json(
-            { error: "Internal Server Error" },
+            { error: error instanceof Error ? error.message : "Internal Server Error" },
             { status: 500 }
         );
     }

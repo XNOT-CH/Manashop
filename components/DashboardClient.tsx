@@ -54,7 +54,7 @@ function toDateString(date: Date): string {
 }
 
 // ─── Component ──────────────────────────────────────────
-export function DashboardClient({ username, initialCreditBalance }: Readonly<DashboardClientProps>) {
+export function DashboardClient({ initialCreditBalance }: Readonly<DashboardClientProps>) {
     const [overviewDate, setOverviewDate] = useState<Date>(new Date());
     const [topupRange, setTopupRange] = useState<DateRange | undefined>({
         from: subDays(new Date(), 6),
@@ -110,6 +110,15 @@ export function DashboardClient({ username, initialCreditBalance }: Readonly<Das
             month: "long",
             day: "numeric",
         });
+
+    let topupRangeLabel = "เลือกช่วงวันที่";
+    if (topupRange?.from) {
+        if (topupRange.to && topupRange.from.toDateString() !== topupRange.to.toDateString()) {
+            topupRangeLabel = `${format(topupRange.from, "d MMM yyyy", { locale: th })} – ${format(topupRange.to, "d MMM yyyy", { locale: th })}`;
+        } else {
+            topupRangeLabel = format(topupRange.from, "d MMM yyyy", { locale: th });
+        }
+    }
 
     return (
         <Tabs defaultValue="overview" className="w-full">
@@ -245,11 +254,7 @@ export function DashboardClient({ username, initialCreditBalance }: Readonly<Das
                     <div>
                         <h2 className="text-lg font-semibold text-foreground">💰 สรุปเติมเงิน</h2>
                         <p className="text-sm text-muted-foreground">
-                            {topupRange?.from
-                                ? topupRange.to && topupRange.from.toDateString() !== topupRange.to.toDateString()
-                                    ? `${format(topupRange.from, "d MMM yyyy", { locale: th })} – ${format(topupRange.to, "d MMM yyyy", { locale: th })}`
-                                    : format(topupRange.from, "d MMM yyyy", { locale: th })
-                                : "เลือกช่วงวันที่"}
+                            {topupRangeLabel}
                         </p>
                     </div>
                     <DateRangePicker
@@ -282,14 +287,15 @@ export function DashboardClient({ username, initialCreditBalance }: Readonly<Das
                     />
                 </div>
 
-                {purchasesLoading ? (
+                {purchasesLoading && (
                     <Card className="bg-card">
                         <CardContent className="py-12 flex items-center justify-center">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                             <span className="ml-2 text-muted-foreground">กำลังโหลด...</span>
                         </CardContent>
                     </Card>
-                ) : purchases.length === 0 ? (
+                )}
+                {!purchasesLoading && purchases.length === 0 && (
                     <Card className="py-12 bg-card">
                         <CardContent className="text-center">
                             <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
@@ -307,7 +313,8 @@ export function DashboardClient({ username, initialCreditBalance }: Readonly<Das
                             </Link>
                         </CardContent>
                     </Card>
-                ) : (
+                )}
+                {!purchasesLoading && purchases.length > 0 && (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {purchases.map((item) => (
                             <PurchasedItem

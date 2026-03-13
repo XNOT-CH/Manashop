@@ -14,7 +14,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (body.name !== undefined) set.name = body.name;
     if (body.sortOrder !== undefined) set.sortOrder = body.sortOrder;
     if (body.isActive !== undefined) set.isActive = body.isActive;
-    await db.update(gachaCategories).set(set as any).where(eq(gachaCategories.id, id));
+    await db.update(gachaCategories).set(set).where(eq(gachaCategories.id, id));
     const updated = await db.query.gachaCategories.findFirst({ where: eq(gachaCategories.id, id) });
     return NextResponse.json({ success: true, data: updated });
 }

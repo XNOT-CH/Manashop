@@ -11,7 +11,7 @@ export async function POST(req: Request) {
         if (!Array.isArray(body.orders)) return NextResponse.json({ success: false, message: "Invalid payload" }, { status: 400 });
         await Promise.all(body.orders.map(({ id, sortOrder }) => db.update(gachaMachines).set({ sortOrder }).where(eq(gachaMachines.id, id))));
         return NextResponse.json({ success: true });
-    } catch (e: any) {
-        return NextResponse.json({ success: false, message: e.message }, { status: 500 });
+    } catch (e: unknown) {
+        return NextResponse.json({ success: false, message: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
     }
 }

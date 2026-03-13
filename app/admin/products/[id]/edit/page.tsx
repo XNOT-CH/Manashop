@@ -59,6 +59,7 @@ export default function EditProductPage() {
                     router.push("/admin/products");
                 }
             } catch (error) {
+                console.error("[EDIT_PRODUCT_FETCH]", error);
                 showError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
                 router.push("/admin/products");
             } finally {
@@ -93,6 +94,7 @@ export default function EditProductPage() {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
         } catch (error) {
+            console.error("[EDIT_PRODUCT_UPLOAD]", error);
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploading(false);
@@ -126,6 +128,7 @@ export default function EditProductPage() {
                 showError(`เกิดข้อผิดพลาด: ${data.message}`);
             }
         } catch (error) {
+            console.error("[EDIT_PRODUCT_SUBMIT]", error);
             showError("ไม่สามารถแก้ไขสินค้าได้ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setIsLoading(false);
@@ -254,7 +257,7 @@ export default function EditProductPage() {
                                     className="border-red-200 focus:border-red-400"
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    หากกรอกราคานี้ สินค้าจะแสดงใน "สินค้าลดราคา"
+                                    หากกรอกราคานี้ สินค้าจะแสดงใน &quot;สินค้าลดราคา&quot;
                                 </p>
                             </div>
                         </div>
@@ -328,6 +331,7 @@ export default function EditProductPage() {
                             {/* Preview */}
                             {formData.image && (
                                 <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-muted max-w-xs border">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={formData.image}
                                         alt="Preview"

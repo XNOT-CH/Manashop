@@ -17,7 +17,7 @@ export default async function GachaGridPage({
 
     const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, machineId) });
 
-    if (!machine || !machine.isActive) notFound();
+    if (!machine?.isActive) notFound();
 
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;

@@ -62,8 +62,8 @@ export const API_ERRORS = {
  * Safe error handler - logs full error but returns safe message
  */
 export function handleApiError(error: unknown, context?: string): NextResponse {
-    // Log the full error for debugging
-    console.error(`API Error${context ? ` [${context}]` : ""}:`, error);
+    const contextStr = context ? ` [${context}]` : "";
+    console.error(`API Error${contextStr}:`, error);
 
     // Return safe error to client
     return API_ERRORS.INTERNAL_ERROR();

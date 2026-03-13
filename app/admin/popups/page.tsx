@@ -51,6 +51,34 @@ export default function AdminPopupsPage() {
     const [loading, setLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const initializePopupModalUpload = () => {
+        const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
+        const preview = document.getElementById("swal-img-preview");
+        const previewImg = preview?.querySelector("img");
+
+        if (urlInput) {
+            urlInput.addEventListener("input", () => {
+                if (urlInput.value) {
+                    if (preview) preview.classList.remove("hidden");
+                    if (previewImg) previewImg.src = urlInput.value;
+                } else if (preview) {
+                    preview.classList.add("hidden");
+                }
+            });
+        }
+
+        const uploadBtn = document.getElementById("swal-upload-btn");
+        if (uploadBtn) {
+            uploadBtn.addEventListener("click", () => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/jpeg,image/png,image/webp,image/gif";
+                input.onchange = () => handlePopupImageUpload(input, urlInput, preview, previewImg);
+                input.click();
+            });
+        }
+    };
+
     const fetchPopups = useCallback(async () => {
         try {
             setLoading(true);
@@ -91,6 +119,17 @@ export default function AdminPopupsPage() {
             hideLoading();
             showError("เกิดข้อผิดพลาดในการอัพโหลด");
             return null;
+        }
+    };
+
+    const handlePopupImageUpload = async (input: HTMLInputElement, urlInput: HTMLInputElement | null, preview: HTMLElement | null, previewImg: HTMLImageElement | null | undefined) => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const url = await handleFileUploadInSwal(file);
+        if (url) {
+            if (urlInput) urlInput.value = url;
+            if (preview) preview.classList.remove("hidden");
+            if (previewImg) previewImg.src = url;
         }
     };
 
@@ -143,8 +182,8 @@ export default function AdminPopupsPage() {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
                             <select id="swal-isActive" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="true" ${(popup?.isActive ?? true) ? "selected" : ""}>แสดง</option>
-                                <option value="false" ${!(popup?.isActive ?? true) ? "selected" : ""}>ซ่อน</option>
+                                <option value="true" ${popup?.isActive ?? true ? "selected" : ""}>แสดง</option>
+                                <option value="false" ${popup?.isActive === false ? "selected" : ""}>ซ่อน</option>
                             </select>
                         </div>
                     </div>
@@ -158,38 +197,7 @@ export default function AdminPopupsPage() {
                     </div>
                 </div>
             `,
-            didOpen: () => {
-                const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
-                const preview = document.getElementById("swal-img-preview");
-                const previewImg = preview?.querySelector("img");
-
-                urlInput?.addEventListener("input", () => {
-                    if (urlInput.value) {
-                        if (preview) preview.classList.remove("hidden");
-                        if (previewImg) previewImg.src = urlInput.value;
-                    } else {
-                        if (preview) preview.classList.add("hidden");
-                    }
-                });
-
-                const uploadBtn = document.getElementById("swal-upload-btn");
-                uploadBtn?.addEventListener("click", () => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "image/jpeg,image/png,image/webp,image/gif";
-                    input.onchange = async () => {
-                        const file = input.files?.[0];
-                        if (!file) return;
-                        const url = await handleFileUploadInSwal(file);
-                        if (url) {
-                            if (urlInput) urlInput.value = url;
-                            if (preview) preview.classList.remove("hidden");
-                            if (previewImg) previewImg.src = url;
-                        }
-                    };
-                    input.click();
-                });
-            },
+            didOpen: initializePopupModalUpload,
             preConfirm: () => {
                 const imageUrl = (document.getElementById("swal-imageUrl") as HTMLInputElement)?.value?.trim();
                 if (!imageUrl) {
@@ -205,30 +213,32 @@ export default function AdminPopupsPage() {
                     dismissOption: (document.getElementById("swal-dismissOption") as HTMLSelectElement)?.value || "show_always",
                 };
             },
-        }).then(async (result) => {
-            if (!result.isConfirmed || !result.value) return;
+        }).then(result => handleDialogResult(result, popup));
+    };
 
-            showLoading("กำลังบันทึก...");
-            try {
-                const url = popup ? `/api/admin/popups/${popup.id}` : "/api/admin/popups";
-                const method = popup ? "PUT" : "POST";
-                const res = await fetch(url, {
-                    method,
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(result.value),
-                });
-                hideLoading();
-                if (res.ok) {
-                    showSuccess(popup ? "แก้ไข Pop-up สำเร็จ!" : "เพิ่ม Pop-up สำเร็จ!");
-                    fetchPopups();
-                } else {
-                    showError("เกิดข้อผิดพลาดในการบันทึก");
-                }
-            } catch {
-                hideLoading();
+    const handleDialogResult = async (result: any, popup?: AnnouncementPopup) => {
+        if (!result.isConfirmed || !result.value) return;
+
+        showLoading("กำลังบันทึก...");
+        try {
+            const url = popup ? `/api/admin/popups/${popup.id}` : "/api/admin/popups";
+            const method = popup ? "PUT" : "POST";
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(result.value),
+            });
+            hideLoading();
+            if (res.ok) {
+                showSuccess(popup ? "แก้ไข Pop-up สำเร็จ!" : "เพิ่ม Pop-up สำเร็จ!");
+                fetchPopups();
+            } else {
                 showError("เกิดข้อผิดพลาดในการบันทึก");
             }
-        });
+        } catch {
+            hideLoading();
+            showError("เกิดข้อผิดพลาดในการบันทึก");
+        }
     };
 
     // Delete popup
@@ -290,11 +300,12 @@ export default function AdminPopupsPage() {
 
             {/* Table */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
-                {loading ? (
+                {loading && (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : popups.length === 0 ? (
+                )}
+                {!loading && popups.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
                         <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>ยังไม่มี Pop-up</p>
@@ -302,7 +313,8 @@ export default function AdminPopupsPage() {
                             เพิ่ม Pop-up แรก
                         </Button>
                     </div>
-                ) : (
+                )}
+                {!loading && popups.length > 0 && (
                     <Table>
                         <TableHeader>
                             <TableRow>

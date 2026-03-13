@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -180,7 +180,7 @@ export default function AdminAuditLogsPage() {
     const openDetail = (log: AuditLog) => {
         const details = parseDetails(log.details);
         const hasChanges = details?.changes && details.changes.length > 0;
-        const changesHtml = hasChanges ? details!.changes!.map((change, i) => `
+        const changesHtml = hasChanges ? details.changes!.map((change) => `
             <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 mb-2">
                 <p class="text-sm font-semibold text-gray-700 mb-2">${getFieldLabel(change.field)}</p>
                 <div class="flex items-center gap-2 text-sm">
@@ -190,6 +190,35 @@ export default function AdminAuditLogsPage() {
                 </div>
             </div>
         `).join('') : '';
+
+        const statusClass = log.status === "SUCCESS" ? "text-green-600" : "text-red-600";
+        const statusText = log.status === "SUCCESS" ? "สำเร็จ" : "ล้มเหลว";
+
+        let resourceSection = '';
+        if (details?.resourceName || log.resource) {
+            let resourceNameHtml = '';
+            if (details?.resourceName) {
+                resourceNameHtml = `<p class="font-medium">${details.resourceName}</p>`;
+            }
+            let resourceTypeHtml = '';
+            if (log.resource) {
+                resourceTypeHtml = `<p class="text-gray-500 text-xs">${RESOURCE_LABELS[log.resource] || log.resource}</p>`;
+            }
+            resourceSection = `
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm">
+                <p class="text-blue-500 text-xs font-semibold uppercase tracking-wide mb-1">รายการที่เกี่ยวข้อง</p>
+                ${resourceNameHtml}
+                ${resourceTypeHtml}
+            </div>
+            `;
+        }
+
+        const changesSection = hasChanges ? `
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2">การเปลี่ยนแปลง (${details.changes!.length} รายการ)</p>
+                ${changesHtml}
+            </div>
+        ` : '';
 
         Swal.fire({
             title: 'รายละเอียดกิจกรรม',
@@ -215,28 +244,17 @@ export default function AdminAuditLogsPage() {
                         </div>
                         <div class="bg-gray-50 rounded-xl p-3">
                             <p class="text-gray-500 mb-1">สถานะ</p>
-                            <p class="font-semibold ${log.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600'}">${log.status === 'SUCCESS' ? '✓ สำเร็จ' : '✗ ล้มเหลว'}</p>
+                            <p class="font-semibold ${statusClass}">${statusText}</p>
                         </div>
                     </div>
-                    ${details?.resourceName || log.resource ? `
-                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm">
-                            <p class="text-blue-500 text-xs font-semibold uppercase tracking-wide mb-1">รายการที่เกี่ยวข้อง</p>
-                            ${details?.resourceName ? `<p class="font-medium">${details.resourceName}</p>` : ''}
-                            ${log.resource ? `<p class="text-gray-500 text-xs">${RESOURCE_LABELS[log.resource] || log.resource}</p>` : ''}
-                        </div>
-                    ` : ''}
-                    ${hasChanges ? `
-                        <div>
-                            <p class="text-sm font-semibold text-gray-700 mb-2">การเปลี่ยนแปลง (${details!.changes!.length} รายการ)</p>
-                            ${changesHtml}
-                        </div>
-                    ` : ''}
+                    ${resourceSection}
+                    ${changesSection}
                 </div>
             `,
         });
     };
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -259,11 +277,11 @@ export default function AdminAuditLogsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, actionFilter, limit]);
 
     useEffect(() => {
-        fetchLogs();
-    }, [page, actionFilter]);
+        void fetchLogs();
+    }, [fetchLogs]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -363,16 +381,18 @@ export default function AdminAuditLogsPage() {
                     </div>
                     <span className="font-bold">ประวัติกิจกรรม</span>
                 </div>
-                {loading ? (
+                {loading && (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : filteredLogs.length === 0 ? (
+                )}
+                {!loading && filteredLogs.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
                         <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>ไม่พบประวัติกิจกรรม</p>
                     </div>
-                ) : (
+                )}
+                {!loading && filteredLogs.length > 0 && (
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
@@ -433,15 +453,16 @@ export default function AdminAuditLogsPage() {
                                                 {log.ipAddress || "-"}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                {log.status === "SUCCESS" ? (
-                                                    <Badge variant="outline" className="text-green-600 border-green-600">
-                                                        สำเร็จ
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="text-red-600 border-red-600">
-                                                        ล้มเหลว
-                                                    </Badge>
-                                                )}
+                                                <Badge
+                                                    variant="outline"
+                                                    className={
+                                                        log.status === "SUCCESS"
+                                                            ? "text-green-600 border-green-600"
+                                                            : "text-red-600 border-red-600"
+                                                    }
+                                                >
+                                                    {log.status === "SUCCESS" ? "สำเร็จ" : "ล้มเหลว"}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Button

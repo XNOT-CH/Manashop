@@ -59,6 +59,7 @@ export default function AdminHelpPage() {
                 setArticles(data);
             }
         } catch (error) {
+            console.error("[HELP_FETCH]", error);
             showError("ไม่สามารถโหลดข้อมูลได้");
         } finally {
             setLoading(false);
@@ -93,6 +94,7 @@ export default function AdminHelpPage() {
                 showError("เกิดข้อผิดพลาด");
             }
         } catch (error) {
+            console.error("[HELP_SUBMIT]", error);
             showError("เกิดข้อผิดพลาด");
         }
     };
@@ -117,6 +119,7 @@ export default function AdminHelpPage() {
                 fetchArticles();
             }
         } catch (error) {
+            console.error("[HELP_DELETE]", error);
             showError("เกิดข้อผิดพลาด");
         }
     };
@@ -133,12 +136,79 @@ export default function AdminHelpPage() {
                 fetchArticles();
             }
         } catch (error) {
+            console.error("[HELP_TOGGLE]", error);
             showError("เกิดข้อผิดพลาด");
         }
     };
 
     const getCategoryLabel = (value: string) => {
         return CATEGORIES.find((c) => c.value === value)?.label || value;
+    };
+
+    const renderContent = () => {
+        if (loading) {
+            return <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>;
+        }
+        
+        if (articles.length === 0) {
+            return <div className="text-center py-8 text-muted-foreground">ยังไม่มีคำถาม</div>;
+        }
+
+        return (
+            <div className="space-y-4">
+                {articles.map((article) => (
+                    <div
+                        key={article.id}
+                        className={`p-4 border rounded-lg ${article.isActive ? "" : "opacity-50"}`}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="secondary">
+                                        {getCategoryLabel(article.category)}
+                                    </Badge>
+                                    {!article.isActive && (
+                                        <Badge variant="outline">ซ่อน</Badge>
+                                    )}
+                                </div>
+                                <h3 className="font-semibold mb-1">{article.question}</h3>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {article.answer}
+                                </p>
+                            </div>
+                            <div className="flex gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleToggleActive(article)}
+                                >
+                                    {article.isActive ? (
+                                        <Eye className="h-4 w-4" />
+                                    ) : (
+                                        <EyeOff className="h-4 w-4" />
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEdit(article)}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive"
+                                    onClick={() => handleDelete(article.id)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -231,67 +301,7 @@ export default function AdminHelpPage() {
                     <CardTitle>คำถามทั้งหมด ({articles.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {loading ? (
-                        <div className="text-center py-8 text-muted-foreground">กำลังโหลด...</div>
-                    ) : articles.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            ยังไม่มีคำถาม
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {articles.map((article) => (
-                                <div
-                                    key={article.id}
-                                    className={`p-4 border rounded-lg ${!article.isActive ? "opacity-50" : ""}`}
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="secondary">
-                                                    {getCategoryLabel(article.category)}
-                                                </Badge>
-                                                {!article.isActive && (
-                                                    <Badge variant="outline">ซ่อน</Badge>
-                                                )}
-                                            </div>
-                                            <h3 className="font-semibold mb-1">{article.question}</h3>
-                                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                                {article.answer}
-                                            </p>
-                                        </div>
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleToggleActive(article)}
-                                            >
-                                                {article.isActive ? (
-                                                    <Eye className="h-4 w-4" />
-                                                ) : (
-                                                    <EyeOff className="h-4 w-4" />
-                                                )}
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleEdit(article)}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-destructive"
-                                                onClick={() => handleDelete(article.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {renderContent()}
                 </CardContent>
             </Card>
         </div>

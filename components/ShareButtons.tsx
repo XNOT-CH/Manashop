@@ -12,7 +12,7 @@ interface ShareButtonsProps {
 export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) {
     const [copied, setCopied] = useState(false);
 
-    const getUrl = () => typeof window !== "undefined" ? window.location.href : "";
+    const getUrl = () => globalThis.window === undefined ? "" : globalThis.window.location.href;
 
     const shareToLine = () => {
         window.open(
@@ -45,14 +45,7 @@ export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) 
             setTimeout(() => setCopied(false), 2000);
         } catch {
             // fallback
-            const input = document.createElement("input");
-            input.value = getUrl();
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand("copy");
-            document.body.removeChild(input);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            console.error("Failed to copy link");
         }
     };
 

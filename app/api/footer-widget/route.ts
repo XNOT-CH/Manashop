@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 export async function GET() {
     try {
         const settings = await db.query.footerWidgetSettings.findFirst();
-        if (!settings || !settings.isActive) {
+        if (!settings?.isActive) {
             return NextResponse.json({ settings: { isActive: false, title: "" }, links: [] });
         }
         const links = await db.query.footerLinks.findMany({

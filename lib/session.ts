@@ -1,5 +1,5 @@
 import { mysqlNow } from "@/lib/utils/date";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { db, sessions } from "@/lib/db";
 import { eq } from "drizzle-orm";

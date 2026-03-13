@@ -43,7 +43,7 @@ export default async function AdminSlipsPage() {
                             id: slip.id,
                             amount: Number(slip.amount),
                             proofImage: slip.proofImage,
-                            createdAt: typeof slip.createdAt === "string" ? slip.createdAt : new Date(slip.createdAt as any).toISOString(),
+                            createdAt: typeof slip.createdAt === "string" ? slip.createdAt : new Date(slip.createdAt).toISOString(),
                             user: {
                                 email: slip.user.email,
                                 username: slip.user.username,

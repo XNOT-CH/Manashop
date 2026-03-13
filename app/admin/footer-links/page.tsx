@@ -120,6 +120,25 @@ export default function FooterLinksAdminPage() {
         }
     };
 
+    const handleConfirmEdit = async (result: { isConfirmed: boolean; value?: Record<string, unknown> }, link: FooterLink) => {
+        if (!result.isConfirmed || !result.value) return;
+        if (!result.value.label || !result.value.href) { showError("กรุณากรอกข้อมูลให้ครบ"); return; }
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/admin/footer-links/${link.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(result.value),
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setLinks(prev => prev.map(l => l.id === updated.id ? updated : l));
+                showSuccess("แก้ไขลิงก์เรียบร้อย");
+            } else { showError("ไม่สามารถแก้ไขลิงก์ได้"); }
+        } catch { showError("เกิดข้อผิดพลาด"); }
+        finally { setSaving(false); }
+    };
+
     const openEditModal = (link: FooterLink) => {
         Swal.fire({
             title: "แก้ไขลิงก์",
@@ -158,24 +177,7 @@ export default function FooterLinksAdminPage() {
                 openInNewTab: (document.getElementById("swal-newtab") as HTMLInputElement)?.checked,
                 isActive: (document.getElementById("swal-active") as HTMLInputElement)?.checked,
             }),
-        }).then(async (result) => {
-            if (!result.isConfirmed || !result.value) return;
-            if (!result.value.label || !result.value.href) { showError("กรุณากรอกข้อมูลให้ครบ"); return; }
-            setSaving(true);
-            try {
-                const res = await fetch(`/api/admin/footer-links/${link.id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(result.value),
-                });
-                if (res.ok) {
-                    const updated = await res.json();
-                    setLinks(prev => prev.map(l => l.id === updated.id ? updated : l));
-                    showSuccess("แก้ไขลิงก์เรียบร้อย");
-                } else { showError("ไม่สามารถแก้ไขลิงก์ได้"); }
-            } catch { showError("เกิดข้อผิดพลาด"); }
-            finally { setSaving(false); }
-        });
+        }).then((result) => handleConfirmEdit(result, link));
     };
 
 

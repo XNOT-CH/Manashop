@@ -20,10 +20,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (body.icon !== undefined) updateData.icon = body.icon;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;
         if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
-        await db.update(navItems).set(updateData as any).where(eq(navItems.id, id));
+        await db.update(navItems).set(updateData).where(eq(navItems.id, id));
         const item = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, id) });
         return NextResponse.json(item);
     } catch (error) {
+        console.error("[NAV_ITEM_PUT]", error);
         return NextResponse.json({ error: "Failed to update nav item" }, { status: 500 });
     }
 }
@@ -36,6 +37,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
         await db.delete(navItems).where(eq(navItems.id, id));
         return NextResponse.json({ success: true });
     } catch (error) {
+        console.error("[NAV_ITEM_DELETE]", error);
         return NextResponse.json({ error: "Failed to delete nav item" }, { status: 500 });
     }
 }

@@ -18,8 +18,7 @@ export const updateProfileSchema = z.object({
         .min(1, "กรุณากรอกชื่อ")
         .max(100, "ชื่อต้องไม่เกิน 100 ตัวอักษร"),
     email: z
-        .string()
-        .email("กรุณากรอกอีเมลให้ถูกต้อง")
+        .email({ error: "กรุณากรอกอีเมลให้ถูกต้อง" })
         .or(z.literal("")), // อนุญาตให้ว่างได้
     phone: z
         .string()
@@ -27,8 +26,7 @@ export const updateProfileSchema = z.object({
         .optional()
         .or(z.literal("")),
     image: z
-        .string()
-        .url("กรุณากรอก URL รูปภาพให้ถูกต้อง")
+        .url({ error: "กรุณากรอก URL รูปภาพให้ถูกต้อง" })
         .or(z.literal(""))
         .optional(), // Optional profile image URL
     // ข้อมูลส่วนตัว

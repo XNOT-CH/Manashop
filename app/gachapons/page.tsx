@@ -47,7 +47,7 @@ export default function GachaHubPage() {
                 setLoading(false);
             }
         };
-        void load();
+        load();
     }, []);
 
     const filtered = selectedCatId
@@ -85,7 +85,7 @@ export default function GachaHubPage() {
                         {/* ทั้งหมด pill */}
                         <button
                             onClick={() => setSelectedCatId(null)}
-                            className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${!selectedCatId ? "bg-[#1a56db] text-white border-[#1a56db]" : "bg-transparent text-foreground border-border hover:border-[#1a56db] hover:text-[#1a56db]"}`}
+                            className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${selectedCatId === null ? "bg-[#1a56db] text-white border-[#1a56db]" : "bg-transparent text-foreground border-border hover:border-[#1a56db] hover:text-[#1a56db]"}`}
                         >
                             ทั้งหมด
                         </button>

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dices, Loader2, Gamepad2, Gift, Star, Gem, Crown } from "lucide-react";
+import { Dices, Loader2, Gamepad2 } from "lucide-react";
 import Image from "next/image";
 import { showError } from "@/lib/swal";
 import { GachaResultModal } from "@/components/GachaResultModal";
@@ -16,6 +16,7 @@ import {
     INTERSECTION_MAP,
     type TileType,
     type GachaProductLite,
+    type Tile,
 } from "@/lib/gachaGrid";
 
 type Phase = "idle" | "rolling1" | "waitSpin2" | "rolling2" | "revealing" | "result";
@@ -27,13 +28,6 @@ const tierRing: Record<TileType, string> = {
     rare: "ring-2 ring-emerald-400/80 shadow-[0_0_12px_rgba(52,211,153,0.4)]",
     epic: "ring-2 ring-violet-500/90 shadow-[0_0_15px_rgba(139,92,246,0.6)]",
     legendary: "ring-[3px] ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse",
-};
-
-const tierDot: Record<string, string> = {
-    common: "bg-amber-400",
-    rare: "bg-emerald-400",
-    epic: "bg-violet-400",
-    legendary: "bg-red-500",
 };
 
 const tierBg: Record<TileType, string> = {
@@ -52,25 +46,15 @@ const tierParticles: Record<string, string[]> = {
     legendary: ["#ef4444", "#fca5a5", "#fde68a"],
 };
 
-const tierIcon: Record<string, React.ElementType> = {
-    common: Gift,
-    rare: Star,
-    epic: Gem,
-    legendary: Crown,
-};
-
-const tierIconColor: Record<string, string> = {
-    common: "text-amber-400",
-    rare: "text-emerald-400",
-    epic: "text-violet-400",
-    legendary: "text-red-400",
-};
-
 interface Particle { id: number; tx: string; ty: string; color: string; dur: string; delay: string; size: number }
 
-function WinBurst({ tier }: { tier: string }) {
+// Cache particles per tier at module level เนโฌโ€ outside React เนโฌโ€ to avoid react-hooks/purity and react-hooks/refs
+const _particleCache = new Map<string, Particle[]>();
+function getParticles(tier: string): Particle[] {
+    const cached = _particleCache.get(tier);
+    if (cached) return cached;
     const colors = tierParticles[tier] ?? tierParticles.common;
-    const particles: Particle[] = Array.from({ length: 20 }, (_, i) => {
+    const particles = Array.from({ length: 20 }, (_, i) => {
         const angle = (i / 20) * 360;
         const rad = angle * (Math.PI / 180);
         const dist = 50 + Math.random() * 70; // NOSONAR - visual animation only
@@ -84,6 +68,12 @@ function WinBurst({ tier }: { tier: string }) {
             size: 5 + Math.floor(Math.random() * 6), // NOSONAR - visual animation only
         };
     });
+    _particleCache.set(tier, particles);
+    return particles;
+}
+
+function WinBurst({ tier }: Readonly<{ tier: string }>) {
+    const particles = getParticles(tier);
     return (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
             {particles.map((p) => (
@@ -100,11 +90,164 @@ function WinBurst({ tier }: { tier: string }) {
 }
 
 interface GachaRhombusProps {
-    products: GachaProductLite[];
-    settings: { isEnabled: boolean; costType: string; costAmount: number; dailySpinLimit: number };
-    userBalance?: number;
-    isLoggedIn?: boolean;
-    machineId?: string; // undefined = global (สุ่มตัว X)
+    readonly products: GachaProductLite[];
+    readonly settings: { readonly isEnabled: boolean; readonly costType: string; readonly costAmount: number; readonly dailySpinLimit: number };
+    readonly userBalance?: number;
+    readonly isLoggedIn?: boolean;
+    readonly machineId?: string; // undefined = global (เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธโ€ขเน€เธเธ‘เน€เธเธ X)
+}
+
+function getTileClasses(
+    tile: { type: string; label?: string; side?: string },
+    phase: string,
+    opts: {
+        isItem: boolean;
+        isHL: boolean;
+        isLSel: boolean;
+        isRSel: boolean;
+        onL: boolean;
+        onR: boolean;
+        onBoth: boolean;
+        isPathGlowSpin1: boolean;
+        isPathGlowSpin2: boolean;
+        fade: boolean;
+    }
+): string {
+    return [
+        "relative w-full h-full rounded-full overflow-hidden transition-all duration-150",
+        tierRing[tile.type as keyof typeof tierRing],
+        opts.isHL && !opts.onBoth ? "ring-2 ring-white/80 scale-110 brightness-125" : "",
+        opts.onBoth ? "ring-2 ring-white scale-115 brightness-125" : "",
+        opts.isLSel && phase !== "rolling2" && phase !== "revealing" ? "ring-2 ring-violet-400" : "",
+        opts.isRSel ? "ring-2 ring-emerald-400" : "",
+        opts.onL && !opts.onBoth && phase === "revealing" ? "ring-2 ring-violet-400/50" : "",
+        opts.onR && !opts.onBoth && phase === "revealing" ? "ring-2 ring-emerald-400/50" : "",
+        opts.fade ? "opacity-90 scale-100  grayscale-[45%]" : "",
+        opts.isPathGlowSpin1 && opts.isItem ? "scale-105" : "",
+        opts.isPathGlowSpin2 && opts.isItem ? "scale-106" : "",
+    ].filter(Boolean).join(" ");
+}
+
+function getTileBoxShadow(isPathGlowSpin1: boolean, isPathGlowSpin2: boolean, isItem: boolean): React.CSSProperties | undefined {
+    if (isPathGlowSpin2 && isItem) {
+        return { boxShadow: "0 0 20px 8px rgba(239,68,68,0.7), 0 0 6px 2px rgba(239,68,68,0.9), 0 0 40px 12px rgba(239,68,68,0.25)" };
+    } else if (isPathGlowSpin1 && isItem) {
+        return { boxShadow: "0 0 14px 5px rgba(251,191,36,0.65), 0 0 4px 1px rgba(251,191,36,0.5)" };
+    }
+    return undefined;
+}
+
+// Context object to avoid too many parameters (S107)
+interface TileStateContext {
+    readonly phase: string;
+    readonly highlightedTile: number | null;
+    readonly selectedLLabel: string | null;
+    readonly selectedRLabel: string | null;
+    readonly lPathTiles: number[];
+    readonly rPathTiles: number[];
+    readonly activePathTiles: number[];
+    readonly lockedPathTiles: number[];
+}
+
+// Helper extracted to reduce Cognitive Complexity (S3776)
+function getTileVisualState(tile: Tile, index: number, ctx: TileStateContext) {
+    const { phase, highlightedTile, selectedLLabel, selectedRLabel,
+        lPathTiles, rPathTiles, activePathTiles, lockedPathTiles } = ctx;
+    const isItem = tile.type !== "start" && tile.type !== "selector";
+    const isHL = highlightedTile === index;
+    const isLSel = tile.label === selectedLLabel;
+    const isRSel = tile.label === selectedRLabel;
+    const onL = lPathTiles.includes(index);
+    const onR = rPathTiles.includes(index);
+    const onBoth = onL && onR;
+
+    const isActiveOrLocked = activePathTiles.includes(index) || lockedPathTiles.includes(index);
+    const isRolling1OrWait = phase === "rolling1" || phase === "waitSpin2";
+    const isPathGlowSpin1 = isActiveOrLocked && isRolling1OrWait;
+
+    const isPathGlowSpin2 = phase === "rolling2" && activePathTiles.includes(index);
+    const isPathGlow = isPathGlowSpin1 || isPathGlowSpin2;
+    const isSpinningPhase = isRolling1OrWait || phase === "rolling2";
+
+    let fade = false;
+    if (phase === "revealing") {
+        if (isItem && !onL && !onR) { fade = true; }
+    } else if (isSpinningPhase) {
+        if (!isPathGlow && !lockedPathTiles.includes(index) && !isHL && tile.type !== "start") { fade = true; }
+    }
+
+    return { isItem, isHL, isLSel, isRSel, onL, onR, onBoth, isPathGlowSpin1, isPathGlowSpin2, fade };
+}
+
+interface TileCardProps {
+    readonly tile: Tile;
+    readonly index: number;
+    readonly tileSize: number;
+    readonly phase: string;
+    readonly flipKey: Record<number, number>;
+    readonly ctx: TileStateContext;
+    readonly getTilePos: (row: number, col: number) => { x: number; y: number };
+}
+
+function TileCard({ tile, index, tileSize, phase, flipKey, ctx, getTilePos }: TileCardProps) {
+    const pos = getTilePos(tile.row, tile.col);
+    const state = getTileVisualState(tile, index, ctx);
+    const boxShadowStyle = getTileBoxShadow(state.isPathGlowSpin1, state.isPathGlowSpin2, state.isItem);
+    const tileClasses = getTileClasses(tile, phase, state);
+
+    return (
+        <motion.div className="absolute"
+            style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
+            <div
+                key={`f-${flipKey[index] ?? 0}`}
+                className={tileClasses}
+                style={boxShadowStyle}
+            >
+                {tile.type === "start" && (
+                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                        <Dices className="h-5 w-5 text-zinc-400" />
+                    </div>
+                )}
+                {tile.type === "selector" && (
+                    <div className={["w-full h-full flex items-center justify-center bg-zinc-800",
+                        state.isLSel && phase !== "rolling2" && phase !== "revealing" ? "bg-violet-500/20" : "",
+                        state.isRSel ? "bg-emerald-500/20" : "",
+                    ].join(" ")}>
+                        <span className={["text-[10px] font-bold tracking-wide",
+                            "text-zinc-300",
+                            state.isLSel && !state.isHL ? "text-violet-400" : "",
+                            state.isRSel && !state.isHL ? "text-emerald-400" : "",
+                        ].join(" ")}>{tile.label}</span>
+                    </div>
+                )}
+                {state.isItem && tile.product && (
+                    tile.product.imageUrl && (tile.product.imageUrl.startsWith("/") || tile.product.imageUrl.startsWith("http")) ? (
+                        <div className="absolute inset-0 bg-zinc-950">
+                            <Image src={tile.product.imageUrl} alt={tile.product.name} fill sizes="64px" className="object-contain" />
+                        </div>
+                    ) : (
+                        <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`} />
+                    )
+                )}
+                {state.isItem && !tile.product && (
+                    <div className={`w-full h-full ${tierBg[tile.type]}`} />
+                )}
+                {state.isHL && (
+                    <motion.div className="absolute inset-0 rounded-full border border-zinc-500/60"
+                        animate={{ scale: [1, 1.35, 1], opacity: [0.7, 0, 0.7] }}
+                        transition={{ duration: 0.65, repeat: Infinity }} />
+                )}
+            </div>
+            {state.isItem && tile.product && (
+                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 z-50">
+                    <span className="text-[9px] text-zinc-500 drop-shadow-md">{tile.product.name.substring(0, 14)}</span>
+                </div>
+            )}
+        </motion.div>
+    );
 }
 
 export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn = true, machineId }: Readonly<GachaRhombusProps>) {
@@ -172,7 +315,9 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                     }, 400);
                     return;
                 }
-                const delay = step < 4 ? 280 : step < 8 ? 160 : 200 + (step - 8) * 30;
+                let delay = 200 + (step - 8) * 30;
+                if (step < 4) delay = 280;
+                else if (step < 8) delay = 160;
                 intervalRef.current = setTimeout(flash, delay);
             };
             intervalRef.current = setTimeout(flash, 200);
@@ -180,33 +325,33 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         [tiles, lSelectorIndices, rSelectorIndices]
     );
 
+    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
     const revealIntersection = useCallback(
-        (lLabel: string, rLabel: string, product: GachaProductLite) => {
+        async (lLabel: string, rLabel: string, product: GachaProductLite) => {
             const lPath = (SELECTOR_PATHS[lLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
             const rPath = (SELECTOR_PATHS[rLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
             setLPathTiles(lPath);
             setRPathTiles(rPath);
             const intersPos = INTERSECTION_MAP[lLabel]?.[rLabel];
             const intersIdx = intersPos ? findTileIndex(tiles, intersPos[0], intersPos[1]) : -1;
-            setTimeout(() => {
-                if (intersIdx >= 0) {
-                    setHighlightedTile(intersIdx);
-                    setFlipKey(prev => ({ ...prev, [intersIdx]: (prev[intersIdx] ?? 0) + 1 }));
-                }
-                setTimeout(() => {
-                    setWinTier(product.tier ?? "common");
-                    setShowBurst(true);
-                    setTimeout(() => setShowBurst(false), 1200);
-                    setResultProduct(product);
-                    setPhase("result");
-                    setHistoryRefreshKey(k => k + 1);
-                }, 900);
-            }, 500);
+            
+            await delay(500);
+            if (intersIdx >= 0) {
+                setHighlightedTile(intersIdx);
+                setFlipKey(prev => ({ ...prev, [intersIdx]: (prev[intersIdx] ?? 0) + 1 }));
+            }
+
+            await delay(900);
+            setWinTier(product.tier ?? "common");
+            setShowBurst(true);
+            setTimeout(() => setShowBurst(false), 1200);
+            setResultProduct(product);
+            setPhase("result");
+            setHistoryRefreshKey(k => k + 1);
         },
         [tiles]
     );
-
-    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
     async function callRollApi(spinNum: 1 | 2) {
         const res = await fetch("/api/gacha/roll", {
@@ -215,7 +360,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
             body: JSON.stringify({ spin: spinNum, machineId: machineId ?? null }),
         });
         try { return await res.json(); }
-        catch { return { success: false, message: res.status === 401 ? "กรุณาเข้าสู่ระบบก่อน" : "เกิดข้อผิดพลาด" }; }
+        catch { return { success: false, message: res.status === 401 ? "เน€เธยเน€เธเธเน€เธเธเน€เธโ€เน€เธเธ’เน€เธโฌเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธยเน€เธยเน€เธยเน€เธเธเน€เธย" : "เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€" }; }
     }
 
     const reset = () => {
@@ -229,12 +374,12 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         if (phase !== "idle") return;
 
         if (!isLoggedIn) {
-            showError("กรุณาเข้าสู่ระบบก่อนทำการสุ่มรางวัล");
+            showError("เน€เธยเน€เธเธเน€เธเธเน€เธโ€เน€เธเธ’เน€เธโฌเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธยเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€”เน€เธเธ“เน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธเธ’เน€เธยเน€เธเธเน€เธเธ‘เน€เธเธ…");
             return;
         }
 
         if (settings.costAmount > 0 && balance < settings.costAmount) {
-            showError(`${settings.costType === "CREDIT" ? "เครดิต" : "เพชร"} ไม่เพียงพอ`);
+            showError(`${settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"} เน€เธยเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธเธ•เน€เธเธเน€เธยเน€เธยเน€เธเธ`);
             return;
         }
 
@@ -243,9 +388,9 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         setShowBurst(false); setHighlightedTile(null);
         try {
             const [data] = await Promise.all([callRollApi(1), delay(1200)]);
-            if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
+            if (!data.success) { showError(data.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
             const lLabel = data.data?.lLabel;
-            if (!lLabel) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            if (!lLabel) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
             runRoulette("L", lLabel, () => {
                 // Keep the chosen L path (+ the selector ball itself) visible during waitSpin2
                 const pathIndices = (SELECTOR_PATHS[lLabel] || [])
@@ -257,7 +402,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                 setSelectedLLabel(lLabel);
                 setPhase("waitSpin2");
             });
-        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
+        } catch { showError("เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"); reset(); }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [phase, isLoggedIn, balance, settings, runRoulette]);
 
@@ -265,12 +410,12 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         if (phase !== "idle") return;
 
         if (!isLoggedIn) {
-            showError("กรุณาเข้าสู่ระบบก่อนทำการสุ่มรางวัล");
+            showError("เน€เธยเน€เธเธเน€เธเธเน€เธโ€เน€เธเธ’เน€เธโฌเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธยเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€”เน€เธเธ“เน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธเธ’เน€เธยเน€เธเธเน€เธเธ‘เน€เธเธ…");
             return;
         }
 
         if (settings.costAmount > 0 && balance < settings.costAmount) {
-            showError(`${settings.costType === "CREDIT" ? "เครดิต" : "เพชร"} ไม่เพียงพอ`);
+            showError(`${settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"} เน€เธยเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธเธ•เน€เธเธเน€เธยเน€เธยเน€เธเธ`);
             return;
         }
 
@@ -281,27 +426,27 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         try {
             // Spin 1
             const spin1 = await callRollApi(1);
-            if (!spin1.success) { showError(spin1.message || "สุ่มไม่สำเร็จ"); reset(); return; }
+            if (!spin1.success) { showError(spin1.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
             const lLabel = spin1.data?.lLabel;
-            if (!lLabel) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            if (!lLabel) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
 
             // Spin 2 immediately
             setPhase("rolling2");
             const spin2 = await callRollApi(2);
-            if (!spin2.success) { showError(spin2.message || "สุ่มไม่สำเร็จ"); reset(); return; }
+            if (!spin2.success) { showError(spin2.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
             const { rLabel, product } = spin2.data ?? {};
-            if (!rLabel || !product) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            if (!rLabel || !product) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
 
             if (settings.costAmount > 0) setBalance((prev) => Math.max(0, prev - settings.costAmount));
 
-            // Skip all animation — go straight to result
+            // Skip all animation เนโฌโ€ go straight to result
             setWinTier(product.tier ?? "common");
             setShowBurst(true);
             setTimeout(() => setShowBurst(false), 1200);
             setResultProduct(product);
             setPhase("result");
             setHistoryRefreshKey((k) => k + 1);
-        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
+        } catch { showError("เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"); reset(); }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [phase, isLoggedIn, balance, settings]);
 
@@ -319,11 +464,11 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         }
         try {
             const [data] = await Promise.all([callRollApi(2), delay(1200)]);
-            if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
+            if (!data.success) { showError(data.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
             const { rLabel, product } = data.data ?? {};
-            if (!rLabel || !product) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            if (!rLabel || !product) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
 
-            // Deduct cost immediately — no refresh needed
+            // Deduct cost immediately เนโฌโ€ no refresh needed
             if (settings.costAmount > 0) setBalance((prev) => Math.max(0, prev - settings.costAmount));
 
             runRoulette("R", rLabel, () => {
@@ -331,11 +476,11 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                 setPhase("revealing");
                 revealIntersection(selectedLLabel!, rLabel, product);
             });
-        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
+        } catch { showError("เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"); reset(); }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [phase, selectedLLabel, runRoulette, revealIntersection]);
 
-    // ── Layout ─────────────────────────────────────────────────────────────────
+    // เนโ€โฌเนโ€โฌ Layout เนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌ
     const spacingX = 110, spacingY = 44, tileSize = 52;
     const maxRowSize = Math.max(...GRID_DEFINITION.map(r => r.length));
     const gridWidth = (maxRowSize - 1) * spacingX + tileSize + 4;
@@ -347,7 +492,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         return { x: offsetX + col * spacingX + 2, y: row * spacingY + 2 };
     }
 
-    // Responsive scaling — measure the card container's real width via ResizeObserver
+    // Responsive scaling เนโฌโ€ measure the card container's real width via ResizeObserver
     const [scale, setScale] = useState(1);
     const cardRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -363,7 +508,6 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
 
     return (
         <div className="flex flex-col items-center gap-4 w-full max-w-[640px]">
-
             {/* ── Grid (framed) ── */}
             <div ref={cardRef} className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 sm:p-8 md:p-10 shadow-sm w-full flex justify-center overflow-hidden relative">
                 {/* Drop rate button — top-left corner of grid card */}
@@ -371,11 +515,6 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                     className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-background/80 hover:bg-background border border-border/60 rounded-full px-2.5 py-1 shadow-sm hover:text-[#145de7] transition-all">
                     ℹ️ อัตราดรอป
                 </button>
-                {/*
-                  Outer wrapper is sized to the SCALED visual footprint (gridWidth*scale × gridHeight*scale)
-                  so the flex container doesn't see the full native gridWidth causing right-side clipping.
-                  The inner div sits at position:absolute top-left, scaled to fit perfectly inside.
-                */}
                 <div style={{ width: gridWidth * scale, height: gridHeight * scale, position: "relative", flexShrink: 0 }}>
                     <div
                         className="absolute top-0 left-0"
@@ -389,157 +528,65 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                                 </motion.div>
                             )}
                         </AnimatePresence>
-
-                        {tiles.map((tile, index) => {
-                            const pos = getTilePos(tile.row, tile.col);
-                            const isItem = tile.type !== "start" && tile.type !== "selector";
-                            const isHL = highlightedTile === index;
-                            const isLSel = tile.label === selectedLLabel;
-                            const isRSel = tile.label === selectedRLabel;
-                            const onL = lPathTiles.includes(index);
-                            const onR = rPathTiles.includes(index);
-                            const onBoth = onL && onR;
-
-                            // Path glow spin-1 (yellow) — active path during rolling1 / waitSpin2
-                            const isPathGlowSpin1 = (
-                                activePathTiles.includes(index) ||
-                                lockedPathTiles.includes(index)
-                            ) && (phase === "rolling1" || phase === "waitSpin2");
-
-                            // Path glow spin-2 (red) — only the actively sweeping R-path
-                            const isPathGlowSpin2 = activePathTiles.includes(index) && phase === "rolling2";
-
-                            const isPathGlow = isPathGlowSpin1 || isPathGlowSpin2;
-
-                            const isSpinningPhase = phase === "rolling1" || phase === "rolling2" || phase === "waitSpin2";
-
-                            const fade =
-                                (phase === "revealing" && isItem && !onL && !onR) ||
-                                (isSpinningPhase && !isPathGlow && !lockedPathTiles.includes(index) && index !== highlightedTile && tile.type !== "start");
-
-                            return (
-                                <motion.div key={index} className="absolute"
-                                    style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }}
-                                    initial={{ opacity: 0, scale: 0.6 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
-                                    <div
-                                        key={`f-${flipKey[index] ?? 0}`}
-                                        className={[
-                                            "relative w-full h-full rounded-full overflow-hidden transition-all duration-150",
-                                            tierRing[tile.type],
-                                            isHL && !onBoth ? "ring-2 ring-white/80 scale-110 brightness-125" : "",
-                                            onBoth ? "ring-2 ring-white scale-115 brightness-125" : "",
-                                            isLSel && phase !== "rolling2" && phase !== "revealing" ? "ring-2 ring-violet-400" : "",
-                                            isRSel ? "ring-2 ring-emerald-400" : "",
-                                            onL && !onBoth && phase === "revealing" ? "ring-2 ring-violet-400/50" : "",
-                                            onR && !onBoth && phase === "revealing" ? "ring-2 ring-emerald-400/50" : "",
-                                            fade ? "opacity-90 scale-100  grayscale-[45%]" : "",
-                                            isPathGlowSpin1 && isItem ? "scale-105" : "",
-                                            isPathGlowSpin2 && isItem ? "scale-106" : "",
-                                        ].join(" ")}
-                                        style={
-                                            isPathGlowSpin2 && isItem
-                                                ? { boxShadow: "0 0 20px 8px rgba(239,68,68,0.7), 0 0 6px 2px rgba(239,68,68,0.9), 0 0 40px 12px rgba(239,68,68,0.25)" }
-                                                : isPathGlowSpin1 && isItem
-                                                    ? { boxShadow: "0 0 14px 5px rgba(251,191,36,0.65), 0 0 4px 1px rgba(251,191,36,0.5)" }
-                                                    : undefined
-                                        }
-                                    >
-                                        {tile.type === "start" && (
-                                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                                                <Dices className="h-5 w-5 text-zinc-400" />
-                                            </div>
-                                        )}
-                                        {tile.type === "selector" && (
-                                            <div className={["w-full h-full flex items-center justify-center bg-zinc-800",
-                                                isLSel && phase !== "rolling2" && phase !== "revealing" ? "bg-violet-500/20" : "",
-                                                isRSel ? "bg-emerald-500/20" : "",
-                                            ].join(" ")}>
-                                                <span className={["text-[10px] font-bold tracking-wide",
-                                                    "text-zinc-300",
-                                                    isLSel && !isHL ? "text-violet-400" : "",
-                                                    isRSel && !isHL ? "text-emerald-400" : "",
-                                                ].join(" ")}>{tile.label}</span>
-                                            </div>
-                                        )}
-                                        {isItem && tile.product && (
-                                            tile.product.imageUrl && (tile.product.imageUrl.startsWith("/") || tile.product.imageUrl.startsWith("http")) ? (
-                                                <div className="absolute inset-0 bg-zinc-950">
-                                                    <Image
-                                                        src={tile.product.imageUrl}
-                                                        alt={tile.product.name}
-                                                        fill
-                                                        sizes="64px"
-                                                        className="object-contain"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`} />
-                                            )
-                                        )}
-                                        {isItem && !tile.product && (
-                                            <div className={`w-full h-full ${tierBg[tile.type]}`} />
-                                        )}
-                                        {isHL && (
-                                            <motion.div className="absolute inset-0 rounded-full border border-zinc-500/60"
-                                                animate={{ scale: [1, 1.35, 1], opacity: [0.7, 0, 0.7] }}
-                                                transition={{ duration: 0.65, repeat: Infinity }} />
-                                        )}
-                                    </div>
-                                    {isItem && tile.product && (
-                                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100">
-                                            <span className="text-[9px] text-zinc-500">{tile.product.name.substring(0, 14)}</span>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            );
-                        })}
+                        {tiles.map((t, i) => (
+                            <TileCard
+                                key={`tile-${t.row}-${t.col}`}
+                                tile={t}
+                                index={i}
+                                tileSize={tileSize}
+                                phase={phase}
+                                flipKey={flipKey}
+                                getTilePos={getTilePos}
+                                ctx={{ phase, highlightedTile, selectedLLabel, selectedRLabel, lPathTiles, rPathTiles, activePathTiles, lockedPathTiles }}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* ── Controls ── */}
+            {/* เนโ€โฌเนโ€โฌ Controls เนโ€โฌเนโ€โฌ */}
             <div className="flex flex-col gap-4 w-full">
 
                 {/* Spin CTA panel */}
                 <div className="w-full flex flex-col items-center gap-2">
-                    {/* Title — centered */}
+                    {/* Title เนโฌโ€ centered */}
                     <h2 className="text-[20px] md:text-[24px] font-bold text-[#145de7] text-center">
-                        สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}
+                        เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธเธ’เน€เธยเน€เธเธเน€เธเธ‘เน€เธเธ…เน€เธยเน€เธเธเน€เธเธ‘เน€เธยเน€เธยเน€เธเธ…เน€เธเธ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}
                     </h2>
 
-                    {/* Balance row — full width, light blue box */}
+                    {/* Balance row เนโฌโ€ full width, light blue box */}
                     <div className="w-full rounded-lg bg-[#eef4ff] dark:bg-[#d0e3ff]/10 border border-[#145de7]/20 px-4 py-3 text-center">
                         <span className="text-[15px] font-bold text-foreground">
-                            ยอด{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}สะสม:{" "}
-                            {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}
+                            เน€เธเธเน€เธเธเน€เธโ€{settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}เน€เธเธเน€เธเธเน€เธเธเน€เธเธ:{" "}
+                            {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}
                         </span>
                         {" "}
                         <span className="text-[13px] text-[#145de7] dark:text-[#7ba2f5]">
-                            (กด รีเฟรช เพื่ออัปเดตยอด)
+                            (เน€เธยเน€เธโ€ เน€เธเธเน€เธเธ•เน€เธโฌเน€เธยเน€เธเธเน€เธย เน€เธโฌเน€เธยเน€เธเธ—เน€เธยเน€เธเธเน€เธเธเน€เธเธ‘เน€เธยเน€เธโฌเน€เธโ€เน€เธโ€ขเน€เธเธเน€เธเธเน€เธโ€)
                         </span>
                     </div>
 
                     {/* Buttons */}
                     <div className="w-full">
                         {phase === "idle" && (
-                            <button onClick={() => void (skipAnimation ? handleFastRoll() : handleFirstSpin())} disabled={!settings.isEnabled}
+                            <button onClick={() => { if (skipAnimation) { handleFastRoll(); } else { handleFirstSpin(); } }} disabled={!settings.isEnabled}
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <Gamepad2 className="h-5 w-5" /> สุ่ม
+                                <Gamepad2 className="h-5 w-5" /> เน€เธเธเน€เธเธเน€เธยเน€เธเธ
                             </button>
                         )}
                         {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && (
                             <button disabled
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d]/60 text-white/80 font-bold text-[15px] md:text-base cursor-not-allowed flex items-center justify-center gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}
+                                {phase === "rolling1" && "เน€เธยเน€เธเธ“เน€เธเธ…เน€เธเธ‘เน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธเธ..."}
+                                {phase === "rolling2" && "เน€เธยเน€เธเธ“เน€เธเธ…เน€เธเธ‘เน€เธยเน€เธโฌเน€เธเธ…เน€เธเธ—เน€เธเธเน€เธย..."}
+                                {phase === "revealing" && "เน€เธยเน€เธเธ“เน€เธเธ…เน€เธเธ‘เน€เธยเน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€..."}
                             </button>
                         )}
                         {phase === "waitSpin2" && !skipAnimation && (
-                            <button onClick={() => void handleSecondSpin()}
+                            <button onClick={() => handleSecondSpin()}
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                                <Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2
+                                <Gamepad2 className="h-5 w-5" /> เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ‘เน€เธยเน€เธยเน€เธโ€”เน€เธเธ•เน€เธย 2
                             </button>
                         )}
                     </div>
@@ -551,7 +598,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                             onClick={() => setSkipAnimation((v) => !v)}
                             role="switch"
                             aria-checked={skipAnimation}
-                            aria-label="ข้ามเอฟเฟกต์การสุ่ม"
+                            aria-label="เน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธโฌเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธยเน€เธโ€ขเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"
                             className={[
                                 "relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0 cursor-pointer",
                                 skipAnimation ? "bg-[#145de7]" : "bg-zinc-300 dark:bg-zinc-600",
@@ -563,13 +610,13 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                             ].join(" ")} />
                         </button>
                         <span className="text-[13px] text-muted-foreground select-none pointer-events-none">
-                            ⏩ ข้ามเอฟเฟกต์การสุ่ม
+                            เนยเธ เน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธโฌเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธยเน€เธโ€ขเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ
                         </span>
                     </div>
 
-                    {/* Disclaimer — small, below toggle */}
+                    {/* Disclaimer เนโฌโ€ small, below toggle */}
                     <p className="text-[11px] text-muted-foreground/70 text-center">
-                        * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}ได้ในทุกกรณี *
+                        * เน€เธโฌเน€เธเธเน€เธเธ—เน€เธยเน€เธเธเน€เธยเน€เธโ€เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธ…เน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ’เน€เธเธเน€เธเธ’เน€เธเธเน€เธโ€“เน€เธยเน€เธเธเน€เธยเน€เธเธ—เน€เธย{settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}เน€เธยเน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธโ€”เน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธโ€เน€เธเธ• *
                     </p>
                 </div>
             </div>
@@ -587,7 +634,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                 <GachaResultModal
                     product={resultProduct}
                     onClose={reset}
-                    onSpinAgain={() => { reset(); setTimeout(() => void (skipAnimation ? handleFastRoll() : handleFirstSpin()), 200); }}
+                    onSpinAgain={() => { reset(); setTimeout(() => { if (skipAnimation) { handleFastRoll(); } else { handleFirstSpin(); } }, 200); }}
                 />
             )}
         </div>

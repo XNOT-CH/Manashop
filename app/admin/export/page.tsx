@@ -148,6 +148,10 @@ function ExportCard({
         }
     }
 
+    let btnClass = "bg-[#1a56db] hover:bg-[#1448c0]";
+    if (state === "done") btnClass = "bg-emerald-600 hover:bg-emerald-700";
+    else if (state === "error") btnClass = "bg-red-600 hover:bg-red-700";
+
     return (
         <div className="relative overflow-hidden bg-white rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col">
             {/* Color bar */}
@@ -183,27 +187,17 @@ function ExportCard({
                 <Button
                     onClick={handleDownload}
                     disabled={state === "loading"}
-                    className={`w-full gap-2 font-medium ${state === "done"
-                        ? "bg-emerald-600 hover:bg-emerald-700"
-                        : state === "error"
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-[#1a56db] hover:bg-[#1448c0]"
-                        }`}
+                    className={`w-full gap-2 font-medium ${btnClass}`}
                 >
-                    {state === "loading" ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : state === "done" ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                        <Download className="h-4 w-4" />
-                    )}
-                    {state === "loading"
-                        ? "กำลังโหลด…"
-                        : state === "done"
-                            ? "ดาวน์โหลดสำเร็จ!"
-                            : state === "error"
-                                ? "ลองอีกครั้ง"
-                                : `ดาวน์โหลด ${config.label}.csv`}
+                    {state === "loading" && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {state === "done" && <CheckCircle2 className="h-4 w-4" />}
+                    {state === "error" && <Download className="h-4 w-4" />}
+                    {state === "idle" && <Download className="h-4 w-4" />}
+                    
+                    {state === "loading" && "กำลังโหลด…"}
+                    {state === "done" && "ดาวน์โหลดสำเร็จ!"}
+                    {state === "error" && "ลองอีกครั้ง"}
+                    {state === "idle" && `ดาวน์โหลด ${config.label}.csv`}
                 </Button>
             </div>
         </div>

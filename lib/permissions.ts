@@ -67,10 +67,8 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
         PERMISSIONS.ADMIN_PANEL,
     ],
 
-    ADMIN: [
-        // Admin has all permissions
-        ...Object.values(PERMISSIONS),
-    ],
+    // Admin has all permissions
+    ADMIN: Object.values(PERMISSIONS),
 };
 
 /**
@@ -103,8 +101,8 @@ export function getUserPermissions(
     customPermissions?: CustomPermissionsInput
 ): Permission[] {
     const rolePerms = ROLE_PERMISSIONS[role] || [];
-    const custom = normalisePermissions(customPermissions);
-    return [...new Set([...rolePerms, ...custom])] as Permission[];
+    const custom = normalisePermissions(customPermissions) as Permission[];
+    return Array.from(new Set(rolePerms.concat(custom)));
 }
 
 /**
@@ -113,7 +111,7 @@ export function getUserPermissions(
 export function hasPermission(
     role: string,
     permission: Permission,
-    customPermissions?: string[] | string | null
+    customPermissions?: CustomPermissionsInput
 ): boolean {
     // Admin always has all permissions
     if (role === "ADMIN") return true;
@@ -128,7 +126,7 @@ export function hasPermission(
 export function hasAllPermissions(
     role: string,
     permissions: Permission[],
-    customPermissions?: string[] | string | null
+    customPermissions?: CustomPermissionsInput
 ): boolean {
     return permissions.every(p => hasPermission(role, p, customPermissions));
 }
@@ -139,7 +137,7 @@ export function hasAllPermissions(
 export function hasAnyPermission(
     role: string,
     permissions: Permission[],
-    customPermissions?: string[] | string | null
+    customPermissions?: CustomPermissionsInput
 ): boolean {
     return permissions.some(p => hasPermission(role, p, customPermissions));
 }
@@ -148,7 +146,7 @@ export function hasAnyPermission(
  * Add custom permission — returns a new string[] ready to save to the json column.
  */
 export function addCustomPermission(
-    currentPermissions: string[] | string | null,
+    currentPermissions: CustomPermissionsInput,
     newPermission: Permission
 ): string[] {
     const perms = normalisePermissions(currentPermissions);
@@ -162,7 +160,7 @@ export function addCustomPermission(
  * Remove custom permission — returns a new string[] ready to save to the json column.
  */
 export function removeCustomPermission(
-    currentPermissions: string[] | string | null,
+    currentPermissions: CustomPermissionsInput,
     permissionToRemove: Permission
 ): string[] {
     const perms = normalisePermissions(currentPermissions);

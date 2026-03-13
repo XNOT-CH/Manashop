@@ -36,7 +36,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const newData = {
             name, code: code.toUpperCase(), iconUrl: iconUrl || null, description: description || null,
             permissions: permissions || null,
-            sortOrder: sortOrder !== undefined ? sortOrder : existingRole.sortOrder,
+            sortOrder: sortOrder === undefined ? existingRole.sortOrder : sortOrder,
         };
         await db.update(roles).set(newData).where(eq(roles.id, id));
 

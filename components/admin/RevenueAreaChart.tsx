@@ -31,15 +31,11 @@ function formatXAxis(dateStr: string, granularity: Granularity): string {
 
     switch (granularity) {
         case "day":
-            return d.toLocaleDateString("th-TH", {
-                day: "2-digit",
-                month: "short",
-            }); // "12 ก.พ."
         case "week":
             return d.toLocaleDateString("th-TH", {
                 day: "2-digit",
                 month: "short",
-            });
+            }); // "12 ก.พ."
         case "month":
             return d.toLocaleDateString("th-TH", {
                 month: "short",
@@ -79,8 +75,8 @@ function CustomTooltip({
             <p className="text-xs font-medium text-muted-foreground mb-1.5">
                 {label}
             </p>
-            {payload.map((entry, i) => (
-                <div key={i} className="flex items-center justify-between gap-6">
+            {payload.map((entry) => (
+                <div key={entry.name} className="flex items-center justify-between gap-6">
                     <span className="text-xs text-muted-foreground">
                         {entry.name}
                     </span>

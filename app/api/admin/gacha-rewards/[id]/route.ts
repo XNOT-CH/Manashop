@@ -23,7 +23,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         if (body.rewardAmount !== undefined) updateData.rewardAmount = String(body.rewardAmount);
         if (body.rewardImageUrl !== undefined) updateData.rewardImageUrl = body.rewardImageUrl;
         if (body.probability !== undefined) updateData.probability = String(body.probability);
-        await db.update(gachaRewards).set(updateData as any).where(eq(gachaRewards.id, id));
+        await db.update(gachaRewards).set(updateData).where(eq(gachaRewards.id, id));
         const updated = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, id) });
         return NextResponse.json({ success: true, data: updated });
     } catch (error) {

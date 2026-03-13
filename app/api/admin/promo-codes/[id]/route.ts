@@ -7,6 +7,38 @@ interface RouteParams { params: Promise<{ id: string }> }
 
 const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
 
+type Numberish = string | number | null;
+
+interface PromoCodeBody {
+    code?: string;
+    discountType?: string;
+    discountValue?: Numberish;
+    minPurchase?: Numberish;
+    maxDiscount?: Numberish;
+    usageLimit?: string | null;
+    startsAt?: string | Date;
+    expiresAt?: string | Date | null;
+    isActive?: boolean;
+}
+
+function buildUpdateData(body: PromoCodeBody) {
+    const { code, discountType, discountValue, minPurchase, maxDiscount, usageLimit, startsAt, expiresAt, isActive } = body;
+    const parseNumStr = (val: string | number | null | undefined) => val ? String(Number.parseFloat(String(val))) : null;
+    
+    const updateData: Record<string, unknown> = {};
+    if (code !== undefined) updateData.code = code.toUpperCase();
+    if (discountType !== undefined) updateData.discountType = discountType;
+    if (discountValue !== undefined) updateData.discountValue = parseNumStr(discountValue);
+    if (minPurchase !== undefined) updateData.minPurchase = parseNumStr(minPurchase);
+    if (maxDiscount !== undefined) updateData.maxDiscount = parseNumStr(maxDiscount);
+    if (usageLimit !== undefined) updateData.usageLimit = usageLimit ? Number.parseInt(usageLimit) : null;
+    if (startsAt !== undefined) updateData.startsAt = toMySQLDatetime(new Date(startsAt));
+    if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? toMySQLDatetime(new Date(expiresAt)) : null;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    
+    return updateData;
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
     const authCheck = await isAdmin();
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
@@ -26,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { code, discountType, discountValue, minPurchase, maxDiscount, usageLimit, startsAt, expiresAt, isActive } = body;
+        const { code } = body;
 
         const existing = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, id) });
         if (!existing) return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
@@ -36,18 +68,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             if (conflict) return NextResponse.json({ success: false, message: "Promo code already exists" }, { status: 400 });
         }
 
-        const updateData: Record<string, unknown> = {};
-        if (code !== undefined) updateData.code = code.toUpperCase();
-        if (discountType !== undefined) updateData.discountType = discountType;
-        if (discountValue !== undefined) updateData.discountValue = String(Number.parseFloat(discountValue));
-        if (minPurchase !== undefined) updateData.minPurchase = minPurchase ? String(Number.parseFloat(minPurchase)) : null;
-        if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount ? String(Number.parseFloat(maxDiscount)) : null;
-        if (usageLimit !== undefined) updateData.usageLimit = usageLimit ? Number.parseInt(usageLimit) : null;
-        if (startsAt !== undefined) updateData.startsAt = toMySQLDatetime(new Date(startsAt));
-        if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? toMySQLDatetime(new Date(expiresAt)) : null;
-        if (isActive !== undefined) updateData.isActive = isActive;
+        const updateData = buildUpdateData(body);
 
-        await db.update(promoCodes).set(updateData as any).where(eq(promoCodes.id, id));
+        await db.update(promoCodes).set(updateData).where(eq(promoCodes.id, id));
         const updated = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, id) });
         return NextResponse.json({ success: true, message: "Promo code updated successfully", data: updated });
     } catch (error) {

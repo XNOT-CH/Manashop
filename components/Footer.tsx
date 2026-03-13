@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/getSiteSettings";
-import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
+import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import {
     Gamepad2, Home, ShoppingBag, HelpCircle, Mail, Shield, FileText, ChevronRight,
@@ -10,7 +10,7 @@ import {
 async function getFooterWidget() {
     try {
         const settings = await db.query.footerWidgetSettings.findFirst();
-        if (!settings || !settings.isActive) return { settings: null, links: [] };
+        if (!settings?.isActive) return { settings: null, links: [] };
         const links = await db.query.footerLinks.findMany({
             where: eq(footerLinks.isActive, true),
             orderBy: (t, { asc }) => asc(t.sortOrder),
@@ -25,7 +25,7 @@ export default async function Footer() {
     const siteSettings = await getSiteSettings();
     const footerWidget = await getFooterWidget();
     const currentYear = new Date().getFullYear();
-    const siteName = siteSettings?.heroTitle || "GameStore";
+    const siteName = siteSettings?.heroTitle ?? "GameStore";
     const menuLinks = [
         { href: "/", label: "หน้าหลัก", icon: Home },
         { href: "/shop", label: "สินค้าทั้งหมด", icon: ShoppingBag },

@@ -59,6 +59,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                 showError(data.message);
             }
         } catch (error) {
+            console.error("[SLIP_ACTION]", error);
             showError("ไม่สามารถดำเนินการได้");
         } finally {
             setProcessingId(null);

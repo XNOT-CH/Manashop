@@ -53,11 +53,12 @@ export async function PUT(request: Request) {
 
         const existing = await db.query.siteSettings.findFirst();
         if (existing) {
-            await db.update(siteSettings).set(body as any).where(
+            await db.update(siteSettings).set(body).where(
                 (await import("drizzle-orm")).eq(siteSettings.id, existing.id)
             );
         } else {
-            await db.insert(siteSettings).values({ id: crypto.randomUUID(), ...body, createdAt: mysqlNow(), updatedAt: mysqlNow() } as any);
+            const newRecord = { id: crypto.randomUUID(), ...body, createdAt: mysqlNow(), updatedAt: mysqlNow() };
+            await db.insert(siteSettings).values(newRecord as typeof siteSettings.$inferInsert);
         }
 
         const updated = await db.query.siteSettings.findFirst();

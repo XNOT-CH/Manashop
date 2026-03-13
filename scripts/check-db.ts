@@ -28,11 +28,11 @@ async function main() {
 
     // Show current database
     const [dbRows] = await conn.execute("SELECT DATABASE() as db");
-    console.log("📁 Database:", (dbRows as any[])[0].db);
+    console.log("📁 Database:", (dbRows as { db: string }[])[0].db);
 
     // List tables
     const [tables] = await conn.execute("SHOW TABLES");
-    const tableList = (tables as any[]).map(r => Object.values(r)[0]);
+    const tableList = (tables as Record<string, string>[]).map(r => Object.values(r)[0]);
     console.log(`\n📋 Tables (${tableList.length} found):`);
     if (tableList.length === 0) {
         console.log("   ⚠️  No tables found! Run: npm run db:push");
@@ -47,7 +47,7 @@ async function main() {
 
     if (userTableName) {
         const [users] = await conn.execute(`SELECT id, username, role FROM \`${userTableName}\` LIMIT 10`);
-        const userList = users as any[];
+        const userList = users as { id: string, username: string, role: string }[];
         console.log(`\n👤 Users in '${userTableName}' table (${userList.length} found):`);
         if (userList.length === 0) {
             console.log("   ⚠️  No users found! Need to create admin user.");

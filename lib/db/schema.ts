@@ -14,7 +14,6 @@ import { relations, sql } from "drizzle-orm";
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-const uuid = () => varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID());
 const now = () => datetime("createdAt", { mode: "string" }).default(sql`now()`).notNull();
 const updatedAt = () => datetime("updatedAt", { mode: "string" }).default(sql`now()`).notNull().$onUpdateFn(() => new Date().toISOString().slice(0, 19).replace("T", " "));
 

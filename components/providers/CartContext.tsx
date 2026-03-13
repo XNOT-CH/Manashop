@@ -148,7 +148,7 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
     // Total (same as subtotal for now, can add fees/discounts later)
     const total = subtotal;
 
-    const value: CartContextType = {
+    const value: CartContextType = React.useMemo(() => ({
         items,
         addToCart,
         updateQuantity,
@@ -159,7 +159,7 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
         subtotal,
         total,
         isLoading,
-    };
+    }), [items, addToCart, updateQuantity, removeFromCart, clearCart, isInCart, itemCount, subtotal, total, isLoading]);
 
     return (
         <CartContext.Provider value={value}>

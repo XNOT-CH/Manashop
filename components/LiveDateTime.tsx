@@ -35,9 +35,12 @@ export function LiveDateTime() {
     const [now, setNow] = useState<Date | null>(null);
 
     useEffect(() => {
-        setNow(new Date());
+        const timeout = setTimeout(() => setNow(new Date()), 0);
         const interval = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(timeout);
+            clearInterval(interval);
+        };
     }, []);
 
     if (!now) return null;

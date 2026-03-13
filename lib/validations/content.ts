@@ -23,8 +23,8 @@ export type CurrencySettingsInput = z.infer<typeof currencySettingsSchema>;
 export const newsItemSchema = z.object({
     title: z.string().min(1, "กรุณากรอกหัวข้อข่าว").max(300),
     description: z.string().min(1, "กรุณากรอกรายละเอียด").max(5000),
-    imageUrl: z.string().url().optional().or(z.literal("")),
-    link: z.string().url().optional().or(z.literal("")),
+    imageUrl: z.url({ error: "URL รูปภาพไม่ถูกต้อง" }).optional().or(z.literal("")),
+    link: z.url({ error: "URL ลิงก์ไม่ถูกต้อง" }).optional().or(z.literal("")),
     sortOrder: z.coerce.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
 });
@@ -33,8 +33,8 @@ export type NewsItemInput = z.infer<typeof newsItemSchema>;
 // ── Popup ─────────────────────────────────────────────────
 export const popupSchema = z.object({
     title: z.string().max(200).optional().or(z.literal("")),
-    imageUrl: z.string().url("กรุณากรอก URL รูปภาพที่ถูกต้อง"),
-    linkUrl: z.string().url().optional().or(z.literal("")),
+    imageUrl: z.url({ error: "กรุณากรอก URL รูปภาพที่ถูกต้อง" }),
+    linkUrl: z.url({ error: "URL ลิงก์ไม่ถูกต้อง" }).optional().or(z.literal("")),
     sortOrder: z.coerce.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
     dismissOption: z

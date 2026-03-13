@@ -39,7 +39,7 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
             setLoading(true);
             try {
                 const res = await fetch("/api/gacha/recent");
-                if (!res.ok) throw new Error();
+                if (!res.ok) throw new Error("Failed to fetch recent logs");
                 const json = await res.json();
                 if (json.success && mounted) {
                     setLogs(json.data);
@@ -51,7 +51,7 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
             }
         };
 
-        void fetchRecent();
+        fetchRecent();
         return () => { mounted = false; };
     }, [refreshKey]);
 

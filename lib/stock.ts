@@ -21,7 +21,7 @@ export function getDelimiter(separatorType: string): string {
  * Split secretData into individual stock items
  */
 export function splitStock(secretData: string, separatorType: string): string[] {
-    if (!secretData || !secretData.trim()) return [];
+    if (!secretData?.trim()) return [];
     const delimiter = getDelimiter(separatorType);
     return secretData.split(delimiter).filter(item => item.trim() !== "");
 }

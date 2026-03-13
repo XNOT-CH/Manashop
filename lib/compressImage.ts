@@ -4,6 +4,40 @@
  * Uses Canvas API to re-encode images as WebP/JPEG with iterative quality reduction.
  */
 
+async function compressWithCanvas(
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    imageBitmap: ImageBitmap,
+    startWidth: number,
+    startHeight: number,
+    maxSizeBytes: number
+): Promise<Blob | null> {
+    const outputType = "image/webp";
+    let quality = 0.85;
+    let width = startWidth;
+    let height = startHeight;
+    let blob: Blob | null = null;
+
+    for (let i = 0; i < 10; i++) {
+        blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, outputType, quality)
+        );
+
+        if (!blob || blob.size <= maxSizeBytes) break;
+
+        quality -= 0.1;
+        if (quality < 0.1) {
+            width = Math.round(width * 0.75);
+            height = Math.round(height * 0.75);
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(imageBitmap, 0, 0, width, height);
+            quality = 0.5;
+        }
+    }
+    return blob;
+}
+
 const DEFAULT_MAX_SIZE_BYTES = 300 * 1024; // 300KB
 const MAX_GIF_SVG_SIZE = 2 * 1024 * 1024; // 2MB limit for GIF/SVG
 const MAX_DIMENSION = 1920; // Max width/height
@@ -59,32 +93,7 @@ export async function compressImage(
     ctx.drawImage(imageBitmap, 0, 0, width, height);
 
     // Try WebP first, then JPEG
-    const outputType = "image/webp";
-
-    // Iteratively reduce quality until the file is small enough
-    let quality = 0.85;
-    let blob: Blob | null = null;
-
-    for (let i = 0; i < 10; i++) {
-        blob = await new Promise<Blob | null>((resolve) =>
-            canvas.toBlob(resolve, outputType, quality)
-        );
-
-        if (!blob) break;
-        if (blob.size <= maxSizeBytes) break;
-
-        // Reduce quality
-        quality -= 0.1;
-        if (quality < 0.1) {
-            // If still too large at minimum quality, scale down dimensions
-            width = Math.round(width * 0.75);
-            height = Math.round(height * 0.75);
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(imageBitmap, 0, 0, width, height);
-            quality = 0.5;
-        }
-    }
+    const blob = await compressWithCanvas(canvas, ctx, imageBitmap, width, height, maxSizeBytes);
 
     if (!blob) {
         return file; // Fallback to original
@@ -93,7 +102,7 @@ export async function compressImage(
     // Create a new File with .webp extension
     const baseName = file.name.replace(/\.[^.]+$/, "");
     return new File([blob], `${baseName}.webp`, {
-        type: outputType,
+        type: "image/webp",
         lastModified: Date.now(),
     });
 }

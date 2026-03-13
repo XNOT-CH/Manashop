@@ -14,6 +14,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");

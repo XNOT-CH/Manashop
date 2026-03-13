@@ -16,7 +16,12 @@ interface ProductGalleryProps {
 
 export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
     // Since DB has only 1 image, simulate multiple angles
-    const images = [mainImage, mainImage, mainImage, mainImage];
+    const images = [
+        { id: "img-1", url: mainImage },
+        { id: "img-2", url: mainImage },
+        { id: "img-3", url: mainImage },
+        { id: "img-4", url: mainImage },
+    ];
     const [selectedImage, setSelectedImage] = useState(0);
 
     return (
@@ -26,7 +31,7 @@ export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
                 <DialogTrigger asChild>
                     <div className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-zinc-100">
                         <Image
-                            src={images[selectedImage]}
+                            src={images[selectedImage].url}
                             alt="Product"
                             fill
                             sizes="(max-width: 768px) 100vw, 50vw"
@@ -45,7 +50,7 @@ export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
                     <DialogTitle className="sr-only">Product Image View</DialogTitle>
                     <div className="relative aspect-square w-full overflow-hidden rounded-xl">
                         <Image
-                            src={images[selectedImage]}
+                            src={images[selectedImage].url}
                             alt="Product Full View"
                             fill
                             sizes="100vw"
@@ -59,7 +64,7 @@ export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
             <div className="flex gap-3">
                 {images.map((image, index) => (
                     <button
-                        key={index}
+                        key={image.id}
                         onClick={() => setSelectedImage(index)}
                         className={`relative aspect-square w-16 overflow-hidden rounded-lg transition-all border-2 ${selectedImage === index
                             ? "border-blue-500"
@@ -67,7 +72,7 @@ export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
                             }`}
                     >
                         <Image
-                            src={image}
+                            src={image.url}
                             alt={`View ${index + 1}`}
                             fill
                             sizes="64px"

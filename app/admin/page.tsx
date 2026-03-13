@@ -17,7 +17,7 @@ import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], [{ count: rawProducts }], [{ count: rawUsers }]] = await Promise.all([
+    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], , [{ count: rawUsers }]] = await Promise.all([
         db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders),
         db.select({ count: count() }).from(products),
         db.select({ count: count() }).from(users),

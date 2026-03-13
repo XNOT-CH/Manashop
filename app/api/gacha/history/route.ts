@@ -37,7 +37,7 @@ export async function GET() {
             .limit(1);
         const topTier = tierCountsRaw[0]?.tier ?? null;
 
-        const normalised = logs.map((log: any) => ({
+        const normalised = logs.map((log) => ({
             id: log.id, tier: log.tier,
             rewardName: log.rewardName ?? log.product?.name ?? "รางวัล",
             rewardImageUrl: log.rewardImageUrl ?? log.product?.imageUrl ?? null,

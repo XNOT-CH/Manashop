@@ -6,7 +6,7 @@ export const createTopupSchema = z.object({
         .number()
         .min(1, "จำนวนเงินต้องมากกว่า 0")
         .max(1_000_000, "จำนวนเงินเกินขีดจำกัด"),
-    proofImage: z.string().url("กรุณาอัปโหลดสลิป").optional().or(z.literal("")),
+    slipUrl: z.url({ error: "URL สลิปไม่ถูกต้อง" }).optional().or(z.literal("")),
     senderBank: z.string().max(50).optional().or(z.literal("")),
     transactionRef: z.string().max(100).optional().or(z.literal("")),
 });

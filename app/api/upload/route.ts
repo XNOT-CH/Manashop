@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import { writeFile, mkdir } from "node:fs/promises";
+import path from "node:path";
+import { existsSync } from "node:fs";
 
 import crypto from "node:crypto";
 

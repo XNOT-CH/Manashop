@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { cookies } from "next/headers";
+
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";

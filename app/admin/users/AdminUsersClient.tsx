@@ -63,14 +63,53 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         return users.filter(
             (u) =>
                 u.username.toLowerCase().includes(q) ||
-                (u.name && u.name.toLowerCase().includes(q)) ||
-                (u.email && u.email.toLowerCase().includes(q))
+                u.name?.toLowerCase().includes(q) ||
+                u.email?.toLowerCase().includes(q)
         );
     }, [users, searchQuery]);
 
     const vipCount = users.filter((u) => Number(u.totalTopup) > VIP_TOPUP_THRESHOLD).length;
     const totalCredits = users.reduce((s, u) => s + Number(u.creditBalance), 0);
     const totalPoints = users.reduce((s, u) => s + u.pointBalance, 0);
+
+    const handleEditConfirm = async (result: { isConfirmed: boolean; value?: Record<string, unknown> }, user: User) => {
+        if (!result.isConfirmed || !result.value) return;
+
+        showLoading("กำลังบันทึก...");
+        try {
+            const response = await fetch(`/api/admin/users/${user.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(result.value),
+            });
+            const data = await response.json();
+            hideLoading();
+
+            if (!response.ok) {
+                showError(data.error || "เกิดข้อผิดพลาด");
+                return;
+            }
+
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u.id === user.id
+                        ? {
+                            ...u,
+                            creditBalance: data.user.creditBalance,
+                            totalTopup: data.user.totalTopup,
+                            pointBalance: data.user.pointBalance,
+                            lifetimePoints: data.user.lifetimePoints,
+                            role: data.user.role,
+                        }
+                        : u
+                )
+            );
+            showSuccess("บันทึกข้อมูลสำเร็จ!");
+        } catch {
+            hideLoading();
+            showError("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+        }
+    };
 
     const openEditDialog = (user: User) => {
         const customRoles = roles.filter((r) => !["USER", "MODERATOR", "SELLER", "ADMIN"].includes(r.code));
@@ -134,44 +173,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                 lifetimePoints: (document.getElementById("swal-lifetime") as HTMLInputElement)?.value,
                 role: (document.getElementById("swal-role") as HTMLSelectElement)?.value,
             }),
-        }).then(async (result) => {
-            if (!result.isConfirmed || !result.value) return;
-
-            showLoading("กำลังบันทึก...");
-            try {
-                const response = await fetch(`/api/admin/users/${user.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(result.value),
-                });
-                const data = await response.json();
-                hideLoading();
-
-                if (!response.ok) {
-                    showError(data.error || "เกิดข้อผิดพลาด");
-                    return;
-                }
-
-                setUsers((prev) =>
-                    prev.map((u) =>
-                        u.id === user.id
-                            ? {
-                                ...u,
-                                creditBalance: data.user.creditBalance,
-                                totalTopup: data.user.totalTopup,
-                                pointBalance: data.user.pointBalance,
-                                lifetimePoints: data.user.lifetimePoints,
-                                role: data.user.role,
-                            }
-                            : u
-                    )
-                );
-                showSuccess("บันทึกข้อมูลสำเร็จ!");
-            } catch {
-                hideLoading();
-                showError("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-            }
-        });
+        }).then((result) => handleEditConfirm(result, user));
     };
 
     const statCards = [

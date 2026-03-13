@@ -140,11 +140,11 @@ function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
     return (
         <>
             <nav className="flex-1 space-y-0.5 px-3 py-4 overflow-y-auto">
-                {navigation.map((entry, i) => {
+                {navigation.map((entry) => {
                     if ("group" in entry && entry.group) {
                         return (
                             <NavGroup
-                                key={`group-${i}`}
+                                key={entry.label}
                                 group={entry as NavGroup}
                                 pathname={pathname}
                                 onLinkClick={onLinkClick}

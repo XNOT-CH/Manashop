@@ -26,6 +26,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         const product = await db.query.products.findFirst({ where: eq(products.id, id), columns: { id: true, name: true, isFeatured: true } });
         return NextResponse.json(product);
     } catch (error) {
+        console.error("[PRODUCT_FEATURED]", error);
         return NextResponse.json({ error: "Failed to update featured status" }, { status: 500 });
     }
 }

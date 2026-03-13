@@ -42,6 +42,37 @@ export default function AdminNewsPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadedUrlRef = useRef<string>("");
 
+    // Handle modal init
+    const initializeNewsModalUpload = () => {
+        const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
+        const preview = document.getElementById("swal-img-preview");
+        const previewImg = preview?.querySelector("img");
+        
+        if (urlInput) {
+            urlInput.addEventListener("input", () => {
+                if (urlInput.value) {
+                    if (preview) preview.classList.remove("hidden");
+                    if (previewImg) previewImg.src = urlInput.value;
+                    uploadedUrlRef.current = urlInput.value;
+                } else {
+                    if (preview) preview.classList.add("hidden");
+                    uploadedUrlRef.current = "";
+                }
+            });
+        }
+
+        const uploadBtn = document.getElementById("swal-upload-btn");
+        if (uploadBtn) {
+            uploadBtn.addEventListener("click", () => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = "image/jpeg,image/png,image/webp,image/gif";
+                input.onchange = () => handleNewsImageUpload(input, urlInput, preview, previewImg);
+                input.click();
+            });
+        }
+    };
+
     // Fetch news
     const fetchNews = useCallback(async () => {
         try {
@@ -83,6 +114,18 @@ export default function AdminNewsPage() {
             hideLoading();
             showError("เกิดข้อผิดพลาดในการอัพโหลด");
             return null;
+        }
+    };
+
+    const handleNewsImageUpload = async (input: HTMLInputElement, urlInput: HTMLInputElement | null, preview: HTMLElement | null, previewImg: HTMLImageElement | null | undefined) => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const url = await handleFileUploadInSwal(file);
+        if (url) {
+            uploadedUrlRef.current = url;
+            if (urlInput) urlInput.value = url;
+            if (preview) preview.classList.remove("hidden");
+            if (previewImg) previewImg.src = url;
         }
     };
 
@@ -141,49 +184,14 @@ export default function AdminNewsPage() {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สถานะ</label>
                             <select id="swal-isActive" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="true" ${(article?.isActive ?? true) ? "selected" : ""}>แสดง</option>
-                                <option value="false" ${!(article?.isActive ?? true) ? "selected" : ""}>ซ่อน</option>
+                                <option value="true" ${article?.isActive ?? true ? "selected" : ""}>แสดง</option>
+                                <option value="false" ${article?.isActive === false ? "selected" : ""}>ซ่อน</option>
                             </select>
                         </div>
                     </div>
                 </div>
             `,
-            didOpen: () => {
-                // Image URL live preview
-                const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
-                const preview = document.getElementById("swal-img-preview");
-                const previewImg = preview?.querySelector("img");
-                urlInput?.addEventListener("input", () => {
-                    if (urlInput.value) {
-                        if (preview) preview.classList.remove("hidden");
-                        if (previewImg) previewImg.src = urlInput.value;
-                        uploadedUrlRef.current = urlInput.value;
-                    } else {
-                        if (preview) preview.classList.add("hidden");
-                        uploadedUrlRef.current = "";
-                    }
-                });
-
-                // Upload button
-                const uploadBtn = document.getElementById("swal-upload-btn");
-                uploadBtn?.addEventListener("click", () => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "image/jpeg,image/png,image/webp,image/gif";
-                    input.onchange = async () => {
-                        const file = input.files?.[0];
-                        if (!file) return;
-                        const url = await handleFileUploadInSwal(file);
-                        if (url) {
-                            uploadedUrlRef.current = url;
-                            if (urlInput) urlInput.value = url;
-                            if (preview) preview.classList.remove("hidden");
-                            if (previewImg) previewImg.src = url;
-                        }
-                    };
-                    input.click();
-                });
-            },
+            didOpen: initializeNewsModalUpload,
             preConfirm: () => {
                 const title = (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim();
                 const description = (document.getElementById("swal-description") as HTMLTextAreaElement)?.value?.trim();
@@ -198,35 +206,37 @@ export default function AdminNewsPage() {
                 }
                 return { title, description, imageUrl, link, sortOrder, isActive };
             },
-        }).then(async (result) => {
-            if (!result.isConfirmed || !result.value) return;
+        }).then(result => handleDialogResult(result, article));
+    };
 
-            const formData = result.value as {
-                title: string; description: string; imageUrl: string;
-                link: string; sortOrder: number; isActive: boolean;
-            };
+    const handleDialogResult = async (result: any, article?: NewsArticle) => {
+        if (!result.isConfirmed || !result.value) return;
 
-            showLoading("กำลังบันทึก...");
-            try {
-                const url = article ? `/api/admin/news/${article.id}` : "/api/admin/news";
-                const method = article ? "PUT" : "POST";
-                const res = await fetch(url, {
-                    method,
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(formData),
-                });
-                hideLoading();
-                if (res.ok) {
-                    showSuccess(article ? "แก้ไขข่าวสารสำเร็จ!" : "เพิ่มข่าวสารสำเร็จ!");
-                    fetchNews();
-                } else {
-                    showError("เกิดข้อผิดพลาดในการบันทึก");
-                }
-            } catch {
-                hideLoading();
+        const formData = result.value as {
+            title: string; description: string; imageUrl: string;
+            link: string; sortOrder: number; isActive: boolean;
+        };
+
+        showLoading("กำลังบันทึก...");
+        try {
+            const url = article ? `/api/admin/news/${article.id}` : "/api/admin/news";
+            const method = article ? "PUT" : "POST";
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+            hideLoading();
+            if (res.ok) {
+                showSuccess(article ? "แก้ไขข่าวสารสำเร็จ!" : "เพิ่มข่าวสารสำเร็จ!");
+                fetchNews();
+            } else {
                 showError("เกิดข้อผิดพลาดในการบันทึก");
             }
-        });
+        } catch {
+            hideLoading();
+            showError("เกิดข้อผิดพลาดในการบันทึก");
+        }
     };
 
     // Delete news
@@ -290,11 +300,12 @@ export default function AdminNewsPage() {
 
             {/* Table */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
-                {loading ? (
+                {loading && (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : news.length === 0 ? (
+                )}
+                {!loading && news.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
                         <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>ยังไม่มีข่าวสาร</p>
@@ -302,7 +313,8 @@ export default function AdminNewsPage() {
                             เพิ่มข่าวสารแรก
                         </Button>
                     </div>
-                ) : (
+                )}
+                {!loading && news.length > 0 && (
                     <Table>
                         <TableHeader>
                             <TableRow>

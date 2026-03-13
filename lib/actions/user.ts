@@ -12,6 +12,42 @@ interface ActionResult {
     errors?: Record<string, string[]>;
 }
 
+// Helpers to reduce cognitive complexity
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getFieldErrors(issues: any[]) {
+    const fieldErrors: Record<string, string[]> = {};
+    for (const error of issues) {
+        const field = error.path[0] as string;
+        if (!fieldErrors[field]) fieldErrors[field] = [];
+        fieldErrors[field].push(error.message);
+    }
+    return fieldErrors;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTaxAddress(taxAddress: any, updateData: any) {
+    if (!taxAddress) return;
+    updateData.taxFullName = taxAddress.fullName || null;
+    updateData.taxPhone = taxAddress.phone || null;
+    updateData.taxAddress = taxAddress.address || null;
+    updateData.taxProvince = taxAddress.province || null;
+    updateData.taxDistrict = taxAddress.district || null;
+    updateData.taxSubdistrict = taxAddress.subdistrict || null;
+    updateData.taxPostalCode = taxAddress.postalCode || null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapShippingAddress(shippingAddress: any, updateData: any) {
+    if (!shippingAddress) return;
+    updateData.shipFullName = shippingAddress.fullName || null;
+    updateData.shipPhone = shippingAddress.phone || null;
+    updateData.shipAddress = shippingAddress.address || null;
+    updateData.shipProvince = shippingAddress.province || null;
+    updateData.shipDistrict = shippingAddress.district || null;
+    updateData.shipSubdistrict = shippingAddress.subdistrict || null;
+    updateData.shipPostalCode = shippingAddress.postalCode || null;
+}
+
 /**
  * อัปเดตโปรไฟล์ผู้ใช้
  */
@@ -31,18 +67,10 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         // Validate ข้อมูลด้วย Zod
         const validationResult = updateProfileSchema.safeParse(formData);
         if (!validationResult.success) {
-            const fieldErrors: Record<string, string[]> = {};
-            for (const error of validationResult.error.issues) {
-                const field = error.path[0] as string;
-                if (!fieldErrors[field]) {
-                    fieldErrors[field] = [];
-                }
-                fieldErrors[field].push(error.message);
-            }
             return {
                 success: false,
                 message: "ข้อมูลไม่ถูกต้อง",
-                errors: fieldErrors,
+                errors: getFieldErrors(validationResult.error.issues),
             };
         }
 
@@ -85,27 +113,8 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             updateData.image = validatedData.image || null;
         }
 
-        // อัปเดต tax address
-        if (validatedData.taxAddress) {
-            updateData.taxFullName = validatedData.taxAddress.fullName || null;
-            updateData.taxPhone = validatedData.taxAddress.phone || null;
-            updateData.taxAddress = validatedData.taxAddress.address || null;
-            updateData.taxProvince = validatedData.taxAddress.province || null;
-            updateData.taxDistrict = validatedData.taxAddress.district || null;
-            updateData.taxSubdistrict = validatedData.taxAddress.subdistrict || null;
-            updateData.taxPostalCode = validatedData.taxAddress.postalCode || null;
-        }
-
-        // อัปเดต shipping address
-        if (validatedData.shippingAddress) {
-            updateData.shipFullName = validatedData.shippingAddress.fullName || null;
-            updateData.shipPhone = validatedData.shippingAddress.phone || null;
-            updateData.shipAddress = validatedData.shippingAddress.address || null;
-            updateData.shipProvince = validatedData.shippingAddress.province || null;
-            updateData.shipDistrict = validatedData.shippingAddress.district || null;
-            updateData.shipSubdistrict = validatedData.shippingAddress.subdistrict || null;
-            updateData.shipPostalCode = validatedData.shippingAddress.postalCode || null;
-        }
+        mapTaxAddress(validatedData.taxAddress, updateData);
+        mapShippingAddress(validatedData.shippingAddress, updateData);
 
         // อัปเดต password ถ้ากรอกมา
         if (validatedData.password && validatedData.password.length >= 6) {
@@ -132,7 +141,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         );
 
         // อัปเดตข้อมูลใน database
-        await db.update(users).set(updateData as any).where(eq(users.id, userId));
+        await db.update(users).set(updateData).where(eq(users.id, userId));
 
         // บันทึก Audit Log
         await createAuditLog({

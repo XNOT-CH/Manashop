@@ -224,7 +224,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                         <Button
                             type="submit"
                             className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-300 to-blue-300 hover:from-purple-400 hover:to-blue-400 text-primary font-medium shadow-lg shadow-purple-200/50 transition-all mt-6"
-                            disabled={isLoading || !!(formData.confirmPassword && !passwordsMatch)}
+                            disabled={isLoading || Boolean(formData.confirmPassword && !passwordsMatch)}
                         >
                             {isLoading ? (
                                 <>

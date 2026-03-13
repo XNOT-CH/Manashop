@@ -33,7 +33,15 @@ export async function PATCH(
         const parsed = adminUserUpdateSchema.safeParse(raw);
         if (!parsed.success) {
             return NextResponse.json(
-                { error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors },
+                {
+                    error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง",
+                    errors: parsed.error.issues.reduce((acc, issue) => {
+                        const key = String(issue.path[0] || '_root');
+                        if (!acc[key]) acc[key] = [];
+                        acc[key].push(issue.message);
+                        return acc;
+                    }, {} as Record<string, string[]>),
+                },
                 { status: 400 }
             );
         }
@@ -66,7 +74,7 @@ export async function PATCH(
             changes.push({ field: "role", old: existingUser.role, new: role.toUpperCase() });
         }
 
-        await db.update(users).set(updateData as any).where(eq(users.id, id));
+        await db.update(users).set(updateData).where(eq(users.id, id));
 
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.USER_UPDATE, resource: "User", resourceId: id,
@@ -80,11 +88,11 @@ export async function PATCH(
             user: {
                 id: existingUser.id,
                 username: existingUser.username,
-                creditBalance: String(updateData.creditBalance ?? existingUser.creditBalance),
-                totalTopup: String(updateData.totalTopup ?? existingUser.totalTopup),
-                pointBalance: (updateData.pointBalance ?? existingUser.pointBalance) as number,
-                lifetimePoints: (updateData.lifetimePoints ?? existingUser.lifetimePoints) as number,
-                role: (updateData.role ?? existingUser.role) as string,
+                creditBalance: (updateData.creditBalance as string) ?? String(existingUser.creditBalance),
+                totalTopup: (updateData.totalTopup as string) ?? String(existingUser.totalTopup),
+                pointBalance: (updateData.pointBalance as number) ?? Number(existingUser.pointBalance),
+                lifetimePoints: (updateData.lifetimePoints as number) ?? Number(existingUser.lifetimePoints),
+                role: (updateData.role as string) ?? existingUser.role,
             },
         });
     } catch (error) {

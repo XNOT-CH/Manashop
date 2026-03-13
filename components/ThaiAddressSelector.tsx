@@ -308,7 +308,7 @@ export function ThaiAddressSelector({
                     onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
                     disabled={disabled}
                     className="bg-gray-50 border-gray-200"
-                    readOnly={!!value.subdistrict}
+                    readOnly={Boolean(value.subdistrict)}
                 />
                 {value.subdistrict && (
                     <p className="text-xs text-gray-400">กรอกอัตโนมัติจากตำบล/แขวง</p>

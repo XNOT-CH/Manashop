@@ -24,7 +24,7 @@ export default async function ShopPage(props: Readonly<{
     const categories = [...new Set(allProducts.map((p) => p.category))];
 
     // Filter available products
-    let availableProducts = allProducts.filter((p) => !p.isSold);
+    const availableProducts = allProducts.filter((p) => !p.isSold);
 
     // Apply Sorting
     availableProducts.sort((a, b) => {

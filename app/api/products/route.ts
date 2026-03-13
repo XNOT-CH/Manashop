@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
             id: newId,
             name: title,
             price: String(priceNumber),
-            discountPrice: discountPriceNumber !== null ? String(discountPriceNumber) : null,
+            discountPrice: discountPriceNumber === null ? null : String(discountPriceNumber),
             imageUrl: image || null,
             category,
             currency: currency || "THB",

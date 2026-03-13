@@ -11,7 +11,8 @@ export function GlobalLoading() {
 
     useEffect(() => {
         // When path or search params change, we assume navigation is complete
-        setIsLoading(false);
+        const timer = setTimeout(() => setIsLoading(false), 0);
+        return () => clearTimeout(timer);
     }, [pathname, searchParams]);
 
     // We use a small hack to detect when a link is clicked to show loading.

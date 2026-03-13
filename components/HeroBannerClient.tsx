@@ -33,18 +33,18 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
 
     // Scroll to specific slide
     const scrollTo = useCallback(
-        (index: number) => emblaApi && emblaApi.scrollTo(index),
+        (index: number) => emblaApi?.scrollTo(index),
         [emblaApi]
     );
 
     // Scroll to previous slide
     const scrollPrev = useCallback(() => {
-        if (emblaApi) emblaApi.scrollPrev();
+        emblaApi?.scrollPrev();
     }, [emblaApi]);
 
     // Scroll to next slide
     const scrollNext = useCallback(() => {
-        if (emblaApi) emblaApi.scrollNext();
+        emblaApi?.scrollNext();
     }, [emblaApi]);
 
     // Handle selection change
@@ -182,7 +182,7 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
                     {scrollSnaps.map((_, index) => (
                         <button
-                            key={index}
+                            key={banners[index]?.id ?? `dot-${index}`}
                             onClick={() => scrollTo(index)}
                             className={`
                                 w-2.5 h-2.5 sm:w-3 sm:h-3 

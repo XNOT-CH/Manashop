@@ -63,19 +63,19 @@ export function getChanges<T extends Record<string, unknown>>(
     fieldsToTrack?: string[]
 ): AuditChange[] {
     const changes: AuditChange[] = [];
-    if (!oldData) {
-        for (const [field, newValue] of Object.entries(newData)) {
-            if (fieldsToTrack && !fieldsToTrack.includes(field)) continue;
-            if (newValue !== undefined && newValue !== null) changes.push({ field, oldValue: null, newValue });
-        }
-        return changes;
-    }
     for (const [field, newValue] of Object.entries(newData)) {
         if (fieldsToTrack && !fieldsToTrack.includes(field)) continue;
-        const oldValue = oldData[field];
-        if (JSON.stringify(oldValue) === JSON.stringify(newValue)) continue;
         if (newValue === undefined) continue;
-        changes.push({ field, oldValue, newValue });
+
+        if (!oldData) {
+            if (newValue !== null) changes.push({ field, oldValue: null, newValue });
+            continue;
+        }
+
+        const oldValue = oldData[field];
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            changes.push({ field, oldValue, newValue });
+        }
     }
     return changes;
 }

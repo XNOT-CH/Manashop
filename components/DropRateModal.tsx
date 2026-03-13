@@ -26,17 +26,20 @@ export function DropRateModal({ open, onClose, machineId }: Readonly<DropRateMod
 
     useEffect(() => {
         if (!open) return;
-        setLoading(true);
         const url = machineId
             ? `/api/gacha/drop-rates?machineId=${machineId}`
             : "/api/gacha/drop-rates";
+        const timer = setTimeout(() => setLoading(true), 0);
         fetch(url)
             .then((r) => r.json())
             .then((json: { success: boolean; data: TierRate[] }) => {
                 if (json.success) setTiers(json.data ?? []);
             })
             .catch(() => { /* ignore */ })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                clearTimeout(timer);
+                setLoading(false);
+            });
     }, [open, machineId]);
 
     return (
@@ -73,15 +76,17 @@ export function DropRateModal({ open, onClose, machineId }: Readonly<DropRateMod
 
                         {/* Tier rows */}
                         <div className="px-4 py-3 flex flex-col divide-y divide-border/50 min-h-[80px]">
-                            {loading ? (
+                            {loading && (
                                 <div className="flex items-center justify-center py-6">
                                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                                 </div>
-                            ) : tiers.length === 0 ? (
+                            )}
+                            {!loading && tiers.length === 0 && (
                                 <p className="text-[12px] text-muted-foreground text-center py-4">
                                     ยังไม่มีข้อมูลอัตราการดรอป
                                 </p>
-                            ) : (
+                            )}
+                            {!loading && tiers.length > 0 && (
                                 tiers.map((tier, i) => (
                                     <div key={tier.tier} className="flex items-center gap-3 py-2.5">
                                         {/* dot */}

@@ -248,13 +248,13 @@ export default function StockManagementPage() {
                             <div className="text-center py-8 text-muted-foreground">
                                 <Package className="h-10 w-10 mx-auto mb-2 opacity-30" />
                                 <p>ยังไม่มีสต็อก</p>
-                                <p className="text-xs mt-1">เพิ่มข้อมูลทางด้านซ้าย หรือกดปุ่ม "เพิ่มทีละไอดี"</p>
+                                <p className="text-xs mt-1">เพิ่มข้อมูลทางด้านซ้าย หรือกดปุ่ม &quot;เพิ่มทีละไอดี&quot;</p>
                             </div>
                         ) : (
                             <div className="max-h-[500px] overflow-y-auto space-y-2">
                                 {stockItems.map((item, index) => (
                                     <div
-                                        key={index}
+                                        key={item + "-" + index}
                                         className="rounded-lg border bg-card p-3 text-sm"
                                     >
                                         {editingIndex === index ? (

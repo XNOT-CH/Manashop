@@ -41,9 +41,9 @@ export const siteSettingsSchema = z.object({
     bannerTitle3: z.string().max(200).optional().or(z.literal("")),
     bannerSubtitle3: z.string().max(300).optional().or(z.literal("")),
     // Social
-    lineUrl: z.string().url().optional().or(z.literal("")),
-    facebookUrl: z.string().url().optional().or(z.literal("")),
-    discordUrl: z.string().url().optional().or(z.literal("")),
+    lineUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
+    facebookUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
+    discordUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     // Features
     maintenanceMode: z.boolean().default(false),
     allowRegistration: z.boolean().default(true),

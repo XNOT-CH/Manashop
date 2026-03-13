@@ -30,7 +30,6 @@ export default function AddProductPage() {
     });
 
     // Single stock add form
-    const [showAddForm, setShowAddForm] = useState(false);
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
 
@@ -40,8 +39,6 @@ export default function AddProductPage() {
 
     // Edit stock item
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
-    const [editUser, setEditUser] = useState("");
-    const [editPass, setEditPass] = useState("");
 
     const handleAddSingleStock = () => {
         if (!singleUser.trim() || !singlePass.trim()) {
@@ -55,34 +52,11 @@ export default function AddProductPage() {
         }));
         setSingleUser("");
         setSinglePass("");
-        setShowAddForm(false);
         showSuccess("เพิ่มสต็อกสำเร็จ");
     };
 
     const rebuildSecretData = (items: string[]) => {
         setFormData((prev) => ({ ...prev, secretData: items.join("\n") }));
-    };
-
-    const handleEditStock = (index: number, item: string) => {
-        const parts = item.split(" / ");
-        setEditUser(parts[0]?.trim() || item);
-        setEditPass(parts[1]?.trim() || "");
-        setEditingIndex(index);
-    };
-
-    const handleSaveEditStock = () => {
-        if (editingIndex === null) return;
-        if (!editUser.trim() || !editPass.trim()) {
-            showError("กรุณากรอก User และ Pass");
-            return;
-        }
-        const items = [...stockItems];
-        items[editingIndex] = `${editUser.trim()} / ${editPass.trim()}`;
-        rebuildSecretData(items);
-        setEditingIndex(null);
-        setEditUser("");
-        setEditPass("");
-        showSuccess("แก้ไขสำเร็จ");
     };
 
     const handleDeleteStock = (index: number) => {
@@ -121,6 +95,7 @@ export default function AddProductPage() {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
         } catch (error) {
+            console.error("[NEW_PRODUCT_UPLOAD]", error);
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploading(false);
@@ -170,6 +145,7 @@ export default function AddProductPage() {
                 showError(`เกิดข้อผิดพลาด: ${data.message}`);
             }
         } catch (error) {
+            console.error("[NEW_PRODUCT_SUBMIT]", error);
             showError("ไม่สามารถสร้างสินค้าได้ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setIsLoading(false);
@@ -361,6 +337,7 @@ export default function AddProductPage() {
                                 {/* Preview */}
                                 {formData.image && (
                                     <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-muted max-w-xs border">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={formData.image}
                                             alt="Preview"
@@ -458,7 +435,7 @@ export default function AddProductPage() {
                                     <div className="max-h-64 overflow-y-auto space-y-2">
                                         {stockItems.map((item, index) => (
                                             <div
-                                                key={index}
+                                                key={item + "-" + index}
                                                 className="rounded-lg border bg-card p-3 text-sm flex items-center justify-between"
                                             >
                                                 <div className="flex items-center gap-2">

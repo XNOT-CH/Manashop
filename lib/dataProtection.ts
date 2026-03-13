@@ -25,16 +25,12 @@ export function assertNoSecretDataLeak(obj: Record<string, unknown>, context: st
  * Strips secretData from any object (useful for returning products to frontend)
  */
 export function stripSecretData<T extends Record<string, unknown>>(obj: T): Omit<T, "secretData"> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { secretData, ...safeObj } = obj;
     return safeObj;
 }
 
-// Fields that should be masked (show partial)
-const MASKED_FIELDS = [
-    "email",
-    "creditBalance",
-    "ipAddress",
-];
+
 
 /**
  * Remove sensitive fields from an object
@@ -68,7 +64,7 @@ export function sanitizeArray<T extends Record<string, unknown>>(
  * Mask email address (show first 3 chars + domain)
  */
 export function maskEmail(email: string): string {
-    if (!email || !email.includes("@")) return "***@***.***";
+    if (!email?.includes("@")) return "***@***.***";
 
     const [local, domain] = email.split("@");
     const maskedLocal = local.length > 3
@@ -226,7 +222,7 @@ export function prepareProductForAdmin(product: {
     return {
         ...prepareProductForCustomer(product),
         orderId: product.orderId,
-        hasSecretData: !!product.secretData,
+        hasSecretData: Boolean(product.secretData),
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         // secretData only shown when product is purchased by the user

@@ -58,14 +58,14 @@ export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
     }, []);
 
     useEffect(() => {
-        void fetchHistory();
+        fetchHistory();
     }, [fetchHistory, refreshKey]);
 
     if (loading) {
         return (
             <div className="animate-pulse space-y-2 mt-4">
                 {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-12 rounded-xl bg-muted/40" />
+                    <div key={`gacha-history-skeleton-${i}`} className="h-12 rounded-xl bg-muted/40" /> // NOSONAR
                 ))}
             </div>
         );

@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
             .filter((o) => o.product)
             .map((order) => ({
                 id: order.id,
-                title: order.product!.name,
-                image: order.product!.imageUrl || "/placeholder.jpg",
+                title: order.product?.name ?? "ไม่ทราบชื่อสินค้า",
+                image: order.product?.imageUrl || "/placeholder.jpg",
                 date: new Date(order.purchasedAt).toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }),
                 price: Number(order.totalPrice),
                 secretData: order.givenData ? decrypt(order.givenData) : "ไม่พบข้อมูล",

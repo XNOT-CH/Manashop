@@ -21,15 +21,15 @@ export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
         const { isActive, title } = body;
-        let settings = await db.query.footerWidgetSettings.findFirst();
-        if (!settings) {
-            const newId = crypto.randomUUID();
-            await db.insert(footerWidgetSettings).values({ id: newId, isActive: isActive ?? true, title: title ?? "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
-        } else {
+        const settings = await db.query.footerWidgetSettings.findFirst();
+        if (settings) {
             const set: Record<string, unknown> = {};
             if (isActive !== undefined) set.isActive = isActive;
             if (title !== undefined) set.title = title;
-            await db.update(footerWidgetSettings).set(set as any).where(eq(footerWidgetSettings.id, settings.id));
+            await db.update(footerWidgetSettings).set(set).where(eq(footerWidgetSettings.id, settings.id));
+        } else {
+            const newId = crypto.randomUUID();
+            await db.insert(footerWidgetSettings).values({ id: newId, isActive: isActive ?? true, title: title ?? "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
         }
         const updated = await db.query.footerWidgetSettings.findFirst();
         return NextResponse.json(updated);

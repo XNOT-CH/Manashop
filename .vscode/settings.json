@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "http-0-0-0-0-9000",
+        "projectKey": "my-game-store"
+    }
+}

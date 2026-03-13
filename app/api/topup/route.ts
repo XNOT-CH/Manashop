@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         try {
             slipResult = await verifySlipWithEasySlip(proofImage);
         } catch (error) {
+            console.error("[TOPUP_EASYSLIP]", error);
             return NextResponse.json({ success: false, message: "ไม่สามารถตรวจสอบสลิปได้ กรุณาลองใหม่" }, { status: 500 });
         }
 

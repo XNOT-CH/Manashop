@@ -49,7 +49,7 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
                     {items.map((item, index) => {
                         const isLast = index === items.length - 1;
                         return (
-                            <span key={index} className="contents">
+                            <span key={item.label + "-" + index} className="contents">
                                 <BreadcrumbSeparator>
                                     <ChevronRight className="h-3 w-3 text-muted-foreground/50" />
                                 </BreadcrumbSeparator>

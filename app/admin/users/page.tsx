@@ -18,7 +18,7 @@ export default async function AdminUsersPage() {
         creditBalance: String(user.creditBalance ?? "0"),
         totalTopup: String(user.totalTopup ?? "0"),
         // Drizzle returns datetime as string — ensure ISO format
-        createdAt: typeof user.createdAt === "string" ? user.createdAt : new Date(user.createdAt as any).toISOString(),
+        createdAt: typeof user.createdAt === "string" ? user.createdAt : new Date(user.createdAt as string | number | Date).toISOString(),
     }));
 
     return <AdminUsersClient initialUsers={serializedUsers} />;

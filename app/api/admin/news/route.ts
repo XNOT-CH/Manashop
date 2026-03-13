@@ -19,7 +19,8 @@ export async function GET(request: Request) {
             orderBy: (t, { asc, desc }) => [asc(t.sortOrder), desc(t.createdAt)],
         });
         return NextResponse.json(articles);
-    } catch {
+    } catch (error) {
+        console.error("[NEWS_GET]", error);
         return NextResponse.json({ error: "Failed to fetch news" }, { status: 500 });
     }
 }
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
         await auditFromRequest(request, { action: AUDIT_ACTIONS.NEWS_CREATE, resource: "NewsArticle", resourceId: newId, details: { title } });
         return NextResponse.json(news, { status: 201 });
     } catch (error) {
+        console.error("[NEWS_POST]", error);
         return NextResponse.json({ error: "Failed to create news" }, { status: 500 });
     }
 }

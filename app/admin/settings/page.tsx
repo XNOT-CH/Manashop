@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
@@ -88,6 +88,7 @@ export default function AdminSettingsPage() {
                 });
             }
         } catch (error) {
+            console.error("[SETTINGS_FETCH]", error);
             showError("ไม่สามารถโหลดการตั้งค่าได้");
         } finally {
             setIsLoading(false);
@@ -110,6 +111,7 @@ export default function AdminSettingsPage() {
                 showError(data.message || "เกิดข้อผิดพลาด");
             }
         } catch (error) {
+            console.error("[SETTINGS_SAVE]", error);
             showError("ไม่สามารถบันทึกได้");
         } finally {
             setIsSaving(false);
@@ -144,6 +146,7 @@ export default function AdminSettingsPage() {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
         } catch (error) {
+            console.error("[SETTINGS_UPLOAD_LOGO]", error);
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploadingLogo(false);
@@ -174,6 +177,7 @@ export default function AdminSettingsPage() {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
         } catch (error) {
+            console.error("[SETTINGS_UPLOAD_BG]", error);
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploadingBg(false);
@@ -355,6 +359,7 @@ export default function AdminSettingsPage() {
                                 {/* Preview full-width */}
                                 {settings.backgroundImage ? (
                                     <div className="relative w-full aspect-video rounded-xl overflow-hidden border bg-muted">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={settings.backgroundImage}
                                             alt="Background Preview"
@@ -538,6 +543,7 @@ function BannerCard({
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
         } catch (error) {
+            console.error("[SETTINGS_UPLOAD_BANNER]", error);
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploading(false);
@@ -570,6 +576,7 @@ function BannerCard({
                         {hasValidImage ? (
                             <>
                                 {/* Using img tag to avoid next/image URL validation issues */}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={image}
                                     alt={`Banner ${number} Preview`}

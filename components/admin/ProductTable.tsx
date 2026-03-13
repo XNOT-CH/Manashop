@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -64,6 +63,7 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                 showError("เกิดข้อผิดพลาด");
             }
         } catch (error) {
+            console.error("[PRODUCT_FEATURED_TOGGLE]", error);
             showError("เกิดข้อผิดพลาด");
         } finally {
             setTogglingFeatured(null);
@@ -82,6 +82,7 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                 showError("ไม่สามารถคัดลอกสินค้าได้");
             }
         } catch (error) {
+            console.error("[PRODUCT_DUPLICATE]", error);
             showError("เกิดข้อผิดพลาด");
         } finally {
             setDuplicatingId(null);
@@ -103,6 +104,7 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                 showError(data.message || "เกิดข้อผิดพลาด");
             }
         } catch (error) {
+            console.error("[PRODUCT_DELETE]", error);
             showError("ไม่สามารถลบสินค้าได้");
         } finally {
             setDeletingId(null);
@@ -125,8 +127,18 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {products.map((product) => (
-                        <TableRow key={product.id}>
+                    {products.map((product) => {
+                        let statusBadge;
+                        if (product.isSold) {
+                            statusBadge = <Badge variant="destructive">ขายแล้ว</Badge>;
+                        } else if (product.stockCount === 0) {
+                            statusBadge = <Badge variant="destructive">หมดสต็อก</Badge>;
+                        } else {
+                            statusBadge = <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>;
+                        }
+
+                        return (
+                            <TableRow key={product.id}>
                             <TableCell>
                                 <Avatar className="rounded-lg">
                                     <AvatarImage
@@ -156,23 +168,17 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                                 )}
                             </TableCell>
                             <TableCell className="text-center">
-                                {product.stockCount !== undefined ? (
+                                {product.stockCount === undefined ? (
+                                    <span className="text-muted-foreground">-</span>
+                                ) : (
                                     <Badge variant={product.stockCount > 0 ? "secondary" : "destructive"} className="gap-1">
                                         <Package className="h-3 w-3" />
                                         {product.stockCount}
                                     </Badge>
-                                ) : (
-                                    <span className="text-muted-foreground">-</span>
                                 )}
                             </TableCell>
                             <TableCell className="text-center">
-                                {product.isSold ? (
-                                    <Badge variant="destructive">ขายแล้ว</Badge>
-                                ) : product.stockCount === 0 ? (
-                                    <Badge variant="destructive">หมดสต็อก</Badge>
-                                ) : (
-                                    <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>
-                                )}
+                                {statusBadge}
                             </TableCell>
                             <TableCell className="text-center hidden md:table-cell">
                                 <Button
@@ -237,7 +243,8 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                                 </DropdownMenu>
                             </TableCell>
                         </TableRow>
-                    ))}
+                        );
+                    })}
                 </TableBody>
             </Table>
         </div>
