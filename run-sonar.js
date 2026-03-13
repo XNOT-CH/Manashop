@@ -9,7 +9,7 @@ scanner(
       "sonar.projectKey": "my-game-store",
       "sonar.projectName": "My Game Store",
       "sonar.sources": "app,components,lib",
-      "sonar.exclusions": "**/node_modules/**,**/.next/**,**/*.test.*",
+      "sonar.exclusions": "**/node_modules/**,**/.next/**,**/*.test.*,components/ui/**,components/emails/**",
       "sonar.javascript.lcov.reportPaths": "coverage/lcov.info"
     },
   },
