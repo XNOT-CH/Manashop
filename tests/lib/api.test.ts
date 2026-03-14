@@ -1,113 +1,93 @@
 import { describe, it, expect } from "vitest";
-import { z } from "zod";
 import { apiSuccess, apiError, parseBody } from "@/lib/api";
+import { z } from "zod";
 
-// Helper to create a mock Request with JSON body
-function mockRequest(body: unknown): Request {
-  return new Request("http://localhost/api/test", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
-
-function mockBadRequest(): Request {
-  return new Request("http://localhost/api/test", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: "not json{{{",
-  });
-}
-
-describe("api response helpers", () => {
+describe("lib/api", () => {
   describe("apiSuccess", () => {
-    it("returns JSON with success: true", async () => {
-      const res = apiSuccess({ items: [1, 2, 3] });
+    it("returns NextResponse with data", async () => {
+      const data = { id: 1 };
+      const res = apiSuccess(data);
+      expect(res.status).toBe(200);
+      
       const body = await res.json();
       expect(body.success).toBe(true);
-      expect(body.data.items).toEqual([1, 2, 3]);
+      expect(body.data).toEqual(data);
     });
 
-    it("includes optional message", async () => {
-      const res = apiSuccess("ok", "Created!");
-      const body = await res.json();
-      expect(body.message).toBe("Created!");
-    });
-
-    it("uses custom status code", async () => {
-      const res = apiSuccess(null, "Created", 201);
+    it("includes custom message and status", async () => {
+      const res = apiSuccess({}, "Created", 201);
       expect(res.status).toBe(201);
-    });
-
-    it("defaults to 200", () => {
-      const res = apiSuccess(null);
-      expect(res.status).toBe(200);
+      
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.message).toBe("Created");
     });
   });
 
   describe("apiError", () => {
-    it("returns JSON with success: false", async () => {
-      const res = apiError("Something went wrong");
+    it("returns NextResponse with error message", async () => {
+      const res = apiError("Error message");
+      expect(res.status).toBe(400);
+      
       const body = await res.json();
       expect(body.success).toBe(false);
-      expect(body.message).toBe("Something went wrong");
+      expect(body.message).toBe("Error message");
     });
 
-    it("uses custom status code", () => {
-      const res = apiError("Not found", 404);
-      expect(res.status).toBe(404);
-    });
-
-    it("defaults to 400", () => {
-      const res = apiError("Bad request");
-      expect(res.status).toBe(400);
-    });
-
-    it("includes error map when provided", async () => {
-      const res = apiError("Validation failed", 422, { name: ["Required"] });
+    it("includes errors object and status", async () => {
+      const errors = { field: ["invalid"] };
+      const res = apiError("Validation failed", 422, errors);
+      expect(res.status).toBe(422);
+      
       const body = await res.json();
-      expect(body.errors).toEqual({ name: ["Required"] });
+      expect(body.success).toBe(false);
+      expect(body.errors).toEqual(errors);
     });
   });
-});
 
-describe("parseBody", () => {
-  const testSchema = z.object({
-    name: z.string().min(1, "Name required"),
-    age: z.number().min(0),
-  });
+  describe("parseBody", () => {
+    const schema = z.object({ name: z.string(), age: z.number().optional() });
 
-  it("returns data on valid input", async () => {
-    const result = await parseBody(mockRequest({ name: "Alice", age: 25 }), testSchema);
-    expect("data" in result).toBe(true);
-    if ("data" in result) {
-      expect(result.data.name).toBe("Alice");
-      expect(result.data.age).toBe(25);
-    }
-  });
+    it("parses valid body correctly", async () => {
+      const mockReq = {
+        json: async () => ({ name: "Test", age: 25 })
+      } as unknown as Request;
 
-  it("returns error for invalid JSON", async () => {
-    const result = await parseBody(mockBadRequest(), testSchema);
-    expect("error" in result).toBe(true);
-  });
+      const result = await parseBody(mockReq, schema);
+      expect("data" in result).toBe(true);
+      expect((result as any).data).toEqual({ name: "Test", age: 25 });
+    });
 
-  it("returns error for validation failure", async () => {
-    const result = await parseBody(mockRequest({ name: "" }), testSchema);
-    expect("error" in result).toBe(true);
-  });
+    it("returns error for invalid json", async () => {
+      const mockReq = {
+        json: async () => { throw new Error("Invalid JSON"); }
+      } as unknown as Request;
 
-  it("returns 422 for validation errors", async () => {
-    const result = await parseBody(mockRequest({ name: 123 }), testSchema);
-    if ("error" in result) {
-      expect(result.error.status).toBe(422);
-    }
-  });
+      const result = await parseBody(mockReq, schema);
+      expect("error" in result).toBe(true);
+      
+      const errRes = (result as any).error;
+      expect(errRes.status).toBe(400);
+      
+      const body = await errRes.json();
+      expect(body.message).toBe("Invalid JSON body");
+    });
 
-  it("returns errors object with field keys", async () => {
-    const result = await parseBody(mockRequest({}), testSchema);
-    if ("error" in result) {
-      const body = await result.error.json();
-      expect(body.errors).toBeDefined();
-    }
+    it("returns error for schema validation failure", async () => {
+      const mockReq = {
+        json: async () => ({ age: "not-a-number" })
+      } as unknown as Request;
+
+      const result = await parseBody(mockReq, schema);
+      expect("error" in result).toBe(true);
+      
+      const errRes = (result as any).error;
+      expect(errRes.status).toBe(422);
+      
+      const body = await errRes.json();
+      expect(body.message).toBe("ข้อมูลไม่ถูกต้อง");
+      expect(body.errors.name).toBeDefined(); // Missing required
+      expect(body.errors.age).toBeDefined(); // Wrong type
+    });
   });
 });

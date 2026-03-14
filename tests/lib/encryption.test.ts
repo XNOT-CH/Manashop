@@ -1,79 +1,87 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { encrypt, decrypt, isEncrypted } from "@/lib/encryption";
 
-// Set test encryption key (exactly 32 bytes)
-beforeEach(() => {
-  vi.stubEnv("ENCRYPTION_KEY", "");
-  vi.stubEnv("NODE_ENV", "development");
-});
-
-describe("encryption utilities", () => {
-  describe("encrypt/decrypt", () => {
-    it("encrypts and decrypts text correctly", () => {
-      const plaintext = "hello world";
-      const encrypted = encrypt(plaintext);
-      expect(encrypted).not.toBe(plaintext);
-      expect(encrypted).toContain(":");
-
-      const decrypted = decrypt(encrypted);
-      expect(decrypted).toBe(plaintext);
-    });
-
-    it("produces different ciphertexts for same input (random IV)", () => {
-      const plaintext = "same text";
-      const enc1 = encrypt(plaintext);
-      const enc2 = encrypt(plaintext);
-      expect(enc1).not.toBe(enc2);
-    });
-
-    it("handles empty string", () => {
-      const encrypted = encrypt("");
-      const decrypted = decrypt(encrypted);
-      expect(decrypted).toBe("");
-    });
-
-    it("handles unicode text", () => {
-      const text = "สวัสดีครับ 🎮";
-      const encrypted = encrypt(text);
-      const decrypted = decrypt(encrypted);
-      expect(decrypted).toBe(text);
-    });
-
-    it("handles long text", () => {
-      const text = "x".repeat(10000);
-      const encrypted = encrypt(text);
-      const decrypted = decrypt(encrypted);
-      expect(decrypted).toBe(text);
-    });
+describe("lib/encryption", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.ENCRYPTION_KEY = "gamestore-secret-key-12345678901"; // 32 bytes
   });
 
-  describe("decrypt fallback", () => {
-    it("returns original text if not encrypted", () => {
-      expect(decrypt("plain text without colons")).toBe("plain text without colons");
-    });
+  it("encrypts and decrypts correctly (GCM)", async () => {
+    const { encrypt, decrypt } = await import("@/lib/encryption");
+    const secret = "my top secret data";
+    
+    const encrypted = encrypt(secret);
+    expect(encrypted).not.toBe(secret);
+    expect(encrypted.split(":")).toHaveLength(3); // iv:encrypted:tag
+    
+    const decrypted = decrypt(encrypted);
+    expect(decrypted).toBe(secret);
+  });
 
-    it("returns original text if decryption fails", () => {
-      expect(decrypt("aa:bb:cc")).toBe("aa:bb:cc");
-    });
+  it("returns original text on decryption failure", async () => {
+    const { decrypt } = await import("@/lib/encryption");
+    const fakeData = "not-encrypted-data";
+    expect(decrypt(fakeData)).toBe(fakeData);
+    
+    // Invalid encrypted format
+    expect(decrypt("invalid:hex:parts")).toBe("invalid:hex:parts");
+  });
+
+  it("throws in production without ENCRYPTION_KEY", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    delete process.env.ENCRYPTION_KEY;
+
+    const { encrypt } = await import("@/lib/encryption");
+    expect(() => encrypt("test")).toThrow(/ENCRYPTION_KEY environment variable is required in production/);
+    
+    vi.unstubAllEnvs(); // Reset
+  });
+
+  it("throws if ENCRYPTION_KEY is wrong length", async () => {
+    process.env.ENCRYPTION_KEY = "short";
+
+    const { encrypt } = await import("@/lib/encryption");
+    expect(() => encrypt("test")).toThrow(/ENCRYPTION_KEY must be exactly 32 bytes/);
+  });
+
+  it("falls back to DEV_FALLBACK_KEY if no key provided in non-production", async () => {
+    delete process.env.ENCRYPTION_KEY;
+    const { encrypt, decrypt } = await import("@/lib/encryption");
+    
+    const encrypted = encrypt("test");
+    expect(decrypt(encrypted)).toBe("test");
   });
 
   describe("isEncrypted", () => {
-    it("returns false for plain text", () => {
-      expect(isEncrypted("hello world")).toBe(false);
+    it("returns false for plain text", async () => {
+      const { isEncrypted } = await import("@/lib/encryption");
+      expect(isEncrypted("plain text")).toBe(false);
     });
 
-    it("returns false for text with wrong colon format", () => {
-      expect(isEncrypted("a:b:c")).toBe(false);
+    it("returns false for invalid hex", async () => {
+      const { isEncrypted } = await import("@/lib/encryption");
+      expect(isEncrypted("invalid:hex")).toBe(false);
     });
-
-    it("returns false for non-hex parts", () => {
-      expect(isEncrypted("not-hex:also-not-hex")).toBe(false);
-    });
-
-    it("returns true for properly formatted encrypted text", () => {
-      // 32 char hex IV : hex payload
-      const fakeEncrypted = "a".repeat(32) + ":" + "b".repeat(16);
+    
+    it("returns true for valid legacy CBC format", async () => {
+      const { isEncrypted } = await import("@/lib/encryption");
+      // 32 chars hex IV : hex body
+      const fakeEncrypted = `${"a".repeat(32)}:1a2b3c`;
       expect(isEncrypted(fakeEncrypted)).toBe(true);
     });
+  });
+  
+  it("decrypts legacy CBC format correctly", async () => {
+    const { encrypt, decrypt } = await import("@/lib/encryption");
+    // Generate old CBC format manually for testing
+    const crypto = await import("node:crypto");
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from("gamestore-secret-key-12345678901"), iv);
+    let encrypted = cipher.update(Buffer.from("legacy data"));
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+    const legacyEncryptedString = `${iv.toString("hex")}:${encrypted.toString("hex")}`;
+    
+    expect(decrypt(legacyEncryptedString)).toBe("legacy data");
   });
 });

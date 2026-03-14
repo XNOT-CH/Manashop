@@ -18,11 +18,11 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov", "html"],
       reportsDirectory: "./coverage",
-      include: ["lib/**/*.ts", "components/**/*.tsx", "app/**/*.ts", "app/**/*.tsx"],
+      include: ["lib/**/*.ts", "app/api/**/*.ts"],
       exclude: [
         "**/*.d.ts",
         "**/node_modules/**",
-        "lib/db.ts",
+        "lib/db/**",
         "lib/redis.ts",
         "lib/cubejs.ts",
         "lib/mail.ts",

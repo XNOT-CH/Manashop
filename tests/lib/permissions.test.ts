@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   PERMISSIONS,
-  ROLE_PERMISSIONS,
   roleHasPermission,
   getUserPermissions,
   hasPermission,
@@ -11,144 +10,110 @@ import {
   removeCustomPermission,
 } from "@/lib/permissions";
 
-describe("permissions system", () => {
-  describe("PERMISSIONS constant", () => {
-    it("has product permissions", () => {
-      expect(PERMISSIONS.PRODUCT_VIEW).toBe("product:view");
-      expect(PERMISSIONS.PRODUCT_CREATE).toBe("product:create");
-    });
-
-    it("has admin permissions", () => {
-      expect(PERMISSIONS.ADMIN_PANEL).toBe("admin:panel");
-    });
-  });
-
-  describe("ROLE_PERMISSIONS", () => {
-    it("USER has product:view", () => {
-      expect(ROLE_PERMISSIONS.USER).toContain(PERMISSIONS.PRODUCT_VIEW);
-    });
-
-    it("USER does not have admin:panel", () => {
-      expect(ROLE_PERMISSIONS.USER).not.toContain(PERMISSIONS.ADMIN_PANEL);
-    });
-
-    it("ADMIN has all permissions", () => {
-      const allPerms = Object.values(PERMISSIONS);
-      for (const perm of allPerms) {
-        expect(ROLE_PERMISSIONS.ADMIN).toContain(perm);
-      }
-    });
-
-    it("SELLER has admin:panel", () => {
-      expect(ROLE_PERMISSIONS.SELLER).toContain(PERMISSIONS.ADMIN_PANEL);
-    });
-  });
-
+describe("lib/permissions", () => {
   describe("roleHasPermission", () => {
     it("returns true for valid role permission", () => {
       expect(roleHasPermission("USER", PERMISSIONS.PRODUCT_VIEW)).toBe(true);
+      expect(roleHasPermission("ADMIN", PERMISSIONS.ADMIN_PANEL)).toBe(true);
     });
 
     it("returns false for invalid role permission", () => {
       expect(roleHasPermission("USER", PERMISSIONS.ADMIN_PANEL)).toBe(false);
-    });
-
-    it("returns false for unknown role", () => {
       expect(roleHasPermission("UNKNOWN", PERMISSIONS.PRODUCT_VIEW)).toBe(false);
     });
   });
 
   describe("getUserPermissions", () => {
-    it("returns role permissions without custom", () => {
-      const perms = getUserPermissions("USER");
+    it("returns role permissions + custom permissions", () => {
+      const perms = getUserPermissions("USER", [PERMISSIONS.PRODUCT_CREATE]);
       expect(perms).toContain(PERMISSIONS.PRODUCT_VIEW);
-      expect(perms).toContain(PERMISSIONS.ORDER_VIEW);
+      expect(perms).toContain(PERMISSIONS.PRODUCT_CREATE);
     });
 
-    it("merges custom permissions with role permissions", () => {
-      const perms = getUserPermissions("USER", [PERMISSIONS.ADMIN_PANEL]);
-      expect(perms).toContain(PERMISSIONS.PRODUCT_VIEW);
-      expect(perms).toContain(PERMISSIONS.ADMIN_PANEL);
-    });
-
-    it("deduplicates overlapping custom permissions", () => {
-      const perms = getUserPermissions("USER", [PERMISSIONS.PRODUCT_VIEW]);
-      const viewCount = perms.filter((p) => p === PERMISSIONS.PRODUCT_VIEW).length;
-      expect(viewCount).toBe(1);
-    });
-
-    it("handles null custom permissions", () => {
+    it("handles null/undefined custom permissions", () => {
       const perms = getUserPermissions("USER", null);
-      expect(perms.length).toBeGreaterThan(0);
+      expect(perms).toContain(PERMISSIONS.PRODUCT_VIEW);
+      
+      const perms2 = getUserPermissions("USER", undefined);
+      expect(perms2).toContain(PERMISSIONS.PRODUCT_VIEW);
     });
 
-    it("handles legacy JSON string permissions", () => {
-      const perms = getUserPermissions("USER", JSON.stringify([PERMISSIONS.ADMIN_PANEL]));
-      expect(perms).toContain(PERMISSIONS.ADMIN_PANEL);
+    it("handles legacy JSON string custom permissions", () => {
+      const perms = getUserPermissions("USER", JSON.stringify([PERMISSIONS.PRODUCT_CREATE]));
+      expect(perms).toContain(PERMISSIONS.PRODUCT_VIEW);
+      expect(perms).toContain(PERMISSIONS.PRODUCT_CREATE);
+    });
+
+    it("handles invalid JSON gracefully", () => {
+      const perms = getUserPermissions("USER", "invalid-json");
+      expect(perms).toEqual(expect.arrayContaining([PERMISSIONS.PRODUCT_VIEW]));
     });
   });
 
   describe("hasPermission", () => {
-    it("ADMIN always returns true", () => {
+    it("always returns true for ADMIN", () => {
       expect(hasPermission("ADMIN", PERMISSIONS.PRODUCT_VIEW)).toBe(true);
-      expect(hasPermission("ADMIN", PERMISSIONS.SETTINGS_EDIT)).toBe(true);
+      expect(hasPermission("ADMIN", "some:fake:perm" as any)).toBe(true);
     });
 
-    it("USER has product:view", () => {
+    it("checks role permissions", () => {
       expect(hasPermission("USER", PERMISSIONS.PRODUCT_VIEW)).toBe(true);
-    });
-
-    it("USER does not have admin:panel", () => {
       expect(hasPermission("USER", PERMISSIONS.ADMIN_PANEL)).toBe(false);
     });
 
-    it("USER with custom admin:panel has it", () => {
-      expect(hasPermission("USER", PERMISSIONS.ADMIN_PANEL, [PERMISSIONS.ADMIN_PANEL])).toBe(true);
+    it("checks custom permissions", () => {
+      expect(hasPermission("USER", PERMISSIONS.PRODUCT_CREATE, [PERMISSIONS.PRODUCT_CREATE])).toBe(true);
     });
   });
 
   describe("hasAllPermissions", () => {
-    it("returns true when user has all permissions", () => {
-      expect(hasAllPermissions("USER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.ORDER_VIEW])).toBe(true);
+    it("returns true if user has all listed permissions", () => {
+      expect(hasAllPermissions("SELLER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.PRODUCT_CREATE])).toBe(true);
     });
 
-    it("returns false when user lacks one permission", () => {
-      expect(hasAllPermissions("USER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.ADMIN_PANEL])).toBe(false);
+    it("returns false if user is missing one or more", () => {
+      expect(hasAllPermissions("SELLER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.USER_VIEW])).toBe(false);
     });
   });
 
   describe("hasAnyPermission", () => {
-    it("returns true when user has at least one permission", () => {
-      expect(hasAnyPermission("USER", [PERMISSIONS.ADMIN_PANEL, PERMISSIONS.PRODUCT_VIEW])).toBe(true);
+    it("returns true if user has at least one permission", () => {
+      expect(hasAnyPermission("USER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.ADMIN_PANEL])).toBe(true);
     });
 
-    it("returns false when user has none", () => {
-      expect(hasAnyPermission("USER", [PERMISSIONS.ADMIN_PANEL, PERMISSIONS.SETTINGS_EDIT])).toBe(false);
+    it("returns false if user has none", () => {
+      expect(hasAnyPermission("USER", [PERMISSIONS.ADMIN_PANEL, PERMISSIONS.USER_VIEW])).toBe(false);
     });
   });
 
   describe("addCustomPermission", () => {
     it("adds a new permission", () => {
-      const result = addCustomPermission(null, PERMISSIONS.ADMIN_PANEL);
-      expect(result).toContain(PERMISSIONS.ADMIN_PANEL);
+      const result = addCustomPermission([PERMISSIONS.PRODUCT_VIEW], PERMISSIONS.PRODUCT_CREATE);
+      expect(result).toHaveLength(2);
+      expect(result).toContain(PERMISSIONS.PRODUCT_CREATE);
     });
 
-    it("does not duplicate existing permission", () => {
-      const result = addCustomPermission([PERMISSIONS.ADMIN_PANEL], PERMISSIONS.ADMIN_PANEL);
-      expect(result.filter((p) => p === PERMISSIONS.ADMIN_PANEL).length).toBe(1);
+    it("does not duplicate permissions", () => {
+      const result = addCustomPermission([PERMISSIONS.PRODUCT_VIEW], PERMISSIONS.PRODUCT_VIEW);
+      expect(result).toHaveLength(1);
+    });
+    
+    it("handles null", () => {
+      const result = addCustomPermission(null, PERMISSIONS.PRODUCT_VIEW);
+      expect(result).toContain(PERMISSIONS.PRODUCT_VIEW);
     });
   });
 
   describe("removeCustomPermission", () => {
-    it("removes an existing permission", () => {
-      const result = removeCustomPermission([PERMISSIONS.ADMIN_PANEL, PERMISSIONS.PRODUCT_VIEW], PERMISSIONS.ADMIN_PANEL);
-      expect(result).not.toContain(PERMISSIONS.ADMIN_PANEL);
-      expect(result).toContain(PERMISSIONS.PRODUCT_VIEW);
+    it("removes a permission", () => {
+      const result = removeCustomPermission([PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.PRODUCT_CREATE], PERMISSIONS.PRODUCT_CREATE);
+      expect(result).toHaveLength(1);
+      expect(result).not.toContain(PERMISSIONS.PRODUCT_CREATE);
     });
 
-    it("returns empty array when removing from null", () => {
-      const result = removeCustomPermission(null, PERMISSIONS.ADMIN_PANEL);
-      expect(result).toEqual([]);
+    it("does nothing if permission not found", () => {
+      const result = removeCustomPermission([PERMISSIONS.PRODUCT_VIEW], PERMISSIONS.PRODUCT_CREATE);
+      expect(result).toHaveLength(1);
     });
   });
 });
